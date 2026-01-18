@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% load backup_filters %}
+
+{% block title %}备份管理中心 - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="container page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">备份管理中心</h1>
+            <div class="page-subtitle">管理数据备份和恢复，保障数据安全</div>
+        </div>
+        <div class="action-row">
+            <a class="btn btn-outline-primary" href="{% url 'backup:backup_list' %}">备份列表</a>
+            <a class="btn btn-primary" href="{% url 'backup:backup_create' %}">创建备份</a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h5>总备份数</h5>
+                <div class="stat-value">{{ total_backups }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="border-top-color: #10B981;">
+                <h5>成功</h5>
+                <div class="stat-value">{{ success_count }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="border-top-color: #EF4444;">
+                <h5>失败</h5>
+                <div class="stat-value">{{ failed_count }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="border-top-color: #F59E0B;">
+                <h5>总大小</h5>
+                <div class="stat-value" style="font-size: 18px;">
+                    {% with total_size=total_size %}
+                    {% if total_size < 1048576 %}{{ total_size|filesizeformat }}{% elif total_size < 1073741824 %}{{ total_size|div:1048576 }} MB{% else %}{{ total_size|div:1073741824 }} GB{% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-card mb-4">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="status" class="form-label">状态</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">全部</option>
+                    <option value="SUCCESS" {{ status_selected_SUCCESS }}>成功</option>
+                    <option value="FAILED" {{ status_selected_FAILED }}>失败</option>
+                    <option value="RUNNING" {{ status_selected_RUNNING }}>进行中</option>
+                    <option value="PENDING" {{ status_selected_PENDING }}>待处理</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="type" class="form-label">备份类型</label>
+                <select class="form-select" id="type" name="type">
+                    <option value="">全部</option>
+                    <option value="FULL" {{ type_selected_FULL }}>全量备份</option>
+                    <option value="INCREMENTAL" {{ type_selected_INCREMENTAL }}>增量备份</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="auto" class="form-label">备份方式</label>
+                <select class="form-select" id="auto" name="auto">
+                    <option value="">全部</option>
+                    <option value="true" {{ auto_selected_true }}>自动备份</option>
+                    <option value="false" {{ auto_selected_false }}>手动备份</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-outline-primary w-100">筛选</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>备份名称</th>
+                        <th>类型</th>
+                        <th>状态</th>
+                        <th>数据类型</th>
+                        <th>文件大小</th>
+                        <th>创建时间</th>
+                        <th class="text-end">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for backup in backups %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'backup:backup_detail' backup.pk %}">{{ backup.backup_name }}</a>
+                            <div class="text-muted" style="font-size: 12px;">
+                                {% if backup.is_automatic %}系统自动备份{% else %}手动触发{% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if backup.backup_type == 'FULL' %}
+                            <span class="badge bg-primary">全量备份</span>
+                            {% else %}
+                            <span class="badge bg-info">增量备份</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if backup.status == 'SUCCESS' %}
+                            <span class="badge bg-success">成功</span>
+                            {% elif backup.status == 'FAILED' %}
+                            <span class="badge bg-danger">失败</span>
+                            {% elif backup.status == 'RUNNING' %}
+                            <span class="badge bg-warning text-dark">进行中</span>
+                            {% else %}
+                            <span class="badge bg-secondary">待处理</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% for dtype in backup.data_types %}
+                            <span class="badge bg-light text-dark">{{ dtype }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% with size=backup.file_size %}
+                            {% if size < 1048576 %}{{ size|filesizeformat }}{% elif size < 1073741824 %}{{ size|div:1048576 }} MB{% else %}{{ size|div:1073741824 }} GB{% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>{{ backup.created_at|date:"Y-m-d H:i" }}</td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'backup:backup_detail' backup.pk %}" class="btn btn-outline-primary" title="查看详情">查看</a>
+                                {% if backup.status == 'SUCCESS' %}
+                                <a href="{% url 'backup:backup_download' backup.pk %}" class="btn btn-outline-success" title="下载">下载</a>
+                                <a href="{% url 'backup:backup_restore' backup.pk %}" class="btn btn-outline-warning" title="恢复">恢复</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">暂无备份记录</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">上一页</a>
+            </li>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">下一页</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

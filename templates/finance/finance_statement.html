@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}费用明细单 - {{ contract }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h1 class="h4 mb-0">费用明细单</h1>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h2 class="h5">合同信息</h2>
+                    <p><strong>合同编号：</strong>{{ contract.id }}</p>
+                    <p><strong>店铺名称：</strong>{{ contract.shop.name }}</p>
+                    <p><strong>租赁期限：</strong>{{ contract.start_date }} 至 {{ contract.end_date }}</p>
+                    <p><strong>月租金：</strong>¥{{ contract.monthly_rent }}</p>
+                    <p><strong>押金：</strong>¥{{ contract.deposit }}</p>
+                    <p><strong>缴费周期：</strong>{{ contract.get_payment_cycle_display }}</p>
+                </div>
+                <div class="col-md-6 text-right">
+                    <h2 class="h5">明细单信息</h2>
+                    <p><strong>生成日期：</strong>{{ current_date }}</p>
+                    <p><strong>总费用：</strong>¥{{ total_amount }}</p>
+                    <p><strong>已支付：</strong>¥{{ paid_amount }}</p>
+                    <p><strong>待支付：</strong>¥{{ unpaid_amount }}</p>
+                </div>
+            </div>
+
+            <div class="border-top pt-4">
+                <h2 class="h5 mb-3">费用明细</h2>
+                {% if records %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>费用类型</th>
+                            <th>金额</th>
+                            <th>账单周期</th>
+                            <th>状态</th>
+                            <th>缴费方式</th>
+                            <th>缴费时间</th>
+                            <th>交易单号</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ record.get_fee_type_display }}</td>
+                            <td>¥{{ record.amount }}</td>
+                            <td>{{ record.billing_period_start }} 至 {{ record.billing_period_end }}</td>
+                            <td>
+                                {% if record.status == 'UNPAID' %}
+                                <span class="badge badge-danger">未支付</span>
+                                {% elif record.status == 'PAID' %}
+                                <span class="badge badge-success">已支付</span>
+                                {% else %}
+                                <span class="badge badge-secondary">已作废</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ record.get_payment_method_display|default:'-' }}</td>
+                            <td>{{ record.paid_at|date:"Y-m-d H:i"|default:'-' }}</td>
+                            <td>{{ record.transaction_id|default:'-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2" class="text-right"><strong>合计</strong></td>
+                            <td><strong>¥{{ total_amount }}</strong></td>
+                            <td colspan="5"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                {% else %}
+                <div class="alert alert-info">
+                    暂无费用记录
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="border-top pt-4 mt-4">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p><strong>备注：</strong>此明细单仅作为参考，具体以实际缴费记录为准。</p>
+                    </div>
+                    <div>
+                        <a href="?format=pdf" class="btn btn-primary">
+                            <i class="fas fa-file-pdf"></i> 导出PDF
+                        </a>
+                        <a href="{% url 'finance:finance_list' %}?contract_id={{ contract.id }}" class="btn btn-secondary ml-2">
+                            <i class="fas fa-list"></i> 查看详情
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}{% if form.instance.pk %}编辑店铺{% else %}新建店铺{% endif %} - {{ block.super }}{% endblock %}
+
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
+
+
+
+{% block content %}
+<div class="container page-shell">
+    <div class="card shadow-sm section-card">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">{% if form.instance.pk %}编辑店铺{% else %}新建店铺{% endif %}</h2>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group mb-3">
+                    <label for="id_name" class="form-label">店铺名称</label>
+                    {{ form.name }}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="id_business_type" class="form-label">业态类型</label>
+                    {{ form.business_type }}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="id_area" class="form-label">经营面积 (㎡)</label>
+                    {{ form.area }}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="id_rent" class="form-label">租金 (元/月)</label>
+                    {{ form.rent }}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="id_contact_person" class="form-label">联系人</label>
+                    {{ form.contact_person }}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="id_contact_phone" class="form-label">联系方式</label>
+                    {{ form.contact_phone }}
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label">入驻日期</label>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <select class="form-select" id="entry_year" name="entry_year" required>
+                                <option value="">年</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="entry_month" name="entry_month" required>
+                                <option value="">月</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="entry_day" name="entry_day" required>
+                                <option value="">日</option>
+                            </select>
+                        </div>
+                    </div>
+                    <input type="hidden" id="id_entry_date" name="entry_date" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="id_description" class="form-label">描述</label>
+                    {{ form.description }}
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'store:shop_list' %}" class="btn btn-secondary">取消</a>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 当前年份
+    const currentYear = new Date().getFullYear();
+
+    // 生成年份选项
+    function populateYears() {
+        const yearSelect = document.getElementById('entry_year');
+
+        // 生成从当前年份开始的10年选项
+        for (let year = currentYear; year >= currentYear - 10; year--) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearSelect.appendChild(option);
+        }
+    }
+
+    // 获取月份的天数
+    function getDaysInMonth(year, month) {
+        return new Date(year, month, 0).getDate();
+    }
+
+    // 更新日期选项
+    function updateDays() {
+        const year = parseInt(document.getElementById('entry_year').value);
+        const month = parseInt(document.getElementById('entry_month').value);
+        const daySelect = document.getElementById('entry_day');
+
+        // 清空现有选项
+        daySelect.innerHTML = '<option value="">日</option>';
+
+        if (year && month) {
+            const daysInMonth = getDaysInMonth(year, month);
+            for (let day = 1; day <= daysInMonth; day++) {
+                const option = document.createElement('option');
+                option.value = day;
+                option.textContent = day;
+                daySelect.appendChild(option);
+            }
+        }
+    }
+
+    // 组合日期为YYYY-MM-DD格式
+    function combineDate() {
+        const year = document.getElementById('entry_year').value;
+        const month = document.getElementById('entry_month').value;
+        const day = document.getElementById('entry_day').value;
+
+        if (year && month && day) {
+            const monthStr = month.toString().padStart(2, '0');
+            const dayStr = day.toString().padStart(2, '0');
+            return `${year}-${monthStr}-${dayStr}`;
+        }
+        return '';
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function () {
+        populateYears();
+
+        // 添加事件监听器
+        const yearSelect = document.getElementById('entry_year');
+        const monthSelect = document.getElementById('entry_month');
+
+        yearSelect.addEventListener('change', function () {
+            updateDays();
+        });
+
+        monthSelect.addEventListener('change', function () {
+            updateDays();
+        });
+
+        // 表单提交处理
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function (e) {
+            const entryDate = combineDate();
+
+            if (!entryDate) {
+                e.preventDefault();
+                alert('请选择完整的入驻日期');
+                return;
+            }
+
+            const selectedDate = new Date(entryDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (selectedDate > today) {
+                e.preventDefault();
+                alert('入驻日期不能是未来日期');
+                return;
+            }
+
+            // 设置隐藏字段
+            document.getElementById('id_entry_date').value = entryDate;
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{% if object %}编辑店铺{% else %}创建店铺{% endif %}</h1>
+
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        <strong>表单验证失败，请检查以下字段：</strong>
+        <ul>
+            {% for field in form %}
+            {% for error in field.errors %}
+            <li>{{ field.label }}: {{ error }}</li>
+            {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="post"
+        action="{% if object %}{% url 'store:shop_update' object.id %}{% else %}{% url 'store:shop_create' %}{% endif %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a href="{% url 'store:shop_list' %}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}

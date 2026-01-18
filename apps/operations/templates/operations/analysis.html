@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}运营数据分析{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">运营数据分析</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title">分析结果列表</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>店铺</th>
+                            <th>分析周期</th>
+                            <th>周期时间</th>
+                            <th>总客流量</th>
+                            <th>总销售额</th>
+                            <th>客单价</th>
+                            <th>转化率</th>
+                            <th>销售额增长率</th>
+                            <th>分析时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for analysis in analyses %}
+                        <tr>
+                            <td>{{ analysis.shop.name }}</td>
+                            <td>{{ analysis.analysis_period }}</td>
+                            <td>{{ analysis.period_start|date:"Y-m-d" }} 至 {{ analysis.period_end|date:"Y-m-d" }}</td>
+                            <td>{{ analysis.total_foot_traffic }}</td>
+                            <td>¥{{ analysis.total_sales }}</td>
+                            <td>¥{{ analysis.average_transaction_value }}</td>
+                            <td>{{ analysis.conversion_rate }}%</td>
+                            <td>{{ analysis.sales_growth_rate|default:"-" }}%</td>
+                            <td>{{ analysis.analyzed_at|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

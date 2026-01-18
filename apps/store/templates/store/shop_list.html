@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>店铺列表</h1>
+    <a href="{% url 'store:shop_create' %}" class="btn btn-primary mb-3">创建店铺</a>
+    
+    {% if messages %}
+    <div class="alert alert-info">
+        {% for message in messages %}
+        {{ message }}
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>名称</th>
+                <th>业态类型</th>
+                <th>经营面积</th>
+                <th>租金</th>
+                <th>联系人</th>
+                <th>联系方式</th>
+                <th>入驻日期</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for shop in shops %}
+            <tr>
+                <td>{{ shop.id }}</td>
+                <td>{{ shop.name }}</td>
+                <td>{{ shop.get_business_type_display }}</td>
+                <td>{{ shop.area }} 平方米</td>
+                <td>¥{{ shop.rent }}/月</td>
+                <td>{{ shop.contact_person|default:"-" }}</td>
+                <td>{{ shop.contact_phone|default:"-" }}</td>
+                <td>{{ shop.entry_date|date:"Y-m-d"|default:"-" }}</td>
+                <td>
+                    <a href="{% url 'store:shop_update' shop.id %}" class="btn btn-sm btn-warning">编辑</a>
+                    <a href="{% url 'store:shop_delete' shop.id %}" class="btn btn-sm btn-danger">删除</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

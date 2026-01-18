@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% load backup_filters %}
+
+{% block title %}恢复数据确认 - {{ backup.backup_name }}{% endblock %}
+
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
+
+
+
+{% block content %}
+<div class="container mt-4 page-shell" style="max-width: 700px;">
+    <div class="card border-danger section-card">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0"><i class="fas fa-exclamation-triangle"></i> 数据恢复确认</h4>
+        </div>
+        <div class="card-body">
+            <!-- 警告提示 -->
+            <div class="alert alert-danger" role="alert">
+                <h5 class="alert-heading">⚠️ 请注意</h5>
+                <p class="mb-0">
+                    您即将从备份 <strong>{{ backup.backup_name }}</strong> 恢复数据。
+                    此操作将<strong>覆盖</strong>现有的所有数据！
+                </p>
+            </div>
+
+            <!-- 备份信息 -->
+            <div class="card mb-4 section-card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">备份信息</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <tr>
+                            <td style="width: 150px; font-weight: bold;">备份名称</td>
+                            <td>{{ backup.backup_name }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">备份类型</td>
+                            <td>
+                                {% if backup.backup_type == 'FULL' %}
+                                <span class="badge bg-info">全量备份</span>
+                                {% else %}
+                                <span class="badge bg-secondary">增量备份</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">创建时间</td>
+                            <td>{{ backup.created_at|date:"Y-m-d H:i:s" }}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">文件大小</td>
+                            <td>
+                                {% with size=backup.file_size %}
+                                {% if size < 1048576 %}{{ size|filesizeformat }}{% elif size < 1073741824 %}{{
+                                    size|div:1048576|floatformat:2 }} MB{% else %}{{ size|div:1073741824|floatformat:2
+                                    }} GB{% endif %} {% endwith %} </td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">备份内容</td>
+                            <td>
+                                {% for dtype in backup.data_types %}
+                                <span class="badge bg-light text-dark me-1">{{ dtype }}</span>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% if backup.description %}
+                        <tr>
+                            <td style="font-weight: bold;">备份说明</td>
+                            <td>{{ backup.description }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+
+            <!-- 恢复内容预览 -->
+            <div class="card mb-4 section-card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">将恢复以下数据</h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        {% if 'SHOP' in backup.data_types %}
+                        <li><strong>店铺信息：</strong>所有店铺及其关联数据</li>
+                        {% endif %}
+                        {% if 'CONTRACT' in backup.data_types %}
+                        <li><strong>合约数据：</strong>所有合约及条款信息</li>
+                        {% endif %}
+                        {% if 'OPERATION' in backup.data_types %}
+                        <li><strong>运营数据：</strong>设备数据和手工录入数据</li>
+                        {% endif %}
+                        {% if 'FINANCE' in backup.data_types %}
+                        <li><strong>财务记录：</strong>所有缴费记录和财务统计</li>
+                        {% endif %}
+                        {% if 'LOG' in backup.data_types %}
+                        <li><strong>事务日志：</strong>系统操作日志和审计记录</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 恢复前备份 -->
+            <div class="alert alert-info mb-4">
+                <h6 class="alert-heading">ℹ️ 自动备份</h6>
+                <p class="mb-0">
+                    系统将在恢复前自动创建当前数据的备份，以防万一。
+                    如果恢复后出现问题，您可以从自动备份中恢复。
+                </p>
+            </div>
+
+            <!-- 确认复选框 -->
+            <form method="post" class="mb-4">
+                {% csrf_token %}
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="confirm_restore" name="confirm">
+                    <label class="form-check-label" for="confirm_restore">
+                        我确认已了解恢复操作的风险，同意覆盖现有数据
+                    </label>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="confirm_understanding" name="understanding">
+                    <label class="form-check-label" for="confirm_understanding">
+                        我已备好重要文件，理解此操作不可撤销
+                    </label>
+                </div>
+
+                <!-- 按钮 -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{% url 'backup:backup_detail' backup.pk %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> 取消
+                    </a>
+                    <button type="submit" class="btn btn-danger btn-lg" id="restore_btn" disabled>
+                        <i class="fas fa-redo"></i> 确认恢复
+                    </button>
+                </div>
+            </form>
+
+            <!-- 恢复步骤 -->
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">恢复步骤</h5>
+                </div>
+                <div class="card-body">
+                    <ol>
+                        <li>系统自动备份当前数据</li>
+                        <li>清空目标数据表</li>
+                        <li>导入备份文件中的数据</li>
+                        <li>验证数据完整性</li>
+                        <li>更新系统缓存</li>
+                        <li>记录恢复日志</li>
+                    </ol>
+                    <p class="text-muted mt-3">整个过程通常需要 2-10 分钟，请不要关闭此页面。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 当两个复选框都被勾选时，启用提交按钮
+    document.querySelectorAll('#confirm_restore, #confirm_understanding').forEach(checkbox => {
+        checkbox.addEventListener('change', function () {
+            const confirmRestore = document.getElementById('confirm_restore').checked;
+            const confirmUnderstanding = document.getElementById('confirm_understanding').checked;
+            document.getElementById('restore_btn').disabled = !(confirmRestore && confirmUnderstanding);
+        });
+    });
+</script>
+
+<style>
+    .card {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-header {
+        border-bottom: 1px solid #ddd;
+    }
+
+    .form-check {
+        padding-left: 0;
+    }
+
+    .form-check-input {
+        margin-top: 0.3em;
+    }
+
+    .form-check-label {
+        margin-left: 1.5em;
+        cursor: pointer;
+    }
+
+    .alert {
+        border: none;
+        border-left: 4px solid;
+    }
+
+    .alert-danger {
+        border-left-color: #dc3545;
+    }
+
+    .alert-info {
+        border-left-color: #0dcaf0;
+    }
+</style>
+{% endblock %}

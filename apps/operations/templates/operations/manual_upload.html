@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}手动数据上传 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">手动数据上传</h1>
+
+    {% if error %}
+    <div class="alert alert-danger mb-4">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">运营数据上传</h2>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="form-group mb-3">
+                    <label for="shop" class="form-label">店铺</label>
+                    <select class="form-select" id="shop" name="shop" required>
+                        <option value="">请选择店铺</option>
+                        {% for shop in shops %}
+                        <option value="{{ shop.id }}">{{ shop.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="data_date" class="form-label">数据日期</label>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <select class="form-select" id="data_year" name="data_year" required>
+                                <option value="">年</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="data_month" name="data_month" required>
+                                <option value="">月</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="data_day" name="data_day" required>
+                                <option value="">日</option>
+                            </select>
+                        </div>
+                    </div>
+                    <input type="hidden" id="data_date" name="data_date" required>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="foot_traffic" class="form-label">客流量</label>
+                    <input type="number" class="form-control" id="foot_traffic" name="foot_traffic" min="0">
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="sales_amount" class="form-label">销售额 (元)</label>
+                    <input type="number" class="form-control" id="sales_amount" name="sales_amount" min="0" step="0.01">
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="transaction_count" class="form-label">交易笔数</label>
+                    <input type="number" class="form-control" id="transaction_count" name="transaction_count" min="0">
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="remarks" class="form-label">备注</label>
+                    <textarea class="form-control" id="remarks" name="remarks" rows="3"></textarea>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'operations:dashboard' %}" class="btn btn-secondary">取消</a>
+                    <button type="submit" class="btn btn-primary">上传数据</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 生成年份选项
+    function generateYearOptions() {
+        const yearSelect = document.getElementById('data_year');
+        const currentYear = new Date().getFullYear();
+
+        // 生成过去5年和未来1年的选项
+        for (let year = currentYear - 5; year <= currentYear; year++) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearSelect.appendChild(option);
+        }
+
+        // 默认选择当前年份
+        yearSelect.value = currentYear;
+    }
+
+    // 生成天数选项
+    function generateDayOptions() {
+        const yearSelect = document.getElementById('data_year');
+        const monthSelect = document.getElementById('data_month');
+        const daySelect = document.getElementById('data_day');
+        const year = parseInt(yearSelect.value);
+        const month = parseInt(monthSelect.value);
+
+        // 清空现有选项
+        daySelect.innerHTML = '<option value="">日</option>';
+
+        if (year && month) {
+            // 计算当月的天数
+            const daysInMonth = new Date(year, month, 0).getDate();
+
+            // 生成天数选项
+            for (let day = 1; day <= daysInMonth; day++) {
+                const option = document.createElement('option');
+                option.value = day;
+                option.textContent = day;
+                daySelect.appendChild(option);
+            }
+        }
+    }
+
+    // 更新隐藏字段
+    function updateDataDate() {
+        const yearSelect = document.getElementById('data_year');
+        const monthSelect = document.getElementById('data_month');
+        const daySelect = document.getElementById('data_day');
+        const dataDateInput = document.getElementById('data_date');
+
+        const year = yearSelect.value;
+        const month = monthSelect.value.padStart(2, '0');
+        const day = daySelect.value.padStart(2, '0');
+
+        if (year && month && day) {
+            dataDateInput.value = `${year}-${month}-${day}`;
+        } else {
+            dataDateInput.value = '';
+        }
+    }
+
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', function () {
+        // 生成年份选项
+        generateYearOptions();
+
+        // 为年月选择添加事件监听器
+        document.getElementById('data_year').addEventListener('change', function () {
+            generateDayOptions();
+            updateDataDate();
+        });
+
+        document.getElementById('data_month').addEventListener('change', function () {
+            generateDayOptions();
+            updateDataDate();
+        });
+
+        document.getElementById('data_day').addEventListener('change', updateDataDate);
+
+        // 设置默认日期为今天
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        const day = today.getDate();
+
+        document.getElementById('data_year').value = year;
+        document.getElementById('data_month').value = month;
+        generateDayOptions();
+        document.getElementById('data_day').value = day;
+        updateDataDate();
+    });
+</script>
+{% endblock %}

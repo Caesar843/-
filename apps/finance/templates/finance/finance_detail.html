@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>财务记录详情</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title">记录信息</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>记录ID：</strong>{{ record.id }}</p>
+                    <p><strong>合同：</strong>{{ record.contract.shop.name }} - {{ record.contract.start_date }} 至 {{ record.contract.end_date }}</p>
+                    <p><strong>费用类型：</strong>
+                        {% if record.fee_type == 'RENT' %}租金
+                        {% elif record.fee_type == 'PROPERTY_FEE' %}物业费
+                        {% elif record.fee_type == 'UTILITY_FEE' %}水电费
+                        {% elif record.fee_type == 'OTHER' %}其他费用
+                        {% endif %}
+                    </p>
+                    <p><strong>金额：</strong>¥{{ record.amount }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>账单周期：</strong>{{ record.billing_period_start }} 至 {{ record.billing_period_end }}</p>
+                    <p><strong>状态：</strong>
+                        {% if record.status == 'UNPAID' %}
+                            <span class="badge bg-warning">未支付</span>
+                        {% elif record.status == 'PAID' %}
+                            <span class="badge bg-success">已支付</span>
+                        {% elif record.status == 'VOID' %}
+                            <span class="badge bg-danger">已作废</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>缴费方式：</strong>
+                        {% if record.payment_method %}
+                            {% if record.payment_method == 'WECHAT' %}微信支付
+                            {% elif record.payment_method == 'ALIPAY' %}支付宝
+                            {% elif record.payment_method == 'BANK_TRANSFER' %}银行转账
+                            {% elif record.payment_method == 'CASH' %}现金
+                            {% endif %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </p>
+                    <p><strong>缴费时间：</strong>{{ record.paid_at|default:"-" }}</p>
+                    <p><strong>交易单号：</strong>{{ record.transaction_id|default:"-" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title">操作记录</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>操作时间</th>
+                        <th>操作类型</th>
+                        <th>操作人</th>
+                        <th>备注</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.created_at }}</td>
+                        <td>{{ log.action }}</td>
+                        <td>{{ log.operator.username }}</td>
+                        <td>{{ log.remark }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="mb-4">
+        <a href="{% url 'finance:finance_list' %}" class="btn btn-secondary">返回列表</a>
+        {% if record.status == 'UNPAID' %}
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#paymentModal" data-record-id="{{ record.id }}">立即缴费</button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 缴费模态框 -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel">缴费</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="paymentForm" method="post" action="{% url 'finance:finance_pay' 0 %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="record_id" id="recordId">
+                    <div class="mb-3">
+                        <label for="paymentMethod" class="form-label">缴费方式</label>
+                        <select class="form-select" id="paymentMethod" name="payment_method" required>
+                            <option value="">请选择缴费方式</option>
+                            <option value="WECHAT">微信支付</option>
+                            <option value="ALIPAY">支付宝</option>
+                            <option value="BANK_TRANSFER">银行转账</option>
+                            <option value="CASH">现金</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transactionId" class="form-label">交易单号</label>
+                        <input type="text" class="form-control" id="transactionId" name="transaction_id" placeholder="请输入交易单号">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" form="paymentForm" class="btn btn-primary">确认缴费</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 初始化缴费模态框
+    const paymentModal = document.getElementById('paymentModal');
+    if (paymentModal) {
+        paymentModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const recordId = button.getAttribute('data-record-id');
+            const form = document.getElementById('paymentForm');
+            const action = form.action.replace(/\/0\/$/, `/${recordId}/`);
+            form.action = action;
+            document.getElementById('recordId').value = recordId;
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">活动申请管理</h1>
+    
+    <div class="mb-4">
+        <a href="{% url 'communication:activity_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 提交活动申请
+        </a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>店铺</th>
+                        <th>标题</th>
+                        <th>类型</th>
+                        <th>状态</th>
+                        <th>开始日期</th>
+                        <th>结束日期</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for application in applications %}
+                    <tr>
+                        <td>{{ application.id }}</td>
+                        <td>{{ application.shop.name }}</td>
+                        <td>{{ application.title }}</td>
+                        <td>{{ application.get_activity_type_display }}</td>
+                        <td>
+                            <span class="badge {% if application.status == 'PENDING' %}badge-warning{% elif application.status == 'APPROVED' %}badge-success{% elif application.status == 'REJECTED' %}badge-danger{% else %}badge-secondary{% endif %}">
+                                {{ application.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ application.start_date|date:"Y-m-d H:i" }}</td>
+                        <td>{{ application.end_date|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <a href="{% url 'communication:activity_detail' application.id %}" class="btn btn-sm btn-info">查看</a>
+                            {% if application.status == 'PENDING' %}
+                            <a href="{% url 'communication:activity_review' application.id %}" class="btn btn-sm btn-primary">审核</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center">暂无活动申请</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

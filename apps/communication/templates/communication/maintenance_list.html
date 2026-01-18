@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">维修请求管理</h1>
+    
+    <div class="mb-4">
+        <a href="{% url 'communication:maintenance_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 提交维修请求
+        </a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>店铺</th>
+                        <th>标题</th>
+                        <th>类型</th>
+                        <th>优先级</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in requests %}
+                    <tr>
+                        <td>{{ request.id }}</td>
+                        <td>{{ request.shop.name }}</td>
+                        <td>{{ request.title }}</td>
+                        <td>{{ request.get_request_type_display }}</td>
+                        <td>{{ request.get_priority_display }}</td>
+                        <td>
+                            <span class="badge {% if request.status == 'PENDING' %}badge-warning{% elif request.status == 'ASSIGNED' %}badge-info{% elif request.status == 'IN_PROGRESS' %}badge-primary{% elif request.status == 'COMPLETED' %}badge-success{% else %}badge-danger{% endif %}">
+                                {{ request.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ request.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <a href="{% url 'communication:maintenance_detail' request.id %}" class="btn btn-sm btn-info">查看</a>
+                            {% if request.status != 'COMPLETED' and request.status != 'CANCELLED' %}
+                            <a href="{% url 'communication:maintenance_update' request.id %}" class="btn btn-sm btn-primary">编辑</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center">暂无维修请求</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}数据报表{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">数据报表</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title">报表生成</h5>
+        </div>
+        <div class="card-body">
+            <form>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">选择店铺</label>
+                            <select class="form-select" required>
+                                <option value="">请选择店铺</option>
+                                {% for shop in shops %}
+                                <option value="{{ shop.id }}">{{ shop.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">报表类型</label>
+                            <select class="form-select" required>
+                                <option value="">请选择报表类型</option>
+                                <option value="daily">日报</option>
+                                <option value="weekly">周报</option>
+                                <option value="monthly">月报</option>
+                                <option value="quarterly">季报</option>
+                                <option value="yearly">年报</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">日期范围</label>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <input type="date" class="form-control" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="date" class="form-control" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">生成报表</button>
+                <button type="button" class="btn btn-secondary">导出Excel</button>
+                <button type="button" class="btn btn-secondary">导出PDF</button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">报表预览</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>客流量</th>
+                            <th>销售额</th>
+                            <th>交易笔数</th>
+                            <th>客单价</th>
+                            <th>转化率</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2026-01-01</td>
+                            <td>120</td>
+                            <td>¥1200</td>
+                            <td>60</td>
+                            <td>¥20</td>
+                            <td>50%</td>
+                        </tr>
+                        <tr>
+                            <td>2026-01-02</td>
+                            <td>150</td>
+                            <td>¥1800</td>
+                            <td>75</td>
+                            <td>¥24</td>
+                            <td>50%</td>
+                        </tr>
+                        <tr>
+                            <td>2026-01-03</td>
+                            <td>180</td>
+                            <td>¥2160</td>
+                            <td>90</td>
+                            <td>¥24</td>
+                            <td>50%</td>
+                        </tr>
+                        <tr>
+                            <td>2026-01-04</td>
+                            <td>200</td>
+                            <td>¥2400</td>
+                            <td>100</td>
+                            <td>¥24</td>
+                            <td>50%</td>
+                        </tr>
+                        <tr>
+                            <td>2026-01-05</td>
+                            <td>220</td>
+                            <td>¥2640</td>
+                            <td>110</td>
+                            <td>¥24</td>
+                            <td>50%</td>
+                        </tr>
+                        <tr>
+                            <td>2026-01-06</td>
+                            <td>250</td>
+                            <td>¥3000</td>
+                            <td>125</td>
+                            <td>¥24</td>
+                            <td>50%</td>
+                        </tr>
+                        <tr>
+                            <td>2026-01-07</td>
+                            <td>280</td>
+                            <td>¥3360</td>
+                            <td>140</td>
+                            <td>¥24</td>
+                            <td>50%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>总计</strong></td>
+                            <td><strong>1400</strong></td>
+                            <td><strong>¥16560</strong></td>
+                            <td><strong>700</strong></td>
+                            <td><strong>¥23.66</strong></td>
+                            <td><strong>50%</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

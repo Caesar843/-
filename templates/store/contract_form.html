@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{% if form.instance.pk %}编辑合同{% else %}新建合同{% endif %} - {{ block.super }}{% endblock %}
+
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
+
+
+
+{% block content %}
+<div class="container page-shell">
+    <div class="card shadow-sm section-card">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">{% if form.instance.pk %}编辑合同{% else %}新建合同{% endif %}</h2>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                {% if form.errors %}
+                <div class="alert alert-danger mb-4">
+                    <strong>表单验证失败，请检查以下错误：</strong>
+                    <ul>
+                        {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <div class="form-group mb-3">
+                    <label for="id_shop" class="form-label">店铺</label>
+                    {{ form.shop }}
+                    {% if form.shop.errors %}
+                    <div class="text-danger small">{{ form.shop.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="id_start_date" class="form-label">开始日期</label>
+                    {{ form.start_date }}
+                    {% if form.start_date.errors %}
+                    <div class="text-danger small">{{ form.start_date.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="id_end_date" class="form-label">结束日期</label>
+                    {{ form.end_date }}
+                    {% if form.end_date.errors %}
+                    <div class="text-danger small">{{ form.end_date.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="id_monthly_rent" class="form-label">月租金 (元)</label>
+                    {{ form.monthly_rent }}
+                    {% if form.monthly_rent.errors %}
+                    <div class="text-danger small">{{ form.monthly_rent.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="id_deposit" class="form-label">押金 (元)</label>
+                    {{ form.deposit }}
+                    {% if form.deposit.errors %}
+                    <div class="text-danger small">{{ form.deposit.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="id_payment_cycle" class="form-label">缴费周期</label>
+                    {{ form.payment_cycle }}
+                    {% if form.payment_cycle.errors %}
+                    <div class="text-danger small">{{ form.payment_cycle.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'store:contract_list' %}" class="btn btn-secondary">取消</a>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

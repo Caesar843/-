@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">维修请求详情</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>{{ request.title }}</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>店铺：</strong>{{ request.shop.name }}</p>
+                    <p><strong>类型：</strong>{{ request.get_request_type_display }}</p>
+                    <p><strong>优先级：</strong>{{ request.get_priority_display }}</p>
+                    <p><strong>状态：</strong>
+                        <span class="badge {% if request.status == 'PENDING' %}badge-warning{% elif request.status == 'ASSIGNED' %}badge-info{% elif request.status == 'IN_PROGRESS' %}badge-primary{% elif request.status == 'COMPLETED' %}badge-success{% else %}badge-danger{% endif %}">
+                            {{ request.get_status_display }}
+                        </span>
+                    </p>
+                    <p><strong>指派人员：</strong>{{ request.assigned_to|default:"未指派" }}</p>
+                    <p><strong>预估费用：</strong>¥{{ request.estimated_cost|default:"0" }}</p>
+                    <p><strong>实际费用：</strong>¥{{ request.actual_cost|default:"0" }}</p>
+                    <p><strong>完成日期：</strong>{{ request.completion_date|date:"Y-m-d"|default:"未完成" }}</p>
+                    <p><strong>创建时间：</strong>{{ request.created_at|date:"Y-m-d H:i" }}</p>
+                    <p><strong>更新时间：</strong>{{ request.updated_at|date:"Y-m-d H:i" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>描述：</strong></p>
+                    <p>{{ request.description }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'communication:maintenance_list' %}" class="btn btn-secondary">返回列表</a>
+            {% if request.status != 'COMPLETED' and request.status != 'CANCELLED' %}
+            <a href="{% url 'communication:maintenance_update' request.id %}" class="btn btn-primary">编辑</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>流程日志</h3>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for log in logs %}
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>{{ log.get_action_display }}</strong> - {{ log.description }}
+                        </div>
+                        <div class="text-muted">
+                            {{ log.created_at|date:"Y-m-d H:i" }}
+                        </div>
+                    </div>
+                    <div class="text-sm text-muted">
+                        操作人：{{ log.operator }}
+                    </div>
+                </li>
+                {% empty %}
+                <li class="list-group-item">暂无日志记录</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}批量导入店铺 - {{ block.super }}{% endblock %}
+
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
+
+
+
+{% block content %}
+<div class="container page-shell">
+    <div class="card shadow-sm section-card">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">批量导入店铺</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group mb-4">
+                    <label for="csv_file" class="form-label">选择CSV文件</label>
+                    <input type="file" name="csv_file" id="csv_file" class="form-control" accept=".csv" required>
+                </div>
+                <div class="alert alert-info mb-4">
+                    <h4 class="alert-heading">导入说明</h4>
+                    <ul>
+                        <li>请确保CSV文件包含以下字段：店铺名称、业态类型、经营面积、租金</li>
+                        <li>可选字段：联系人、联系方式、入驻日期、描述</li>
+                        <li>业态类型支持：零售、餐饮、娱乐、服务、其他</li>
+                        <li>入驻日期格式：YYYY-MM-DD（例如：2026-01-01）</li>
+                        <li>经营面积和租金必须为正数</li>
+                        <li>店铺名称不能重复</li>
+                    </ul>
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'store:shop_list' %}" class="btn btn-secondary">取消</a>
+                    <button type="submit" class="btn btn-primary">开始导入</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

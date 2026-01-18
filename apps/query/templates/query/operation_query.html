@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">📊 运营查询</h1>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">查询条件</h5>
+            <form method="get" action="{% url 'query:operation_query' %}">
+                <div class="form-row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="business_type">业态类型</label>
+                            <select class="form-control" id="business_type" name="business_type">
+                                <option value="">-- 全部业态 --</option>
+                                <option value="RETAIL" {% if is_retail %}selected{% endif %}>零售</option>
+                                <option value="FOOD" {% if is_food %}selected{% endif %}>餐饮</option>
+                                <option value="ENTERTAINMENT" {% if is_entertainment %}selected{% endif %}>娱乐</option>
+                                <option value="SERVICE" {% if is_service %}selected{% endif %}>服务</option>
+                                <option value="OTHER" {% if is_other %}selected{% endif %}>其他</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="period">时间范围</label>
+                            <select class="form-control" id="period" name="period">
+                                <option value="week" {% if is_week %}selected{% endif %}>最近7天</option>
+                                <option value="month" {% if is_month %}selected{% endif %}>最近30天</option>
+                                <option value="quarter" {% if is_quarter %}selected{% endif %}>最近90天</option>
+                                <option value="year" {% if is_year %}selected{% endif %}>最近1年</option>
+                                <option value="custom" {% if is_custom %}selected{% endif %}>自定义范围</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-block">查询</button>
+                    </div>
+                </div>
+
+                <!-- 自定义日期范围，仅在选择"自定义范围"时显示 -->
+                <div id="custom_date_range" {% if not is_custom %}style="display: none;" {% endif %}>
+                    <div class="form-row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="start_date">开始日期</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date"
+                                    value="{{ start_date|date:'Y-m-d' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="end_date">结束日期</label>
+                                <input type="date" class="form-control" id="end_date" name="end_date"
+                                    value="{{ end_date|date:'Y-m-d' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 分管区域店铺信息 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title">分管区域店铺信息</h5>
+        </div>
+        <div class="card-body">
+            {% if shops %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>店铺ID</th>
+                            <th>店铺名称</th>
+                            <th>业态类型</th>
+                            <th>经营面积</th>
+                            <th>租金</th>
+                            <th>联系人</th>
+                            <th>联系方式</th>
+                            <th>入驻日期</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for shop in shops %}
+                        <tr>
+                            <td>{{ shop.id }}</td>
+                            <td>{{ shop.name }}</td>
+                            <td>{{ shop.get_business_type_display }}</td>
+                            <td>{{ shop.area }} 平方米</td>
+                            <td>¥{{ shop.rent }}/月</td>
+                            <td>{{ shop.contact_person }}</td>
+                            <td>{{ shop.contact_phone }}</td>
+                            <td>{{ shop.entry_date|date:"Y-m-d" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted">暂无店铺信息</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 运营数据汇总 -->
+    {% if manual_data_summary or device_data_summary %}
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="card-title">运营数据汇总</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% if manual_data_summary %}
+                <div class="col-md-6">
+                    <h6 class="card-subtitle mb-2 text-muted">手动上传数据汇总</h6>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <strong>总销售额：</strong>¥{{ manual_data_summary.total_sales|default:"0" }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>总客流量：</strong>{{ manual_data_summary.total_foot_traffic|default:"0" }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>总交易笔数：</strong>{{ manual_data_summary.total_transactions|default:"0" }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>平均客单价：</strong>¥{{ manual_data_summary.avg_transaction_value|default:"0" }}
+                        </li>
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if device_data_summary %}
+                <div class="col-md-6">
+                    <h6 class="card-subtitle mb-2 text-muted">设备采集数据汇总</h6>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>数据类型</th>
+                                    <th>总数值</th>
+                                    <th>平均值</th>
+                                    <th>数据量</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data in device_data_summary %}
+                                <tr>
+                                    <td>{{ data.data_type }}</td>
+                                    <td>{{ data.total_value }}</td>
+                                    <td>{{ data.avg_value }}</td>
+                                    <td>{{ data.count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 事务处理情况 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title">维修请求处理情况</h5>
+                </div>
+                <div class="card-body">
+                    {% if maintenance_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>状态</th>
+                                    <th>数量</th>
+                                    <th>占比</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in maintenance_stats %}
+                                <tr>
+                                    <td>
+                                        {% if stat.status == 'PENDING' %}待处理
+                                        {% elif stat.status == 'ASSIGNED' %}已指派
+                                        {% elif stat.status == 'IN_PROGRESS' %}处理中
+                                        {% elif stat.status == 'COMPLETED' %}已完成
+                                        {% else %}已取消{% endif %}
+                                    </td>
+                                    <td>{{ stat.count }}</td>
+                                    <td>
+                                        {{ stat.percentage }}%
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted">暂无维修请求数据</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title">活动申请处理情况</h5>
+                </div>
+                <div class="card-body">
+                    {% if activity_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>状态</th>
+                                    <th>数量</th>
+                                    <th>占比</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in activity_stats %}
+                                <tr>
+                                    <td>
+                                        {% if stat.status == 'PENDING' %}待审核
+                                        {% elif stat.status == 'APPROVED' %}已批准
+                                        {% elif stat.status == 'REJECTED' %}已拒绝
+                                        {% else %}已取消{% endif %}
+                                    </td>
+                                    <td>{{ stat.count }}</td>
+                                    <td>
+                                        {{ stat.percentage }}%
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted">暂无活动申请数据</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

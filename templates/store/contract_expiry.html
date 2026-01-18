@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}合同到期提醒{% endblock %}
+
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
+
+
+
+{% block content %}
+<div class="container mt-4 page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">合同到期提醒</h1>
+            <div class="page-subtitle">近 30 天内到期合同清单</div>
+        </div>
+    </div>
+
+    <div class="card mb-4 section-card">
+        <div class="card-header bg-info text-white">
+            <h2 class="h5 mb-0">即将到期的合同（30天内）</h2>
+        </div>
+        <div class="card-body">
+            {% if expiring_contracts %}
+            <div class="table-card">
+                <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>合同ID</th>
+                        <th>店铺名称</th>
+                        <th>开始日期</th>
+                        <th>到期日期</th>
+                        <th>剩余时间</th>
+                        <th>月租金</th>
+                        <th>押金</th>
+                        <th>缴费周期</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contract in expiring_contracts %}
+                    <tr>
+                        <td>{{ contract.id }}</td>
+                        <td>{{ contract.shop.name }}</td>
+                        <td>{{ contract.start_date }}</td>
+                        <td>{{ contract.end_date }}</td>
+                        <td>{{ contract.end_date|timeuntil:today }}</td>
+                        <td>¥{{ contract.monthly_rent }}</td>
+                        <td>¥{{ contract.deposit }}</td>
+                        <td>{{ contract.get_payment_cycle_display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-success">
+                没有发现即将到期的合同
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-danger text-white">
+            <h2 class="h5 mb-0">已过期的合同</h2>
+        </div>
+        <div class="card-body">
+            {% if expired_contracts %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>合同ID</th>
+                        <th>店铺名称</th>
+                        <th>开始日期</th>
+                        <th>到期日期</th>
+                        <th>已过期时间</th>
+                        <th>月租金</th>
+                        <th>押金</th>
+                        <th>缴费周期</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contract in expired_contracts %}
+                    <tr>
+                        <td>{{ contract.id }}</td>
+                        <td>{{ contract.shop.name }}</td>
+                        <td>{{ contract.start_date }}</td>
+                        <td>{{ contract.end_date }}</td>
+                        <td>{{ today|timeuntil:contract.end_date }}</td>
+                        <td>¥{{ contract.monthly_rent }}</td>
+                        <td>¥{{ contract.deposit }}</td>
+                        <td>{{ contract.get_payment_cycle_display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-success">
+                没有发现已过期的合同
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

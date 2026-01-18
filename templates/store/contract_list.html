@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}合同列表 - {{ block.super }}{% endblock %}
+
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
+
+
+
+{% block content %}
+<div class="container page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">合同管理</h1>
+            <div class="page-subtitle">合同状态与续签情况一览</div>
+        </div>
+        {% if user.is_authenticated %}
+        <div class="d-flex gap-2">
+            <a href="{% url 'store:contract_expiry' %}" class="btn btn-warning">合同到期提醒</a>
+            <a href="{% url 'store:contract_create' %}" class="btn btn-primary">+ 新建合同</a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if contracts %}
+    <div class="table-responsive table-card">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>店铺名称</th>
+                    <th>开始日期</th>
+                    <th>结束日期</th>
+                    <th>月租金 (元)</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contract in contracts %}
+                <tr>
+                    <td>{{ contract.shop.name }}</td>
+                    <td>{{ contract.start_date }}</td>
+                    <td>{{ contract.end_date }}</td>
+                    <td>{{ contract.monthly_rent }}</td>
+                    <td>{{ contract.get_status_display }}</td>
+                    <td>
+                        {% if user.is_authenticated %}
+                        {% if contract.status == 'DRAFT' %}
+                        <a href="{% url 'store:contract_activate' contract.pk %}" class="btn btn-sm btn-success">激活</a>
+                        {% elif contract.status == 'ACTIVE' %}
+                        <a href="{% url 'store:contract_terminate' contract.pk %}" class="btn btn-sm btn-danger">终止</a>
+                        <a href="{% url 'finance:finance_list' %}?contract_id={{ contract.pk }}"
+                            class="btn btn-sm btn-info ml-1">财务记录</a>
+                        {% elif contract.status in 'TERMINATED,EXPIRED' %}
+                        <a href="{% url 'store:contract_delete' contract.pk %}" class="btn btn-sm btn-secondary">删除</a>
+                        <a href="{% url 'finance:finance_list' %}?contract_id={{ contract.pk }}"
+                            class="btn btn-sm btn-info ml-1">财务记录</a>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <strong>暂无合同</strong>，请点击上方按钮创建新合同。
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

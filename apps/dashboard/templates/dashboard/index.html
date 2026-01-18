@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}系统数据总览 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">系统数据总览</h1>
+
+    <!-- 关键指标卡片 -->
+    <div class="row g-4 mb-6">
+        <!-- 店铺总数 -->
+        <div class="col-md-4 col-lg-3">
+            <div class="card text-center border-primary shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">店铺总数</h5>
+                    <p class="card-text display-4">{{ total_shops }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 合同总数 -->
+        <div class="col-md-4 col-lg-3">
+            <div class="card text-center border-secondary shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">合同总数</h5>
+                    <p class="card-text display-4">{{ total_contracts }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 生效合同数 -->
+        <div class="col-md-4 col-lg-3">
+            <div class="card text-center border-success shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-success">生效合同数</h5>
+                    <p class="card-text display-4">{{ active_contracts }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 已收金额总和 -->
+        <div class="col-md-4 col-lg-3">
+            <div class="card text-center border-info shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-info">已收金额</h5>
+                    <p class="card-text display-4">¥{{ paid_amount|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 未收金额总和 -->
+        <div class="col-md-4 col-lg-3">
+            <div class="card text-center border-warning shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">未收金额</h5>
+                    <p class="card-text display-4">¥{{ unpaid_amount|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 总金额 -->
+        <div class="col-md-4 col-lg-3">
+            <div class="card text-center border-dark shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-dark">总金额</h5>
+                    <p class="card-text display-4">¥{{ (paid_amount + unpaid_amount)|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 预留数据可视化区域 -->
+    <div class="card bg-light border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title">数据可视化</h5>
+            <div id="chart-area" style="height: 400px;">
+                <!-- 后续可在此添加图表 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统概览说明 -->
+    <div class="card bg-light border-0 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">系统概览</h5>
+            <p class="card-text">
+                本系统是一个商场店铺智能运营管理系统，主要功能包括店铺管理、合同管理和财务管理。
+                本页面展示了系统的关键运营指标，帮助您快速了解系统的整体运行状态。
+            </p>
+            <ul class="list-group list-group-flush mt-3">
+                <li class="list-group-item bg-light">
+                    <strong>店铺管理：</strong> 管理商场内的所有店铺信息，包括店铺名称、面积等。
+                </li>
+                <li class="list-group-item bg-light">
+                    <strong>合同管理：</strong> 管理店铺的租赁合同，包括合同状态流转（草稿 → 生效 → 过期/终止）。
+                </li>
+                <li class="list-group-item bg-light">
+                    <strong>财务管理：</strong> 基于合同生成财务记录，管理账单的支付状态。
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

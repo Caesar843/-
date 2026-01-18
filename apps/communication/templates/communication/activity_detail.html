@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">活动申请详情</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>{{ application.title }}</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>店铺：</strong>{{ application.shop.name }}</p>
+                    <p><strong>活动类型：</strong>{{ application.get_activity_type_display }}</p>
+                    <p><strong>状态：</strong>
+                        <span class="badge {% if application.status == 'PENDING' %}badge-warning{% elif application.status == 'APPROVED' %}badge-success{% elif application.status == 'REJECTED' %}badge-danger{% else %}badge-secondary{% endif %}">
+                            {{ application.get_status_display }}
+                        </span>
+                    </p>
+                    <p><strong>开始日期：</strong>{{ application.start_date|date:"Y-m-d H:i" }}</p>
+                    <p><strong>结束日期：</strong>{{ application.end_date|date:"Y-m-d H:i" }}</p>
+                    <p><strong>场地位置：</strong>{{ application.location }}</p>
+                    <p><strong>预计参与人数：</strong>{{ application.participants }}</p>
+                    <p><strong>审核人员：</strong>{{ application.reviewer|default:"未审核" }}</p>
+                    <p><strong>创建时间：</strong>{{ application.created_at|date:"Y-m-d H:i" }}</p>
+                    <p><strong>更新时间：</strong>{{ application.updated_at|date:"Y-m-d H:i" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>描述：</strong></p>
+                    <p>{{ application.description }}</p>
+                    {% if application.review_comments %}
+                    <p><strong>审核意见：</strong></p>
+                    <p>{{ application.review_comments }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'communication:activity_list' %}" class="btn btn-secondary">返回列表</a>
+            {% if application.status == 'PENDING' %}
+            <a href="{% url 'communication:activity_review' application.id %}" class="btn btn-primary">审核</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>流程日志</h3>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for log in logs %}
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>{{ log.get_action_display }}</strong> - {{ log.description }}
+                        </div>
+                        <div class="text-muted">
+                            {{ log.created_at|date:"Y-m-d H:i" }}
+                        </div>
+                    </div>
+                    <div class="text-sm text-muted">
+                        操作人：{{ log.operator }}
+                    </div>
+                </li>
+                {% empty %}
+                <li class="list-group-item">暂无日志记录</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

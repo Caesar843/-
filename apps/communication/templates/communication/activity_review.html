@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">活动申请审核</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <h2 class="mb-4">{{ object.title }}</h2>
+            <p><strong>店铺：</strong>{{ object.shop.name }}</p>
+            <p><strong>活动类型：</strong>{{ object.get_activity_type_display }}</p>
+            <p><strong>开始日期：</strong>{{ object.start_date|date:"Y-m-d H:i" }}</p>
+            <p><strong>结束日期：</strong>{{ object.end_date|date:"Y-m-d H:i" }}</p>
+            <p><strong>场地位置：</strong>{{ object.location }}</p>
+            <p><strong>预计参与人数：</strong>{{ object.participants }}</p>
+            <p><strong>描述：</strong></p>
+            <p>{{ object.description }}</p>
+            
+            <hr>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="id_status">审核结果</label>
+                    {{ form.status }}
+                </div>
+                <div class="form-group">
+                    <label for="id_reviewer">审核人员</label>
+                    {{ form.reviewer }}
+                </div>
+                <div class="form-group">
+                    <label for="id_review_comments">审核意见</label>
+                    {{ form.review_comments }}
+                </div>
+                
+                <button type="submit" class="btn btn-primary">提交审核</button>
+                <a href="{% url 'communication:activity_detail' object.id %}" class="btn btn-secondary">取消</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

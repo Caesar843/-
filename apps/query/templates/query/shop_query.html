@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">🏬 店铺查询</h1>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">选择店铺</h5>
+            <form method="get" action="{% url 'query:shop_query' %}">
+                <div class="form-row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="shop_id">店铺名称</label>
+                            <select class="form-control" id="shop_id" name="shop_id">
+                                <option value="">-- 请选择店铺 --</option>
+                                {% for shop in shops %}
+                                <option value="{{ shop.id }}" {% if selected_shop and selected_shop.id == shop.id %}selected{% endif %}>
+                                    {{ shop.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-block">查询</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    {% if selected_shop %}
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title">{{ selected_shop.name }} - 详细信息</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>业态类型：</strong>{{ selected_shop.get_business_type_display }}</p>
+                    <p><strong>经营面积：</strong>{{ selected_shop.area }} 平方米</p>
+                    <p><strong>租金：</strong>¥{{ selected_shop.rent }}/月</p>
+                    <p><strong>联系人：</strong>{{ selected_shop.contact_person }}</p>
+                    <p><strong>联系方式：</strong>{{ selected_shop.contact_phone }}</p>
+                    <p><strong>入驻日期：</strong>{{ selected_shop.entry_date|date:"Y-m-d" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>描述：</strong>{{ selected_shop.description|default:"无" }}</p>
+                    <p><strong>创建时间：</strong>{{ selected_shop.created_at|date:"Y-m-d H:i" }}</p>
+                    <p><strong>更新时间：</strong>{{ selected_shop.updated_at|date:"Y-m-d H:i" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 合约详情 -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="card-title">合约详情</h5>
+        </div>
+        <div class="card-body">
+            {% if contracts %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>合同ID</th>
+                            <th>开始日期</th>
+                            <th>结束日期</th>
+                            <th>月租金</th>
+                            <th>押金</th>
+                            <th>缴费周期</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contract in contracts %}
+                        <tr>
+                            <td>{{ contract.id }}</td>
+                            <td>{{ contract.start_date|date:"Y-m-d" }}</td>
+                            <td>{{ contract.end_date|date:"Y-m-d" }}</td>
+                            <td>¥{{ contract.monthly_rent }}</td>
+                            <td>¥{{ contract.deposit }}</td>
+                            <td>{{ contract.get_payment_cycle_display }}</td>
+                            <td>
+                                <span class="badge {% if contract.status == 'ACTIVE' %}badge-success{% elif contract.status == 'DRAFT' %}badge-warning{% elif contract.status == 'EXPIRED' %}badge-secondary{% else %}badge-danger{% endif %}">
+                                    {{ contract.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ contract.created_at|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted">暂无合约信息</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- 缴费记录 -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-white">
+            <h5 class="card-title">缴费记录</h5>
+        </div>
+        <div class="card-body">
+            {% if finance_records %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>记录ID</th>
+                            <th>费用类型</th>
+                            <th>金额</th>
+                            <th>账单周期</th>
+                            <th>状态</th>
+                            <th>缴费方式</th>
+                            <th>缴费时间</th>
+                            <th>创建时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in finance_records %}
+                        <tr>
+                            <td>{{ record.id }}</td>
+                            <td>{{ record.get_fee_type_display }}</td>
+                            <td>¥{{ record.amount }}</td>
+                            <td>{{ record.billing_period_start|date:"Y-m-d" }} 至 {{ record.billing_period_end|date:"Y-m-d" }}</td>
+                            <td>
+                                <span class="badge {% if record.status == 'PAID' %}badge-success{% elif record.status == 'UNPAID' %}badge-danger{% else %}badge-secondary{% endif %}">
+                                    {{ record.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ record.get_payment_method_display|default:"未支付" }}</td>
+                            <td>{{ record.paid_at|date:"Y-m-d H:i"|default:"未支付" }}</td>
+                            <td>{{ record.created_at|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted">暂无缴费记录</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- 运营数据 -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="card-title">运营数据</h5>
+        </div>
+        <div class="card-body">
+            {% if operation_data %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>客流量</th>
+                            <th>销售额</th>
+                            <th>交易笔数</th>
+                            <th>客单价</th>
+                            <th>上传人</th>
+                            <th>上传时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in operation_data %}
+                        <tr>
+                            <td>{{ data.data_date|date:"Y-m-d" }}</td>
+                            <td>{{ data.foot_traffic }}</td>
+                            <td>¥{{ data.sales_amount }}</td>
+                            <td>{{ data.transaction_count }}</td>
+                            <td>¥{{ data.average_transaction_value }}</td>
+                            <td>{{ data.uploaded_by }}</td>
+                            <td>{{ data.uploaded_at|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted">暂无运营数据</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- 事务申请进度 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title">维修请求进度</h5>
+                </div>
+                <div class="card-body">
+                    {% if maintenance_requests %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>标题</th>
+                                    <th>类型</th>
+                                    <th>优先级</th>
+                                    <th>状态</th>
+                                    <th>创建时间</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for request in maintenance_requests %}
+                                <tr>
+                                    <td>{{ request.id }}</td>
+                                    <td>{{ request.title }}</td>
+                                    <td>{{ request.get_request_type_display }}</td>
+                                    <td>{{ request.get_priority_display }}</td>
+                                    <td>
+                                        <span class="badge {% if request.status == 'PENDING' %}badge-warning{% elif request.status == 'ASSIGNED' %}badge-info{% elif request.status == 'IN_PROGRESS' %}badge-primary{% elif request.status == 'COMPLETED' %}badge-success{% else %}badge-danger{% endif %}">
+                                            {{ request.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ request.created_at|date:"Y-m-d H:i" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted">暂无维修请求</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title">活动申请进度</h5>
+                </div>
+                <div class="card-body">
+                    {% if activity_applications %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>标题</th>
+                                    <th>类型</th>
+                                    <th>状态</th>
+                                    <th>开始日期</th>
+                                    <th>创建时间</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for application in activity_applications %}
+                                <tr>
+                                    <td>{{ application.id }}</td>
+                                    <td>{{ application.title }}</td>
+                                    <td>{{ application.get_activity_type_display }}</td>
+                                    <td>
+                                        <span class="badge {% if application.status == 'PENDING' %}badge-warning{% elif application.status == 'APPROVED' %}badge-success{% elif application.status == 'REJECTED' %}badge-danger{% else %}badge-secondary{% endif %}">
+                                            {{ application.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ application.start_date|date:"Y-m-d H:i" }}</td>
+                                    <td>{{ application.created_at|date:"Y-m-d H:i" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted">暂无活动申请</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

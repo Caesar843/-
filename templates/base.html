@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}&#x5546;&#x573A;&#x5E97;&#x94FA;&#x667A;&#x80FD;&#x8FD0;&#x8425;&#x7BA1;&#x7406;&#x7CFB;&#x7EDF;{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-bg: #111827;
+            --sidebar-text: #e5e7eb;
+            --sidebar-muted: #9ca3af;
+            --sidebar-active: #1f2937;
+            --sidebar-accent: #2563eb;
+            --content-bg: #f3f4f6;
+        }
+
+        body {
+            background: var(--content-bg);
+        }
+
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            display: flex;
+            flex-direction: column;
+            padding: 16px 0;
+        }
+
+        .sidebar-brand {
+            padding: 0 20px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .sidebar-section {
+            margin-top: 16px;
+        }
+
+        .sidebar-section-title {
+            padding: 8px 20px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--sidebar-muted);
+        }
+
+        .sidebar-link {
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--sidebar-text);
+            text-decoration: none;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+
+        .sidebar-link.active {
+            background: var(--sidebar-active);
+            border-left: 4px solid var(--sidebar-accent);
+            padding-left: 16px;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            background: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .app-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .app-header {
+            height: 60px;
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .app-content {
+            flex: 1;
+            padding: 24px;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            border: none;
+            background: transparent;
+            font-size: 20px;
+        }
+
+        @media (max-width: 991px) {
+            .app-shell {
+                position: relative;
+            }
+
+            .app-sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                transform: translateX(-100%);
+                transition: transform 0.2s ease;
+                z-index: 1000;
+            }
+
+            .app-shell.sidebar-open .app-sidebar {
+                transform: translateX(0);
+            }
+
+            .sidebar-toggle {
+                display: inline-flex;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <div class="app-shell" id="appShell">
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                <span>&#x95E8;&#x5E97;&#x7BA1;&#x7406;&#x7CFB;&#x7EDF;</span>
+            </div>
+            <nav class="sidebar-nav">
+                {% if user.is_authenticated %}
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">&#x4E3B;&#x8981;&#x529F;&#x80FD;</div>
+                    <a class="sidebar-link" href="{% url 'dashboard:index' %}">&#x4EEA;&#x8868;&#x76D8;</a>
+                    {% if user.profile.role.role_type == 'SUPER_ADMIN' %}
+                    <a class="sidebar-link" href="{% url 'store:shop_list' %}">&#x5E97;&#x94FA;&#x7BA1;&#x7406;</a>
+                    <a class="sidebar-link" href="{% url 'store:contract_list' %}">&#x5408;&#x540C;&#x7BA1;&#x7406;</a>
+                    <a class="sidebar-link" href="{% url 'finance:finance_list' %}">&#x8D22;&#x52A1;&#x7BA1;&#x7406;</a>
+                    <a class="sidebar-link" href="{% url 'finance:finance_history' %}">&#x8D22;&#x52A1;&#x5386;&#x53F2;</a>
+                    <a class="sidebar-link" href="{% url 'operations:dashboard' %}">&#x8FD0;&#x8425;&#x4EEA;&#x8868;&#x76D8;</a>
+                    <a class="sidebar-link" href="{% url 'operations:analysis' %}">&#x8FD0;&#x8425;&#x5206;&#x6790;</a>
+                    <a class="sidebar-link" href="{% url 'communication:activity_list' %}">&#x6D3B;&#x52A8;&#x7BA1;&#x7406;</a>
+                    <a class="sidebar-link" href="{% url 'communication:maintenance_list' %}">&#x7EF4;&#x4FEE;&#x7BA1;&#x7406;</a>
+                    <a class="sidebar-link" href="{% url 'query:dashboard' %}">&#x591A;&#x7EF4;&#x67E5;&#x8BE2;</a>
+                    <a class="sidebar-link" href="{% url 'reports:report_list' %}">&#x62A5;&#x8868;&#x4E2D;&#x5FC3;</a>
+                    {% elif user.profile.role.role_type == 'MANAGEMENT' %}
+                    <a class="sidebar-link" href="{% url 'store:shop_list' %}">&#x5E97;&#x94FA;&#x7BA1;&#x7406;</a>
+                    <a class="sidebar-link" href="{% url 'store:contract_list' %}">&#x5408;&#x540C;&#x7BA1;&#x7406;</a>
+                    <a class="sidebar-link" href="{% url 'finance:finance_list' %}">&#x8D22;&#x52A1;&#x7BA1;&#x7406;</a>
+                    <a class="sidebar-link" href="{% url 'reports:report_list' %}">&#x62A5;&#x8868;&#x4E2D;&#x5FC3;</a>
+                    {% elif user.profile.role.role_type == 'OPERATION' %}
+                    <a class="sidebar-link" href="{% url 'store:shop_list' %}">&#x5E97;&#x94FA;&#x7BA1;&#x7406;</a>
+                    <a class="sidebar-link" href="{% url 'store:contract_list' %}">&#x5408;&#x540C;&#x7BA1;&#x7406;</a>
+                    <a class="sidebar-link" href="{% url 'operations:dashboard' %}">&#x8FD0;&#x8425;&#x4EEA;&#x8868;&#x76D8;</a>
+                    {% elif user.profile.role.role_type == 'FINANCE' %}
+                    <a class="sidebar-link" href="{% url 'finance:finance_list' %}">&#x8D22;&#x52A1;&#x7BA1;&#x7406;</a>
+                    <a class="sidebar-link" href="{% url 'finance:finance_history' %}">&#x8D22;&#x52A1;&#x5386;&#x53F2;</a>
+                    {% elif user.profile.role.role_type == 'SHOP' %}
+                    {% if user.profile.shop %}
+                    <a class="sidebar-link" href="{% url 'store:shop_update' user.profile.shop.id %}">&#x6211;&#x7684;&#x5E97;&#x94FA;</a>
+                    {% endif %}
+                    <a class="sidebar-link" href="{% url 'finance:finance_list' %}">&#x8D22;&#x52A1;&#x7BA1;&#x7406;</a>
+                    {% endif %}
+                </div>
+                {% if user.profile.role.role_type == 'SUPER_ADMIN' %}
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">&#x6570;&#x636E;&#x4E0E;&#x5B89;&#x5168;</div>
+                    <a class="sidebar-link" href="{% url 'backup:backup_list' %}">&#x5907;&#x4EFD;&#x4E0E;&#x6062;&#x590D;</a>
+                    <a class="sidebar-link" href="{% url 'backup:backup_create' %}">&#x521B;&#x5EFA;&#x5907;&#x4EFD;</a>
+                    <a class="sidebar-link" href="{% url 'backup:backup_stats' %}">&#x5907;&#x4EFD;&#x7EDF;&#x8BA1;</a>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">&#x7528;&#x6237;</div>
+                    <a class="sidebar-link" href="{% url 'core:login' %}">&#x767B;&#x5F55;</a>
+                </div>
+                {% endif %}
+            </nav>
+            <div class="sidebar-footer">
+                {% if user.is_authenticated %}
+                <div class="sidebar-avatar">{{ user.username|slice:":1"|upper }}</div>
+                <div>
+                    <div class="fw-semibold">{{ user.username }}</div>
+                    <a class="text-decoration-none text-light small" href="{% url 'core:logout' %}">&#x9000;&#x51FA;&#x767B;&#x5F55;</a>
+                </div>
+                {% else %}
+                <div class="text-light">&#x672A;&#x767B;&#x5F55;</div>
+                {% endif %}
+            </div>
+        </aside>
+
+        <div class="app-main">
+            <header class="app-header">
+                <button class="sidebar-toggle" type="button" id="sidebarToggle">&#x2630;</button>
+                <div class="text-muted">&#x5F53;&#x524D;&#x9875;&#x9762;</div>
+                <div class="d-flex align-items-center gap-2">
+                    {% if user.is_authenticated %}
+                    <span class="text-muted">{{ user.username }}</span>
+                    {% endif %}
+                </div>
+            </header>
+
+            <main class="app-content">
+                {% if messages %}
+                <div class="row">
+                    <div class="col-12">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% block content %}
+                {% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function () {
+            const shell = document.getElementById('appShell');
+            const toggle = document.getElementById('sidebarToggle');
+            if (!shell || !toggle) return;
+            toggle.addEventListener('click', function () {
+                shell.classList.toggle('sidebar-open');
+            });
+        })();
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

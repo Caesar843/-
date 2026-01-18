@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>创建费用记录</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="contract" class="form-label">合同</label>
+            <select class="form-select" id="contract" name="contract_id" required>
+                <option value="">请选择合同</option>
+                {% for contract in contracts %}
+                <option value="{{ contract.id }}">{{ contract.shop.name }} - {{ contract.start_date }} 至 {{
+                    contract.end_date }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="fee_type" class="form-label">费用类型</label>
+            <select class="form-select" id="fee_type" name="fee_type" required>
+                <option value="">请选择费用类型</option>
+                <option value="RENT">租金</option>
+                <option value="PROPERTY_FEE">物业费</option>
+                <option value="UTILITY_FEE">水电费</option>
+                <option value="OTHER">其他费用</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="amount" class="form-label">金额</label>
+            <input type="number" class="form-control" id="amount" name="amount" step="0.01" min="0" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">账单周期开始</label>
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <select class="form-select" id="start_year" name="start_year" required>
+                        <option value="">年</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="start_month" name="start_month" required>
+                        <option value="">月</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="start_day" name="start_day" required>
+                        <option value="">日</option>
+                    </select>
+                </div>
+            </div>
+            <input type="hidden" id="billing_period_start" name="billing_period_start" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">账单周期结束</label>
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <select class="form-select" id="end_year" name="end_year" required>
+                        <option value="">年</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="end_month" name="end_month" required>
+                        <option value="">月</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="end_day" name="end_day" required>
+                        <option value="">日</option>
+                    </select>
+                </div>
+            </div>
+            <input type="hidden" id="billing_period_end" name="billing_period_end" required>
+        </div>
+        <button type="submit" class="btn btn-primary">提交</button>
+        <a href="{% url 'finance:finance_list' %}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+
+<script>
+    // 当前年份
+    const currentYear = new Date().getFullYear();
+
+    // 生成年份选项
+    function populateYears() {
+        const startYearSelect = document.getElementById('start_year');
+        const endYearSelect = document.getElementById('end_year');
+
+        // 生成从当前年份开始的10年选项
+        for (let year = currentYear; year <= currentYear + 10; year++) {
+            const startOption = document.createElement('option');
+            startOption.value = year;
+            startOption.textContent = year;
+            startYearSelect.appendChild(startOption);
+
+            const endOption = document.createElement('option');
+            endOption.value = year;
+            endOption.textContent = year;
+            endYearSelect.appendChild(endOption);
+        }
+    }
+
+    // 获取月份的天数
+    function getDaysInMonth(year, month) {
+        return new Date(year, month, 0).getDate();
+    }
+
+    // 更新日期选项
+    function updateDays(selectorPrefix) {
+        const year = parseInt(document.getElementById(`${selectorPrefix}_year`).value);
+        const month = parseInt(document.getElementById(`${selectorPrefix}_month`).value);
+        const daySelect = document.getElementById(`${selectorPrefix}_day`);
+
+        // 清空现有选项
+        daySelect.innerHTML = '<option value="">日</option>';
+
+        if (year && month) {
+            const daysInMonth = getDaysInMonth(year, month);
+            for (let day = 1; day <= daysInMonth; day++) {
+                const option = document.createElement('option');
+                option.value = day;
+                option.textContent = day;
+                daySelect.appendChild(option);
+            }
+        }
+    }
+
+    // 组合日期为YYYY-MM-DD格式
+    function combineDate(selectorPrefix) {
+        const year = document.getElementById(`${selectorPrefix}_year`).value;
+        const month = document.getElementById(`${selectorPrefix}_month`).value;
+        const day = document.getElementById(`${selectorPrefix}_day`).value;
+
+        if (year && month && day) {
+            const monthStr = month.toString().padStart(2, '0');
+            const dayStr = day.toString().padStart(2, '0');
+            return `${year}-${monthStr}-${dayStr}`;
+        }
+        return '';
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function () {
+        populateYears();
+
+        // 添加事件监听器
+        const startYear = document.getElementById('start_year');
+        const startMonth = document.getElementById('start_month');
+        const endYear = document.getElementById('end_year');
+        const endMonth = document.getElementById('end_month');
+
+        startYear.addEventListener('change', function () {
+            updateDays('start');
+        });
+
+        startMonth.addEventListener('change', function () {
+            updateDays('start');
+        });
+
+        endYear.addEventListener('change', function () {
+            updateDays('end');
+        });
+
+        endMonth.addEventListener('change', function () {
+            updateDays('end');
+        });
+
+        // 表单提交处理
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function (e) {
+            const startDate = combineDate('start');
+            const endDate = combineDate('end');
+
+            if (!startDate || !endDate) {
+                e.preventDefault();
+                alert('请选择完整的账单周期');
+                return;
+            }
+
+            if (new Date(startDate) > new Date(endDate)) {
+                e.preventDefault();
+                alert('开始日期不能晚于结束日期');
+                return;
+            }
+
+            // 设置隐藏字段
+            document.getElementById('billing_period_start').value = startDate;
+            document.getElementById('billing_period_end').value = endDate;
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">{% if object %}编辑维修请求{% else %}提交维修请求{% endif %}</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                
+                <button type="submit" class="btn btn-primary">
+                    {% if object %}更新{% else %}提交{% endif %}
+                </button>
+                <a href="{% url 'communication:maintenance_list' %}" class="btn btn-secondary">取消</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+
+{% block title %}运营数据仪表盘{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">运营数据仪表盘</h1>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title">数据概览 ({{ start_date }} 至 {{ end_date }})</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for shop_data in dashboard_data %}
+                <div class="col-md-4 mb-4">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            {{ shop_data.shop.name }}
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <strong>客流量:</strong> {{ shop_data.total_foot_traffic }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>销售额:</strong> ¥{{ shop_data.total_sales }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>交易笔数:</strong> {{ shop_data.total_transactions }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>客单价:</strong> ¥{{ shop_data.average_transaction_value|floatformat:2 }}
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>转化率:</strong> {{ shop_data.conversion_rate|floatformat:2 }}%
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">客流量趋势</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="footTrafficChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">销售额趋势</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="salesChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">客单价趋势</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="atvChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">转化率趋势</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="conversionChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // 准备数据
+    const shops = [{% for shop_data in dashboard_data %}"{{ shop_data.shop.name }}", {% endfor %}];
+    const footTrafficData = [];
+    const salesData = [];
+    const atvData = [];
+    const conversionData = [];
+    const dates = [];
+
+    // 填充数据
+    {% for shop_data in dashboard_data %}
+    {% if shop_data.trend_data %}
+    {% for day_data in shop_data.trend_data.daily_data %}
+    {% if forloop.first %}
+    dates.push("{{ day_data.date|slice:"5: " }}");
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+    {% endfor %}
+
+    // 填充各店铺数据
+    {% for shop_data in dashboard_data %}
+    const shopFootTraffic = [];
+    const shopSales = [];
+    const shopAtv = [];
+    const shopConversion = [];
+
+    {% if shop_data.trend_data %}
+    {% for day_data in shop_data.trend_data.daily_data %}
+    shopFootTraffic.push({{ day_data.foot_traffic }});
+    shopSales.push({{ day_data.sales }});
+    shopAtv.push({{ day_data.average_transaction_value }});
+    // 计算转化率
+    const conversion = {{ day_data.transactions }} / {{ day_data.foot_traffic }} * 100 || 0;
+    shopConversion.push(conversion);
+    {% endfor %}
+    {% endif %}
+
+    footTrafficData.push(shopFootTraffic);
+    salesData.push(shopSales);
+    atvData.push(shopAtv);
+    conversionData.push(shopConversion);
+    {% endfor %}
+
+    // 生成颜色
+    const colors = [
+        'rgb(75, 192, 192)',
+        'rgb(54, 162, 235)',
+        'rgb(255, 205, 86)',
+        'rgb(255, 99, 132)',
+        'rgb(153, 102, 255)',
+        'rgb(255, 159, 64)'
+    ];
+
+    // 客流量图表
+    const footTrafficCtx = document.getElementById('footTrafficChart').getContext('2d');
+    new Chart(footTrafficCtx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: shops.map((shop, index) => ({
+                label: shop,
+                data: footTrafficData[index],
+                borderColor: colors[index % colors.length],
+                backgroundColor: colors[index % colors.length] + '20',
+                tension: 0.1
+            }))
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: '客流量趋势 (人)'
+                }
+            }
+        }
+    });
+
+    // 销售额图表
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    new Chart(salesCtx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: shops.map((shop, index) => ({
+                label: shop,
+                data: salesData[index],
+                borderColor: colors[index % colors.length],
+                backgroundColor: colors[index % colors.length] + '20',
+                tension: 0.1
+            }))
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: '销售额趋势 (元)'
+                }
+            }
+        }
+    });
+
+    // 客单价图表
+    const atvCtx = document.getElementById('atvChart').getContext('2d');
+    new Chart(atvCtx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: shops.map((shop, index) => ({
+                label: shop,
+                data: atvData[index],
+                borderColor: colors[index % colors.length],
+                backgroundColor: colors[index % colors.length] + '20',
+                tension: 0.1
+            }))
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: '客单价趋势 (元)'
+                }
+            }
+        }
+    });
+
+    // 转化率图表
+    const conversionCtx = document.getElementById('conversionChart').getContext('2d');
+    new Chart(conversionCtx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: shops.map((shop, index) => ({
+                label: shop,
+                data: conversionData[index],
+                borderColor: colors[index % colors.length],
+                backgroundColor: colors[index % colors.length] + '20',
+                tension: 0.1
+            }))
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: '转化率趋势 (%)'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">🔍 多维度查询系统</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">查询功能导航</h5>
+                    <p class="card-text">选择以下查询功能，获取您需要的数据洞察：</p>
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'query:shop_query' %}" class="btn btn-primary btn-block">
+                                🏬 店铺查询
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'query:operation_query' %}" class="btn btn-success btn-block">
+                                📊 运营查询
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'query:finance_query' %}" class="btn btn-warning btn-block">
+                                💰 财务查询
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'query:admin_query' %}" class="btn btn-info btn-block">
+                                📈 管理层查询
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">功能说明</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <strong>店铺查询</strong>：查看店铺合约详情、缴费记录、运营数据和事务申请进度
+                        </li>
+                        <li class="list-group-item">
+                            <strong>运营查询</strong>：分析分管区域店铺信息、运营数据汇总和事务处理情况
+                        </li>
+                        <li class="list-group-item">
+                            <strong>财务查询</strong>：查看费用收缴明细和未缴费用统计
+                        </li>
+                        <li class="list-group-item">
+                            <strong>管理层查询</strong>：获取商场整体运营数据概览
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">使用提示</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            选择查询维度后，系统会自动加载相关数据
+                        </li>
+                        <li class="list-group-item">
+                            可以使用日期范围筛选特定时间段的数据
+                        </li>
+                        <li class="list-group-item">
+                            查询结果支持导出和进一步分析
+                        </li>
+                        <li class="list-group-item">
+                            如有查询问题，请联系系统管理员
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

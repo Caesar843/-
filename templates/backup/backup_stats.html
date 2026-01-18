@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}备份统计 - 商场店铺智能运营管理系统{% endblock %}
+
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
+
+
+
+{% block content %}
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">💾 备份统计</h1>
+            <div class="page-subtitle">备份情况概览与运行状态统计</div>
+        </div>
+    </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <h5>总备份数</h5>
+                    <div class="stat-value">{{ stats.total }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="border-top-color: #10B981;">
+                    <h5>成功</h5>
+                    <div class="stat-value">{{ stats.success }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="border-top-color: #EF4444;">
+                    <h5>失败</h5>
+                    <div class="stat-value">{{ stats.failed }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="border-top-color: #F59E0B;">
+                    <h5>运行中</h5>
+                    <div class="stat-value">{{ stats.running }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">统计详情</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="text-muted">等待中</div>
+                        <div class="fs-5">{{ stats.pending }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted">自动备份</div>
+                        <div class="fs-5">{{ stats.automatic }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted">手动备份</div>
+                        <div class="fs-5">{{ stats.manual }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted">成功备份总大小</div>
+                        <div class="fs-5">{{ stats.total_size }} bytes</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted">平均耗时</div>
+                        <div class="fs-5">{{ stats.avg_duration|floatformat:2 }} 秒</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-primary" href="{% url 'backup:backup_list' %}">返回备份列表</a>
+            <a class="btn btn-primary" href="{% url 'backup:backup_create' %}">创建备份</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

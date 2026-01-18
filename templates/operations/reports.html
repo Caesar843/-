@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}数据报表 - 商场店铺智能运营管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mt-4 mb-4">📋 数据报表</h1>
+
+        <!-- 报表生成 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">生成报表</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" action="{% url 'operations:reports' %}">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="shop" class="form-label">店铺</label>
+                            <select class="form-select" id="shop" name="shop">
+                                <option value="">全部店铺</option>
+                                {% for shop in shops %}
+                                <option value="{{ shop.id }}">{{ shop.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="report_type" class="form-label">报表类型</label>
+                            <select class="form-select" id="report_type" name="report_type">
+                                <option value="daily">日报</option>
+                                <option value="weekly">周报</option>
+                                <option value="monthly">月报</option>
+                                <option value="quarterly">季报</option>
+                                <option value="yearly">年报</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="report_date" class="form-label">报表日期</label>
+                            <input type="date" class="form-control" id="report_date" name="report_date">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">生成报表</button>
+                    <button type="button" class="btn btn-success">导出Excel</button>
+                    <button type="button" class="btn btn-info">导出PDF</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 报表预览 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">报表预览</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <h3>运营数据报表</h3>
+                    <p>日期: 2026年1月10日</p>
+                    <p>店铺: 全部店铺</p>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>店铺名称</th>
+                                <th>客流量</th>
+                                <th>销售额</th>
+                                <th>交易笔数</th>
+                                <th>客单价</th>
+                                <th>转化率</th>
+                                <th>销售增长率</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shop in shops %}
+                            <tr>
+                                <td>{{ shop.name }}</td>
+                                <td>100</td>
+                                <td>¥5000</td>
+                                <td>50</td>
+                                <td>¥100.00</td>
+                                <td>50.00%</td>
+                                <td>11.00%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

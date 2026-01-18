@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}创建财务记录{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">创建财务记录</h1>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="h5 mb-0">财务记录信息</h2>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% for error in field.errors %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary">创建</button>
+                <a href="{% url 'finance:finance_list' %}" class="btn btn-secondary ml-2">取消</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

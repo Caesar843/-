@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>缴费凭证</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            color: #333;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+
+        .receipt-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: white;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            page-break-after: always;
+        }
+
+        /* 标题 */
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .receipt-header h1 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .company-info {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        /* 基本信息 */
+        .receipt-info {
+            margin-bottom: 30px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            width: 30%;
+            color: #666;
+        }
+
+        .info-value {
+            width: 70%;
+            text-align: right;
+            color: #333;
+        }
+
+        /* 金额部分 */
+        .amount-section {
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .amount-section h2 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .amount-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            font-size: 14px;
+        }
+
+        .amount-item-label {
+            color: #666;
+        }
+
+        .amount-item-value {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .total-amount {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-top: 2px solid #ddd;
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #d32f2f;
+        }
+
+        .total-amount-label {
+            color: #333;
+        }
+
+        /* 备注 */
+        .remarks-section {
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+        }
+
+        .remarks-section h3 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .remarks-section p {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* 页脚 */
+        .receipt-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+        }
+
+        .footer-item {
+            margin: 5px 0;
+        }
+
+        /* 打印样式 */
+        @media print {
+            body {
+                background-color: white;
+            }
+
+            .receipt-container {
+                box-shadow: none;
+                padding: 20px;
+                margin: 0;
+            }
+        }
+
+        /* 状态标签 */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .status-paid {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .status-unpaid {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .status-void {
+            background-color: #f44336;
+            color: white;
+        }
+
+        /* 表格 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 13px;
+        }
+
+        table th {
+            background-color: #f5f5f5;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid #ddd;
+            font-weight: bold;
+        }
+
+        table td {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        table tr:last-child td {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <!-- 标题部分 -->
+        <div class="receipt-header">
+            <h1>缴费凭证</h1>
+            <div class="company-info">
+                <div>{{ company_name }}</div>
+                <div>电话：{{ company_phone }}</div>
+                <div>地址：{{ company_address }}</div>
+            </div>
+        </div>
+
+        <!-- 基本信息 -->
+        <div class="receipt-info">
+            <div class="info-row">
+                <span class="info-label">凭证编号：</span>
+                <span class="info-value">{{ finance_record.id }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">店铺名称：</span>
+                <span class="info-value">{{ contract.shop.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">联系电话：</span>
+                <span class="info-value">{{ contract.shop.contact_phone }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">费用类型：</span>
+                <span class="info-value">{{ finance_record.get_fee_type_display }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">账单周期：</span>
+                <span class="info-value">{{ finance_record.billing_period_start }} 至 {{ finance_record.billing_period_end }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">应缴截止日期：</span>
+                <span class="info-value">{{ finance_record.billing_period_end }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">账单状态：</span>
+                <span class="info-value">
+                    {% if finance_record.status == 'PAID' %}
+                        <span class="status-badge status-paid">已缴</span>
+                    {% elif finance_record.status == 'UNPAID' %}
+                        <span class="status-badge status-unpaid">未缴</span>
+                    {% else %}
+                        <span class="status-badge status-void">作废</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+        <!-- 金额部分 -->
+        <div class="amount-section">
+            <h2>缴费信息</h2>
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width: 40%;">费用项目</td>
+                        <td style="width: 30%;">数量</td>
+                        <td style="width: 30%; text-align: right;">金额</td>
+                    </tr>
+                    <tr>
+                        <td>{{ finance_record.get_fee_type_display }}</td>
+                        <td>1</td>
+                        <td style="text-align: right;">¥ {{ finance_record.amount }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {% if finance_record.status == 'PAID' %}
+            <div style="margin-top: 15px;">
+                <div class="info-row">
+                    <span class="info-label">缴费方式：</span>
+                    <span class="info-value">{{ finance_record.get_payment_method_display }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">缴费时间：</span>
+                    <span class="info-value">{{ finance_record.paid_at }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">交易单号：</span>
+                    <span class="info-value">{{ finance_record.transaction_id }}</span>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="total-amount">
+                <span class="total-amount-label">应缴金额：</span>
+                <span>¥ {{ finance_record.amount }}</span>
+            </div>
+        </div>
+
+        <!-- 备注 -->
+        <div class="remarks-section">
+            <h3>重要提示</h3>
+            <p>
+                1. 此凭证为财务记录凭证，请妥善保管。<br>
+                2. 如有疑问或对账单有异议，请在收到本凭证之日起七个工作日内联系我们。<br>
+                3. 本凭证由系统自动生成，无需签字或盖章。<br>
+                4. 逾期未付款将按照合同约定收取相关费用。
+            </p>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="receipt-footer">
+            <div class="footer-item">生成时间：{{ generated_at|date:'Y-m-d H:i:s' }}</div>
+            <div class="footer-item">系统自动生成 | 无需签字确认</div>
+            <div class="footer-item">{{ company_name }} 财务部</div>
+        </div>
+    </div>
+</body>
+</html>
