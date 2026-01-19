@@ -13,72 +13,70 @@
 <div class="page-shell">
     <div class="page-header">
         <div>
-            <h1 class="page-title">💾 备份统计</h1>
-            <div class="page-subtitle">备份情况概览与运行状态统计</div>
+            <h1 class="page-title">&#x5907;&#x4EFD;&#x7EDF;&#x8BA1;</h1>
+            <div class="page-subtitle">&#x5907;&#x4EFD;&#x60C5;&#x51B5;&#x6982;&#x89C8;&#x4E0E;&#x8FD0;&#x884C;&#x72B6;&#x6001;&#x7EDF;&#x8BA1;</div>
+        </div>
+        <div class="action-row">
+            <a class="btn btn-outline-secondary" href="{% url 'backup:backup_list' %}">&#x8FD4;&#x56DE;&#x5907;&#x4EFD;&#x5217;&#x8868;</a>
+            <a class="btn btn-primary" href="{% url 'backup:backup_create' %}">&#x521B;&#x5EFA;&#x5907;&#x4EFD;</a>
         </div>
     </div>
 
-        <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <div class="stat-card">
-                    <h5>总备份数</h5>
-                    <div class="stat-value">{{ stats.total }}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card" style="border-top-color: #10B981;">
-                    <h5>成功</h5>
-                    <div class="stat-value">{{ stats.success }}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card" style="border-top-color: #EF4444;">
-                    <h5>失败</h5>
-                    <div class="stat-value">{{ stats.failed }}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card" style="border-top-color: #F59E0B;">
-                    <h5>运行中</h5>
-                    <div class="stat-value">{{ stats.running }}</div>
-                </div>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h5>&#x603B;&#x5907;&#x4EFD;&#x6570;</h5>
+                <div class="stat-value numeric">{{ stats.total }}</div>
             </div>
         </div>
-
-        <div class="section-card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">统计详情</h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="text-muted">等待中</div>
-                        <div class="fs-5">{{ stats.pending }}</div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-muted">自动备份</div>
-                        <div class="fs-5">{{ stats.automatic }}</div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-muted">手动备份</div>
-                        <div class="fs-5">{{ stats.manual }}</div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-muted">成功备份总大小</div>
-                        <div class="fs-5">{{ stats.total_size }} bytes</div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="text-muted">平均耗时</div>
-                        <div class="fs-5">{{ stats.avg_duration|floatformat:2 }} 秒</div>
-                    </div>
-                </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="border-top-color: #10B981;">
+                <h5>&#x6210;&#x529F;</h5>
+                <div class="stat-value numeric">{{ stats.success }}</div>
             </div>
         </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="border-top-color: #EF4444;">
+                <h5>&#x5931;&#x8D25;</h5>
+                <div class="stat-value numeric">{{ stats.failed }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="border-top-color: #F59E0B;">
+                <h5>&#x8FD0;&#x884C;&#x4E2D;</h5>
+                <div class="stat-value numeric">{{ stats.running }}</div>
+            </div>
+        </div>
+    </div>
 
-        <div class="d-flex gap-2">
-            <a class="btn btn-outline-primary" href="{% url 'backup:backup_list' %}">返回备份列表</a>
-            <a class="btn btn-primary" href="{% url 'backup:backup_create' %}">创建备份</a>
+    <div class="section-card">
+        <div class="section-header">
+            <h5 class="section-title">&#x7EDF;&#x8BA1;&#x8BE6;&#x60C5;</h5>
+        </div>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">&#x7B49;&#x5F85;&#x4E2D;</div>
+                <div class="info-value numeric">{{ stats.pending }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">&#x81EA;&#x52A8;&#x5907;&#x4EFD;</div>
+                <div class="info-value numeric">{{ stats.automatic }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">&#x624B;&#x52A8;&#x5907;&#x4EFD;</div>
+                <div class="info-value numeric">{{ stats.manual }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">&#x6210;&#x529F;&#x5907;&#x4EFD;&#x603B;&#x5927;&#x5C0F;</div>
+                <div class="info-value numeric">{{ stats.total_size }} bytes</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">&#x5E73;&#x5747;&#x8017;&#x65F6;</div>
+                <div class="info-value numeric">{{ stats.avg_duration|floatformat:2 }} &#x79D2;</div>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
+

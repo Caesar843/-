@@ -17,8 +17,8 @@
             <div class="page-subtitle">合同状态与续签情况一览</div>
         </div>
         {% if user.is_authenticated %}
-        <div class="d-flex gap-2">
-            <a href="{% url 'store:contract_expiry' %}" class="btn btn-warning">合同到期提醒</a>
+        <div class="action-row">
+            <a href="{% url 'store:contract_expiry' %}" class="btn btn-outline-secondary">合同到期提醒</a>
             <a href="{% url 'store:contract_create' %}" class="btn btn-primary">+ 新建合同</a>
         </div>
         {% endif %}
@@ -26,7 +26,7 @@
 
     {% if contracts %}
     <div class="table-responsive table-card">
-        <table class="table table-striped table-hover">
+        <table class="table table-striped table-hover align-middle">
             <thead class="table-dark">
                 <tr>
                     <th>店铺名称</th>
@@ -43,8 +43,18 @@
                     <td>{{ contract.shop.name }}</td>
                     <td>{{ contract.start_date }}</td>
                     <td>{{ contract.end_date }}</td>
-                    <td>{{ contract.monthly_rent }}</td>
-                    <td>{{ contract.get_status_display }}</td>
+                    <td class="numeric">{{ contract.monthly_rent }}</td>
+                    <td>
+                        {% if contract.status == 'ACTIVE' %}
+                        <span class="status-badge success">{{ contract.get_status_display }}</span>
+                        {% elif contract.status == 'DRAFT' %}
+                        <span class="status-badge warning">{{ contract.get_status_display }}</span>
+                        {% elif contract.status == 'TERMINATED' or contract.status == 'EXPIRED' %}
+                        <span class="status-badge danger">{{ contract.get_status_display }}</span>
+                        {% else %}
+                        <span class="status-badge neutral">{{ contract.get_status_display }}</span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if user.is_authenticated %}
                         {% if contract.status == 'DRAFT' %}
@@ -52,11 +62,11 @@
                         {% elif contract.status == 'ACTIVE' %}
                         <a href="{% url 'store:contract_terminate' contract.pk %}" class="btn btn-sm btn-danger">终止</a>
                         <a href="{% url 'finance:finance_list' %}?contract_id={{ contract.pk }}"
-                            class="btn btn-sm btn-info ml-1">财务记录</a>
+                            class="btn btn-sm btn-info ms-1">财务记录</a>
                         {% elif contract.status in 'TERMINATED,EXPIRED' %}
                         <a href="{% url 'store:contract_delete' contract.pk %}" class="btn btn-sm btn-secondary">删除</a>
                         <a href="{% url 'finance:finance_list' %}?contract_id={{ contract.pk }}"
-                            class="btn btn-sm btn-info ml-1">财务记录</a>
+                            class="btn btn-sm btn-info ms-1">财务记录</a>
                         {% endif %}
                         {% endif %}
                     </td>

@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>{% block title %}&#x5546;&#x573A;&#x5E97;&#x94FA;&#x667A;&#x80FD;&#x8FD0;&#x8425;&#x7BA1;&#x7406;&#x7CFB;&#x7EDF;{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
@@ -15,10 +18,22 @@
             --sidebar-active: #1f2937;
             --sidebar-accent: #2563eb;
             --content-bg: #f3f4f6;
+            --primary: #3b82f6;
+            --cta: #f97316;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --shadow-1: 0 8px 20px rgba(15, 23, 42, 0.08);
+            --radius: 14px;
         }
 
         body {
-            background: var(--content-bg);
+            background: var(--bg);
+            color: var(--text);
+            font-family: "Fira Sans", "Microsoft YaHei", sans-serif;
+            line-height: 1.6;
         }
 
         .app-shell {
@@ -79,6 +94,11 @@
             padding-left: 16px;
         }
 
+        .sidebar-link:focus-visible {
+            outline: 2px solid var(--sidebar-accent);
+            outline-offset: -2px;
+        }
+
         .sidebar-footer {
             margin-top: auto;
             padding: 16px 20px;
@@ -129,6 +149,11 @@
             font-size: 20px;
         }
 
+        .numeric {
+            font-family: "Fira Code", monospace;
+            letter-spacing: 0.2px;
+        }
+
         @media (max-width: 991px) {
             .app-shell {
                 position: relative;
@@ -153,6 +178,7 @@
             }
         }
     </style>
+    {% include 'partials/modern_theme.html' %}
     {% block extra_css %}{% endblock %}
 </head>
 

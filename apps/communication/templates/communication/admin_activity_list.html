@@ -1,12 +1,16 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">运营专员 - 活动申请管理</h1>
-    
-    <div class="card">
+<div class="container page-shell">
+    <div class="page-header">
+    <div>
+        <h1 class="page-title">运营专员 - 活动申请管理</h1>
+    </div>
+</div>
+
+<div class="table-responsive table-card">
         <div class="card-body">
-            <table class="table table-striped">
+            <table class="table table-striped table-hover align-middle">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -27,7 +31,7 @@
                         <td>{{ application.title }}</td>
                         <td>{{ application.get_activity_type_display }}</td>
                         <td>
-                            <span class="badge {% if application.status == 'PENDING' %}badge-warning{% elif application.status == 'APPROVED' %}badge-success{% elif application.status == 'REJECTED' %}badge-danger{% else %}badge-secondary{% endif %}">
+                            <span class="status-badge {% if application.status == 'PENDING' %}warning{% elif application.status == 'APPROVED' %}success{% elif application.status == 'REJECTED' %}danger{% else %}neutral{% endif %}">
                                 {{ application.get_status_display }}
                             </span>
                         </td>

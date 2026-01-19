@@ -17,17 +17,17 @@
             <div class="page-subtitle">门店基础信息与经营状态概览</div>
         </div>
         {% if user.is_authenticated %}
-        <div class="btn-group">
+        <div class="action-row">
             <a href="{% url 'store:shop_create' %}" class="btn btn-primary">+ 新建店铺</a>
-            <a href="{% url 'store:shop_export' %}" class="btn btn-success">导出店铺</a>
-            <a href="{% url 'store:shop_import' %}" class="btn btn-info">导入店铺</a>
+            <a href="{% url 'store:shop_export' %}" class="btn btn-outline-secondary">导出店铺</a>
+            <a href="{% url 'store:shop_import' %}" class="btn btn-outline-secondary">导入店铺</a>
         </div>
         {% endif %}
     </div>
 
     {% if shops %}
     <div class="table-responsive table-card">
-        <table class="table table-striped table-hover">
+        <table class="table table-striped table-hover align-middle">
             <thead class="table-dark">
                 <tr>
                     <th>店铺名称</th>
@@ -46,8 +46,8 @@
                 <tr>
                     <td>{{ shop.name }}</td>
                     <td>{{ shop.get_business_type_display }}</td>
-                    <td>{{ shop.area }}</td>
-                    <td>{{ shop.rent }}</td>
+                    <td class="numeric">{{ shop.area }}</td>
+                    <td class="numeric">{{ shop.rent }}</td>
                     <td>{{ shop.contact_person|default:"-" }}</td>
                     <td>{{ shop.contact_phone|default:"-" }}</td>
                     <td>{{ shop.entry_date|date:"Y-m-d"|default:"-" }}</td>
