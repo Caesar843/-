@@ -13,4 +13,11 @@ from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
+try:
+    from config.otel import configure_otel
+
+    configure_otel(instrument_django=True)
+except Exception:
+    pass
+
 application = get_wsgi_application()

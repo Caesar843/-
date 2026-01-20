@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
 {% block content %}
-<div class="container mt-4">
-    <h1>财务记录详情</h1>
-    
-    <div class="card mb-4">
+<div class="container page-shell">
+    {% include 'partials/page_header.html' with title="财务记录详情" subtitle="记录与操作信息" %}
+<div class="card shadow-sm section-card mb-4">
         <div class="card-header">
             <h5 class="card-title">记录信息</h5>
         </div>
@@ -51,7 +54,7 @@
         </div>
     </div>
     
-    <div class="card mb-4">
+    <div class="card shadow-sm section-card mb-4">
         <div class="card-header">
             <h5 class="card-title">操作记录</h5>
         </div>

@@ -1,5 +1,19 @@
 from django.urls import path
-from apps.store.views import ShopListView, ShopCreateView, ShopUpdateView, ShopExportView, ShopImportView, ContractListView, ContractCreateView, ContractActivateView, ContractTerminateView, ShopDeleteView, ContractDeleteView, ContractExpiryView
+from apps.store.views import (
+    ShopListView,
+    ShopCreateView,
+    ShopUpdateView,
+    ShopExportView,
+    ShopImportView,
+    ContractListView,
+    ContractCreateView,
+    ContractDetailView,
+    ContractActivateView,
+    ContractTerminateView,
+    ShopDeleteView,
+    ContractDeleteView,
+    ContractExpiryView,
+)
 
 """
 Store App URL Configuration
@@ -23,6 +37,7 @@ urlpatterns = [
     # 合同管理
     path('contracts/', ContractListView.as_view(), name='contract_list'),
     path('contracts/create/', ContractCreateView.as_view(), name='contract_create'),
+    path('contracts/<int:pk>/', ContractDetailView.as_view(), name='contract_detail'),
     path('contracts/<int:pk>/activate/', ContractActivateView.as_view(), name='contract_activate'),
     path('contracts/<int:pk>/terminate/', ContractTerminateView.as_view(), name='contract_terminate'),
     path('contracts/<int:pk>/delete/', ContractDeleteView.as_view(), name='contract_delete'),

@@ -1,17 +1,42 @@
 from django.views.generic import TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum
+from django.shortcuts import redirect
+from django.http import HttpResponseForbidden
 from apps.store.models import Shop, Contract
 from apps.finance.models import FinanceRecord
 from apps.user_management.permissions import RoleRequiredMixin
+from apps.user_management.models import Role
 
 
-class DashboardView(RoleRequiredMixin, TemplateView):
+class DashboardView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     """
     数据总览视图
     用于系统级只读展示，汇总已有 Store + Finance 的业务成果
     """
     template_name = 'dashboard/index.html'
-    allowed_roles = ['SUPER_ADMIN', 'MANAGEMENT', 'OPERATION', 'FINANCE', 'SHOP']  # 添加 SHOP 角色
+    allowed_roles = ['SUPER_ADMIN', 'FINANCE']
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
+
+        if request.user.is_superuser:
+            return super().dispatch(request, *args, **kwargs)
+
+        try:
+            user_role = request.user.profile.role.role_type
+            user_shop = request.user.profile.shop
+        except AttributeError:
+            return HttpResponseForbidden('Account role not configured')
+
+        if user_role == Role.RoleType.SHOP:
+            if user_shop:
+                return redirect('store:shop_update', user_shop.id)
+            return redirect('store:shop_create')
+
+        return super().dispatch(request, *args, **kwargs)
+
 
     def get_context_data(self, **kwargs):
         """

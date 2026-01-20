@@ -6,6 +6,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from decimal import Decimal
 from apps.finance.models import FinanceRecord
+from apps.finance.forms import FinanceRecordCreateForm
 from apps.finance.dtos import FinancePayDTO, FinanceRecordCreateDTO
 from apps.finance.services import FinanceService
 from apps.store.models import Contract
@@ -61,7 +62,11 @@ class FinancePayView(RoleRequiredMixin, View):
             dto = FinancePayDTO(record_id=int(pk), payment_method=payment_method, transaction_id=transaction_id)
             
             # 调用 Service 处理支付
-            FinanceService.mark_as_paid(dto, request.user.id)
+            idempotency_key = (
+                request.headers.get('Idempotency-Key')
+                or request.POST.get('idempotency_key')
+            )
+            FinanceService.mark_as_paid(dto, request.user.id, idempotency_key)
             
             # 添加成功消息
             messages.success(request, '支付成功！缴费状态已更新为已支付')
@@ -86,14 +91,14 @@ class FinanceCreateView(RoleRequiredMixin, CreateView):
     """财务记录创建视图"""
     model = FinanceRecord
     template_name = 'finance/finance_form.html'
-    fields = ['contract', 'amount', 'fee_type', 'billing_period_start', 'billing_period_end']
+    form_class = FinanceRecordCreateForm
     success_url = '/finance/records/'
     allowed_roles = ['SUPER_ADMIN', 'FINANCE']
     
     def get_context_data(self, **kwargs):
         """添加合同列表到上下文"""
         context = super().get_context_data(**kwargs)
-        context['contracts'] = Contract.objects.all()
+        context['contracts'] = Contract.objects.for_tenant(self.request.tenant).all()
         return context
     
     def form_valid(self, form):
@@ -126,7 +131,7 @@ class FinanceDetailView(RoleRequiredMixin, ShopDataAccessMixin, View):
     def get(self, request, pk):
         try:
             # 查找财务记录
-            record = FinanceRecord.objects.get(id=pk)
+            record = FinanceRecord.objects.for_tenant(request.tenant).get(id=pk)
             
             # 检查店铺用户是否有权限查看该记录
             if hasattr(request.user, 'profile') and request.user.profile.role.role_type == 'SHOP':
@@ -149,7 +154,7 @@ class FinanceStatementView(RoleRequiredMixin, ShopDataAccessMixin, View):
     def get(self, request, contract_id):
         try:
             # 查找合同
-            contract = Contract.objects.get(id=contract_id)
+            contract = Contract.objects.for_tenant(request.tenant).get(id=contract_id)
             
             # 检查店铺用户是否有权限查看该合同的明细单
             if hasattr(request.user, 'profile') and request.user.profile.role.role_type == 'SHOP':
@@ -158,7 +163,7 @@ class FinanceStatementView(RoleRequiredMixin, ShopDataAccessMixin, View):
                     return HttpResponseRedirect(reverse('finance:finance_list'))
             
             # 获取合同的所有财务记录
-            records = FinanceRecord.objects.filter(contract_id=contract_id)
+            records = FinanceRecord.objects.for_tenant(request.tenant).filter(contract_id=contract_id)
             
             # 计算汇总信息
             total_amount = sum(record.amount for record in records)
@@ -258,7 +263,7 @@ class FinanceHistoryView(RoleRequiredMixin, ShopDataAccessMixin, ListView):
     def get_context_data(self, **kwargs):
         """添加合同列表到上下文"""
         context = super().get_context_data(**kwargs)
-        context['contracts'] = Contract.objects.all()
+        context['contracts'] = Contract.objects.for_tenant(self.request.tenant).all()
         context['contract_id'] = self.request.GET.get('contract_id', '')
         context['payment_method'] = self.request.GET.get('payment_method', '')
         context['start_date'] = self.request.GET.get('start_date', '')

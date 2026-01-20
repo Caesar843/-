@@ -30,22 +30,22 @@ class SearchBackend(ABC):
     @abstractmethod
     def index(self, doc_id: str, content: Dict[str, Any], **kwargs) -> bool:
         """Index a document"""
-        pass
+        raise NotImplementedError("SearchBackend.index must be implemented")
 
     @abstractmethod
     def search(self, query: str, **kwargs) -> List[Dict[str, Any]]:
         """Search for documents"""
-        pass
+        raise NotImplementedError("SearchBackend.search must be implemented")
 
     @abstractmethod
     def delete(self, doc_id: str) -> bool:
         """Delete indexed document"""
-        pass
+        raise NotImplementedError("SearchBackend.delete must be implemented")
 
     @abstractmethod
     def rebuild_index(self) -> bool:
         """Rebuild the search index"""
-        pass
+        raise NotImplementedError("SearchBackend.rebuild_index must be implemented")
 
 
 class WhooshSearchBackend(SearchBackend):
@@ -443,8 +443,8 @@ class SearchManager:
         # Clear cache when deleting
         try:
             cache.clear()
-        except:
-            pass
+        except Exception as exc:
+            logger.warning("Cache clear failed during delete_document: %s", exc)
         return self.backend.delete(doc_id)
 
     def rebuild_index(self) -> bool:
@@ -452,8 +452,8 @@ class SearchManager:
         # Clear cache
         try:
             cache.clear()
-        except:
-            pass
+        except Exception as exc:
+            logger.warning("Cache clear failed during rebuild_index: %s", exc)
         return self.backend.rebuild_index()
 
     def autocomplete(self, prefix: str, limit: int = 10, **kwargs) -> List[str]:

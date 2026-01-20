@@ -9,10 +9,13 @@ Celery 任务监控和管理模块
 """
 
 import logging
+import time
 from datetime import datetime, timedelta
 
 from django.core.cache import cache
 from django.utils import timezone
+
+from apps.core.metrics import record_task_result
 
 try:
     from celery import current_app
@@ -22,6 +25,7 @@ except ImportError:
     CELERY_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+_TASK_START_TIMES = {}
 
 
 class TaskMonitor:
@@ -420,6 +424,39 @@ def record_task_sent(sender=None, task_id=None, task=None, args=None, kwargs=Non
     logger.debug(f'Task sent: {task} ({task_id})')
 
 
+def record_task_prerun(sender=None, task_id=None, task=None, args=None, **kw):
+    """???????"""
+    task_name = None
+    if hasattr(sender, 'name'):
+        task_name = sender.name
+    elif task:
+        task_name = str(task)
+
+    task_id = task_id or getattr(getattr(sender, 'request', None), 'id', None)
+    if task_id:
+        _TASK_START_TIMES[task_id] = time.time()
+    if task_name and task_id:
+        TaskMonitor.record_task_execution(task_name, task_id, 'STARTED')
+        record_task_result(task_name, 'STARTED')
+
+
+def record_task_postrun(sender=None, task_id=None, task=None, args=None, retval=None, state=None, **kw):
+    """???????"""
+    task_name = None
+    if hasattr(sender, 'name'):
+        task_name = sender.name
+    elif task:
+        task_name = str(task)
+
+    task_id = task_id or getattr(getattr(sender, 'request', None), 'id', None)
+    duration = 0
+    if task_id in _TASK_START_TIMES:
+        duration = max(0, time.time() - _TASK_START_TIMES.pop(task_id))
+    if task_name and task_id:
+        TaskMonitor.record_task_execution(task_name, task_id, state or 'FINISHED', duration=duration, result=retval)
+        record_task_result(task_name, state or 'FINISHED')
+
+
 def record_task_success(sender=None, result=None, task_id=None, task=None, args=None, **kw):
     """任务成功信号"""
     logger.info(f'Task success: {task} ({task_id})')
@@ -470,13 +507,16 @@ def record_task_retry(sender=None, task_id=None, task=None, args=None, reason=No
         TaskMonitor.record_task_execution(
             task_name, task_id, 'RETRY', error=reason
         )
+        record_task_result(task_name, 'RETRY')
 
 
 # 连接信号处理器
 if CELERY_AVAILABLE:
-    from celery.signals import before_task_publish, task_success, task_failure, task_retry
+    from celery.signals import before_task_publish, task_success, task_failure, task_retry, task_prerun, task_postrun
     
     before_task_publish.connect(record_task_sent)
     task_success.connect(record_task_success)
     task_failure.connect(record_task_failure)
     task_retry.connect(record_task_retry)
+    task_prerun.connect(record_task_prerun)
+    task_postrun.connect(record_task_postrun)

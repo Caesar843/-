@@ -192,7 +192,9 @@
                 {% if user.is_authenticated %}
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">&#x4E3B;&#x8981;&#x529F;&#x80FD;</div>
+                    {% if user.profile.role.role_type == 'SUPER_ADMIN' or user.profile.role.role_type == 'FINANCE' %}
                     <a class="sidebar-link" href="{% url 'dashboard:index' %}">&#x4EEA;&#x8868;&#x76D8;</a>
+                    {% endif %}
                     {% if user.profile.role.role_type == 'SUPER_ADMIN' %}
                     <a class="sidebar-link" href="{% url 'store:shop_list' %}">&#x5E97;&#x94FA;&#x7BA1;&#x7406;</a>
                     <a class="sidebar-link" href="{% url 'store:contract_list' %}">&#x5408;&#x540C;&#x7BA1;&#x7406;</a>
@@ -219,6 +221,8 @@
                     {% elif user.profile.role.role_type == 'SHOP' %}
                     {% if user.profile.shop %}
                     <a class="sidebar-link" href="{% url 'store:shop_update' user.profile.shop.id %}">&#x6211;&#x7684;&#x5E97;&#x94FA;</a>
+                    {% else %}
+                    <a class="sidebar-link" href="{% url 'store:shop_create' %}">&#x521B;&#x5EFA;&#x5E97;&#x94FA;</a>
                     {% endif %}
                     <a class="sidebar-link" href="{% url 'finance:finance_list' %}">&#x8D22;&#x52A1;&#x7BA1;&#x7406;</a>
                     {% endif %}

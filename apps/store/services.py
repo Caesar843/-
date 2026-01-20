@@ -16,8 +16,37 @@ from apps.store.dtos import (
     ContractCreateDTO,
     ContractActivateDTO
 )
+from apps.audit.services import log_audit_action
+from apps.audit.utils import serialize_instance
 
 logger = logging.getLogger(__name__)
+
+SHOP_AUDIT_FIELDS = [
+    "id",
+    "name",
+    "business_type",
+    "area",
+    "rent",
+    "contact_person",
+    "contact_phone",
+    "entry_date",
+    "description",
+    "is_deleted",
+]
+
+CONTRACT_AUDIT_FIELDS = [
+    "id",
+    "shop_id",
+    "start_date",
+    "end_date",
+    "monthly_rent",
+    "deposit",
+    "payment_cycle",
+    "status",
+    "reviewed_by_id",
+    "reviewed_at",
+    "review_comment",
+]
 
 """
 Service Layer Architecture & Engineering Constraints
@@ -84,6 +113,16 @@ class StoreService:
             #     }
             # )
 
+            after_data = serialize_instance(shop, SHOP_AUDIT_FIELDS)
+            log_audit_action(
+                action="create_shop",
+                module="store",
+                instance=shop,
+                actor_id=operator_id,
+                before_data=None,
+                after_data=after_data,
+            )
+
             logger.info(f"Shop {shop.id} created by operator {operator_id}")
             return shop
 
@@ -123,6 +162,7 @@ class StoreService:
                 )
 
             # 4. 执行逻辑删除
+            before_data = serialize_instance(shop, SHOP_AUDIT_FIELDS)
             shop.is_deleted = True
             shop.save(update_fields=['is_deleted', 'updated_at'])
 
@@ -139,6 +179,16 @@ class StoreService:
             #         "is_deleted": True
             #     }
             # )
+
+            after_data = serialize_instance(shop, SHOP_AUDIT_FIELDS)
+            log_audit_action(
+                action="delete_shop",
+                module="store",
+                instance=shop,
+                actor_id=operator_id,
+                before_data=before_data,
+                after_data=after_data,
+            )
 
             logger.info(f"Shop {shop.id} deleted by operator {operator_id}")
             return None
@@ -359,6 +409,16 @@ class ContractService:
             #     }
             # )
 
+            after_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
+            log_audit_action(
+                action="create_contract",
+                module="contract",
+                instance=contract,
+                actor_id=operator_id,
+                before_data=None,
+                after_data=after_data,
+            )
+
             logger.info(f"Draft Contract {contract.id} created for Shop {shop.id}")
             return contract
 
@@ -445,6 +505,7 @@ class ContractService:
                 )
 
             # 5. 执行状态 Update
+            before_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
             old_status = str(contract.status)
             contract.status = Contract.Status.ACTIVE
             contract.save(update_fields=['status', 'updated_at'])
@@ -465,6 +526,16 @@ class ContractService:
             #         "activated_at": current_time_str
             #     }
             # )
+
+            after_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
+            log_audit_action(
+                action="activate_contract",
+                module="contract",
+                instance=contract,
+                actor_id=operator_id,
+                before_data=before_data,
+                after_data=after_data,
+            )
 
             logger.info(f"Contract {contract.id} activated by operator {operator_id}")
             return None
@@ -497,9 +568,20 @@ class ContractService:
                 )
 
             # 3. 执行状态 Update
+            before_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
             old_status = str(contract.status)
             contract.status = Contract.Status.TERMINATED
             contract.save(update_fields=['status', 'updated_at'])
+
+            after_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
+            log_audit_action(
+                action="terminate_contract",
+                module="contract",
+                instance=contract,
+                actor_id=operator_id,
+                before_data=before_data,
+                after_data=after_data,
+            )
 
             logger.info(f"Contract {contract.id} terminated by operator {operator_id}")
             return None
@@ -555,6 +637,21 @@ class ContractService:
                 status=Contract.Status.DRAFT
             )
 
+            after_data = serialize_instance(new_contract, CONTRACT_AUDIT_FIELDS)
+            before_data = {
+                "original_contract_id": original_contract.id,
+                "original_status": str(original_contract.status),
+                "original_end_date": str(original_contract.end_date),
+            }
+            log_audit_action(
+                action="renew_contract",
+                module="contract",
+                instance=new_contract,
+                actor_id=operator_id,
+                before_data=before_data,
+                after_data=after_data,
+            )
+
             logger.info(f"Renewal Contract {new_contract.id} created for Shop {original_contract.shop.id}")
             return new_contract
 
@@ -600,9 +697,20 @@ class ContractService:
                 )
 
             # 4. 执行状态 Update
+            before_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
             old_status = str(contract.status)
             contract.status = Contract.Status.EXPIRED
             contract.save(update_fields=['status', 'updated_at'])
+
+            after_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
+            log_audit_action(
+                action="expire_contract",
+                module="contract",
+                instance=contract,
+                actor_id=operator_id,
+                before_data=before_data,
+                after_data=after_data,
+            )
 
             logger.info(f"Contract {contract.id} marked as expired by operator {operator_id}")
             return None
@@ -674,8 +782,18 @@ class ContractService:
                 )
 
             # 4. 执行状态转移
+            before_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
             contract.status = Contract.Status.PENDING_REVIEW
             contract.save(update_fields=['status', 'updated_at'])
+
+            after_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
+            log_audit_action(
+                action="submit_contract_review",
+                module="contract",
+                instance=contract,
+                before_data=before_data,
+                after_data=after_data,
+            )
 
             logger.info(f"Contract {contract.id} submitted for review")
             return contract
@@ -731,11 +849,32 @@ class ContractService:
                 )
 
             # 4. 更新合同审核信息
+            before_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
             contract.status = Contract.Status.APPROVED
             contract.reviewed_by = reviewer
             contract.reviewed_at = timezone.now()
             contract.review_comment = comment
             contract.save(update_fields=['status', 'reviewed_by', 'reviewed_at', 'review_comment', 'updated_at'])
+
+            after_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
+            log_audit_action(
+                action="reject_contract",
+                module="contract",
+                instance=contract,
+                actor_id=reviewer_id,
+                before_data=before_data,
+                after_data=after_data,
+            )
+
+            after_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
+            log_audit_action(
+                action="approve_contract",
+                module="contract",
+                instance=contract,
+                actor_id=reviewer_id,
+                before_data=before_data,
+                after_data=after_data,
+            )
 
             # 5. 后续业务流程：激活合同并生成初始账单
             # 注：此处可集成后续业务流程，如：
@@ -805,6 +944,7 @@ class ContractService:
                 )
 
             # 5. 更新合同审核信息
+            before_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
             contract.status = Contract.Status.REJECTED
             contract.reviewed_by = reviewer
             contract.reviewed_at = timezone.now()

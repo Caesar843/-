@@ -2,6 +2,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from datetime import date
+from apps.tenants.managers import TenantManager
+from apps.tenants.context import get_current_tenant
 
 """
 Store App Models
@@ -42,11 +44,26 @@ class Shop(models.Model):
         OTHER = 'OTHER', _('其他')
 
     # 业务字段
+    tenant = models.ForeignKey(
+        'tenants.Tenant',
+        on_delete=models.PROTECT,
+        related_name='shops',
+        verbose_name=_("租户"),
+        help_text=_("店铺所属的租户/商场")
+    )
+    org_unit = models.ForeignKey(
+        'tenants.OrgUnit',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='shops',
+        verbose_name=_("组织单元"),
+        help_text=_("店铺所属组织层级")
+    )
     name = models.CharField(
         verbose_name=_("店铺名称"),
         max_length=100,
-        unique=True,
-        help_text=_("店铺的唯一名称")
+        help_text=_("店铺名称（租户内唯一）")
     )
     business_type = models.CharField(
         verbose_name=_("业态类型"),
@@ -109,11 +126,20 @@ class Shop(models.Model):
         auto_now=True
     )
 
+    objects = TenantManager()
+
     class Meta:
         """元数据"""
         verbose_name = _("店铺")
         verbose_name_plural = _("店铺")
         ordering = ["name"]
+        indexes = [
+            models.Index(fields=["tenant", "is_deleted"]),
+            models.Index(fields=["tenant", "name"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "name"], name="shop_unique_name_per_tenant"),
+        ]
 
     def __str__(self):
         """字符串表示"""
@@ -122,6 +148,10 @@ class Shop(models.Model):
     def clean(self):
         """模型级验证"""
         errors = {}
+
+        if self.org_unit_id and self.tenant_id:
+            if self.org_unit.tenant_id != self.tenant_id:
+                errors['org_unit'] = _("组织单元必须属于同一租户")
         
         # 验证联系方式（电话号码）
         if self.contact_phone:
@@ -137,6 +167,13 @@ class Shop(models.Model):
         
         if errors:
             raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id:
+            tenant = get_current_tenant()
+            if tenant:
+                self.tenant = tenant
+        super().save(*args, **kwargs)
 
 
 class Contract(models.Model):
@@ -177,6 +214,13 @@ class Contract(models.Model):
         ANNUALLY = 'ANNUALLY', _('年付')
 
     # 业务字段
+    tenant = models.ForeignKey(
+        'tenants.Tenant',
+        on_delete=models.PROTECT,
+        related_name='contracts',
+        verbose_name=_("租户"),
+        help_text=_("合同所属的租户/商场")
+    )
     shop = models.ForeignKey(
         Shop,
         verbose_name=_("店铺"),
@@ -253,11 +297,17 @@ class Contract(models.Model):
         auto_now=True
     )
 
+    objects = TenantManager()
+
     class Meta:
         """元数据"""
         verbose_name = _("合同")
         verbose_name_plural = _("合同")
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["tenant", "status"]),
+            models.Index(fields=["tenant", "created_at"]),
+        ]
         constraints = [
             # 结束日期必须晚于开始日期
             models.CheckConstraint(
@@ -282,6 +332,8 @@ class Contract(models.Model):
 
     def clean(self):
         """模型级验证"""
+        if self.tenant_id and self.shop_id and self.shop.tenant_id != self.tenant_id:
+            raise ValidationError(_("合同租户与店铺租户不一致"))
         # 结束日期必须晚于开始日期
         if self.start_date and self.end_date:
             if self.end_date <= self.start_date:
@@ -296,3 +348,8 @@ class Contract(models.Model):
         if self.deposit is not None:
             if self.deposit < 0:
                 raise ValidationError(_("押金必须大于等于0"))
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id and self.shop_id:
+            self.tenant = self.shop.tenant
+        super().save(*args, **kwargs)

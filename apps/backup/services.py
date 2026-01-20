@@ -20,6 +20,7 @@ import hashlib
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
+import logging
 
 from django.db import connection, connections
 from django.core.management import call_command
@@ -27,6 +28,8 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.conf import settings
 from io import StringIO
+
+logger = logging.getLogger(__name__)
 
 from apps.store.models import Shop, Contract
 from apps.operations.models import OperationAnalysis, DeviceData, ManualOperationData
@@ -305,7 +308,7 @@ class BackupService:
                 backup.delete()
                 deleted_count += 1
             except Exception as e:
-                print(f"删除备份 {backup.backup_name} 失败: {str(e)}")
+                logger.error("Backup delete failed: %s", str(e))
         
         return deleted_count
 

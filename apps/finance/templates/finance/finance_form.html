@@ -1,9 +1,13 @@
 {% extends "base.html" %}
 
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
 {% block content %}
-<div class="container mt-4">
-    <h1>创建费用记录</h1>
-    <form method="post">
+<div class="container page-shell">
+    {% include 'partials/page_header.html' with title="创建财务记录" subtitle="填写账单周期与费用信息" %}
+<form method="post">
         {% csrf_token %}
         <div class="mb-3">
             <label for="contract" class="form-label">合同</label>
@@ -95,8 +99,10 @@
             </div>
             <input type="hidden" id="billing_period_end" name="billing_period_end" required>
         </div>
-        <button type="submit" class="btn btn-primary">提交</button>
-        <a href="{% url 'finance:finance_list' %}" class="btn btn-secondary">取消</a>
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'finance:finance_list' %}" class="btn btn-secondary">取消</a>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
     </form>
 </div>
 

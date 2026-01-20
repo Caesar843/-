@@ -1,10 +1,13 @@
 {% extends 'base.html' %}
 
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">维修请求详情</h1>
-    
-    <div class="card mb-4">
+<div class="container page-shell">
+    {% include 'partials/page_header.html' with title="维修详情" subtitle="查看处理状态与流程记录" %}
+<div class="card shadow-sm section-card mb-4">
         <div class="card-header">
             <h2>{{ request.title }}</h2>
         </div>

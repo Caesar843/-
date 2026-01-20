@@ -11,10 +11,12 @@
 
 {% block content %}
 <div class="container page-shell">
-    <div class="card shadow-sm section-card">
-        <div class="card-header bg-primary text-white">
-            <h2 class="mb-0">{% if form.instance.pk %}编辑店铺{% else %}新建店铺{% endif %}</h2>
-        </div>
+    {% if form.instance.pk %}
+    {% include 'partials/page_header.html' with title="编辑店铺" subtitle="更新店铺基础信息" %}
+    {% else %}
+    {% include 'partials/page_header.html' with title="新建店铺" subtitle="填写店铺基础信息" %}
+    {% endif %}
+        <div class="card shadow-sm section-card">
         <div class="card-body">
             <form method="post">
                 {% csrf_token %}
@@ -41,6 +43,10 @@
                 <div class="form-group mb-3">
                     <label for="id_contact_phone" class="form-label">联系方式</label>
                     {{ form.contact_phone }}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="id_org_unit" class="form-label">组织单元</label>
+                    {{ form.org_unit }}
                 </div>
                 <div class="form-group mb-3">
                     <label class="form-label">入驻日期</label>

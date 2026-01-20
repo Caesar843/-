@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
@@ -78,6 +81,16 @@ class UserProfile(models.Model):
         verbose_name=_('角色'),
         help_text=_('用户所属的角色')
     )
+
+    tenant = models.ForeignKey(
+        'tenants.Tenant',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='user_profiles',
+        verbose_name=_('所属租户'),
+        help_text=_('用户所属的租户/商场')
+    )
     
     shop = models.ForeignKey(
         'store.Shop',
@@ -114,3 +127,178 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.role.name}"
+
+
+class ObjectPermissionGrant(models.Model):
+    """
+    Object-level permission grant.
+    Allows assigning actions to a specific object for a user or role,
+    with optional time-bound validity.
+    """
+
+    class ActionChoices(models.TextChoices):
+        VIEW = "view", _("View")
+        EDIT = "edit", _("Edit")
+        APPROVE = "approve", _("Approve")
+        DELETE = "delete", _("Delete")
+
+    grantee_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name="object_permission_grants",
+        verbose_name=_("Grantee User"),
+        help_text=_("User who receives the permission grant."),
+    )
+    grantee_role = models.ForeignKey(
+        Role,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name="object_permission_grants",
+        verbose_name=_("Grantee Role"),
+        help_text=_("Role that receives the permission grant."),
+    )
+
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+        verbose_name=_("Content Type"),
+    )
+    object_id = models.PositiveBigIntegerField(verbose_name=_("Object ID"))
+    content_object = GenericForeignKey("content_type", "object_id")
+
+    action = models.CharField(
+        max_length=20,
+        choices=ActionChoices.choices,
+        verbose_name=_("Action"),
+        help_text=_("Action allowed on the target object."),
+    )
+    scope = models.CharField(
+        max_length=30,
+        blank=True,
+        null=True,
+        verbose_name=_("Scope"),
+        help_text=_("Optional scope hint (region/shop/contract)."),
+    )
+
+    valid_from = models.DateTimeField(
+        default=timezone.now,
+        verbose_name=_("Valid From"),
+    )
+    valid_until = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name=_("Valid Until"),
+    )
+
+    granted_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="granted_object_permissions",
+        verbose_name=_("Granted By"),
+    )
+    reason = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name=_("Reason"),
+        help_text=_("Reason or remark for the grant."),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("Created At"),
+    )
+
+    class Meta:
+        verbose_name = _("Object Permission Grant")
+        verbose_name_plural = _("Object Permission Grants")
+        indexes = [
+            models.Index(fields=["content_type", "object_id", "action"]),
+            models.Index(fields=["grantee_user", "action"]),
+            models.Index(fields=["grantee_role", "action"]),
+            models.Index(fields=["valid_from", "valid_until"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    models.Q(grantee_user__isnull=False)
+                    | models.Q(grantee_role__isnull=False)
+                ),
+                name="object_permission_grant_has_grantee",
+            )
+        ]
+
+    def __str__(self):
+        subject = self.grantee_user or self.grantee_role
+        return f"{subject} -> {self.action} {self.content_type}:{self.object_id}"
+
+
+class ApprovalRecord(models.Model):
+    """
+    Approval/audit trail for sensitive actions.
+    """
+
+    class ActionChoices(models.TextChoices):
+        APPROVE_CONTRACT = "approve_contract", _("Approve Contract")
+        TERMINATE_CONTRACT = "terminate_contract", _("Terminate Contract")
+        FINANCE_CONFIRM = "finance_confirm", _("Finance Confirm")
+        SHOP_STATUS_CHANGE = "shop_status_change", _("Shop Status Change")
+
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+        verbose_name=_("Content Type"),
+    )
+    object_id = models.PositiveBigIntegerField(verbose_name=_("Object ID"))
+    content_object = GenericForeignKey("content_type", "object_id")
+
+    action = models.CharField(
+        max_length=50,
+        choices=ActionChoices.choices,
+        verbose_name=_("Action"),
+    )
+    approved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="approval_records",
+        verbose_name=_("Approved By"),
+    )
+    approved_at = models.DateTimeField(
+        default=timezone.now,
+        verbose_name=_("Approved At"),
+    )
+    comment = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name=_("Comment"),
+    )
+    signature_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        verbose_name=_("Signature Hash"),
+    )
+    request_snapshot = models.JSONField(
+        blank=True,
+        null=True,
+        verbose_name=_("Request Snapshot"),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("Created At"),
+    )
+
+    class Meta:
+        verbose_name = _("Approval Record")
+        verbose_name_plural = _("Approval Records")
+        indexes = [
+            models.Index(fields=["content_type", "object_id", "action"]),
+            models.Index(fields=["approved_by", "approved_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.action} {self.content_type}:{self.object_id}"

@@ -1,9 +1,25 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from apps.store.models import Contract
+from apps.audit.services import log_audit_action
+from apps.audit.utils import serialize_instance
 import logging
 
 logger = logging.getLogger(__name__)
+
+CONTRACT_AUDIT_FIELDS = [
+    "id",
+    "shop_id",
+    "start_date",
+    "end_date",
+    "monthly_rent",
+    "deposit",
+    "payment_cycle",
+    "status",
+    "reviewed_by_id",
+    "reviewed_at",
+    "review_comment",
+]
 
 class Command(BaseCommand):
     """
@@ -63,8 +79,17 @@ class Command(BaseCommand):
                     )
                 )
                 # 自动更新状态为EXPIRED
+                before_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
                 contract.status = Contract.Status.EXPIRED
                 contract.save()
+                after_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
+                log_audit_action(
+                    action="expire_contract",
+                    module="contract",
+                    instance=contract,
+                    before_data=before_data,
+                    after_data=after_data,
+                )
                 logger.error(
                     f'Contract expired: ID={contract.id}, Shop={contract.shop.name}, '
                     f'End date={contract.end_date}, Days expired={days_expired}, Status updated to EXPIRED'

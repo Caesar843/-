@@ -11,10 +11,12 @@
 
 {% block content %}
 <div class="container page-shell">
-    <div class="card shadow-sm section-card">
-        <div class="card-header bg-primary text-white">
-            <h2 class="mb-0">{% if form.instance.pk %}编辑合同{% else %}新建合同{% endif %}</h2>
-        </div>
+    {% if form.instance.pk %}
+    {% include 'partials/page_header.html' with title="编辑合同" subtitle="更新合同周期与费用信息" %}
+    {% else %}
+    {% include 'partials/page_header.html' with title="新建合同" subtitle="填写合同周期与费用信息" %}
+    {% endif %}
+        <div class="card shadow-sm section-card">
         <div class="card-body">
             <form method="post">
                 {% csrf_token %}

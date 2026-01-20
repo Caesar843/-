@@ -3,8 +3,101 @@ from django.contrib import messages
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
+from django.utils import timezone
+import hashlib
 
-from apps.user_management.models import Role
+from apps.user_management.models import Role, ObjectPermissionGrant, ApprovalRecord
+
+
+def _get_user_role(user):
+    try:
+        return user.profile.role
+    except AttributeError:
+        return None
+
+
+def has_object_permission(user, action, obj, *, allowed_roles=None, allow_shop_owner=False):
+    """
+    Unified object-level permission check with RBAC fallback.
+    """
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+
+    role = _get_user_role(user)
+    role_type = role.role_type if role else None
+
+    obj_tenant_id = getattr(obj, "tenant_id", None)
+    if obj_tenant_id is not None:
+        user_tenant_id = getattr(getattr(user, "profile", None), "tenant_id", None)
+        if user_tenant_id is None or obj_tenant_id != user_tenant_id:
+            return False
+
+    if allowed_roles and role_type in allowed_roles:
+        return True
+
+    if allow_shop_owner and role_type == Role.RoleType.SHOP:
+        user_shop_id = getattr(getattr(user, "profile", None), "shop_id", None)
+        obj_shop_id = getattr(getattr(obj, "shop", None), "id", None)
+        if user_shop_id and obj_shop_id and user_shop_id == obj_shop_id:
+            return True
+
+    if not obj:
+        return False
+
+    content_type = ContentType.objects.get_for_model(obj.__class__)
+    now = timezone.now()
+
+    grant_query = ObjectPermissionGrant.objects.filter(
+        content_type=content_type,
+        object_id=obj.id,
+        action=action,
+        valid_from__lte=now,
+    ).filter(Q(valid_until__isnull=True) | Q(valid_until__gte=now))
+
+    if role:
+        grant_query = grant_query.filter(Q(grantee_user=user) | Q(grantee_role=role))
+    else:
+        grant_query = grant_query.filter(grantee_user=user)
+
+    return grant_query.exists()
+
+
+def require_object_permission(request, action, obj, *, allowed_roles=None, allow_shop_owner=False):
+    if has_object_permission(
+        request.user,
+        action,
+        obj,
+        allowed_roles=allowed_roles,
+        allow_shop_owner=allow_shop_owner,
+    ):
+        return None
+    messages.error(request, "鎮ㄦ病鏈夋潈闄愭搷浣滆璧勬簮")
+    return HttpResponseForbidden("鎮ㄦ病鏈夋潈闄愭搷浣滆璧勬簮")
+
+
+def record_approval(*, action, obj, approved_by, comment=None, request_snapshot=None):
+    """
+    Create an approval record with a lightweight signature hash.
+    """
+    content_type = ContentType.objects.get_for_model(obj.__class__)
+    approved_at = timezone.now()
+    signature_payload = f"{action}|{content_type.id}|{obj.id}|{approved_by.id}|{approved_at.isoformat()}"
+    signature_hash = hashlib.sha256(signature_payload.encode("utf-8")).hexdigest()
+
+    return ApprovalRecord.objects.create(
+        content_type=content_type,
+        object_id=obj.id,
+        action=action,
+        approved_by=approved_by,
+        approved_at=approved_at,
+        comment=comment or "",
+        signature_hash=signature_hash,
+        request_snapshot=request_snapshot or {},
+    )
 
 
 def role_required(*allowed_roles):

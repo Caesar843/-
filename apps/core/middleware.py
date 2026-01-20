@@ -5,11 +5,48 @@
 """
 
 import logging
-from django.http import JsonResponse
+from django.conf import settings
+from django.http import JsonResponse, HttpResponseForbidden
 from rest_framework import status
 from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
+
+
+class MetricsAccessMiddleware:
+    """Restrict /metrics access via IP allowlist or token when configured."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if not request.path.startswith('/metrics'):
+            return self.get_response(request)
+
+        if getattr(settings, 'METRICS_ALLOW_ALL', False):
+            return self.get_response(request)
+
+        token = getattr(settings, 'METRICS_TOKEN', None)
+        if token:
+            auth_header = request.headers.get('Authorization', '')
+            header_token = auth_header.replace('Bearer ', '', 1).strip()
+            query_token = request.GET.get('token')
+            if token in {header_token, query_token}:
+                return self.get_response(request)
+
+        allowed_ips = set(getattr(settings, 'METRICS_ALLOWED_IPS', []) or [])
+        client_ip = _get_client_ip(request)
+        if allowed_ips and client_ip in allowed_ips:
+            return self.get_response(request)
+
+        return HttpResponseForbidden('metrics access denied')
+
+
+def _get_client_ip(request):
+    forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '')
 
 
 class ExceptionMiddleware:

@@ -10,8 +10,24 @@ from django.db import transaction
 from apps.store.models import Contract
 from apps.notification.services import NotificationService
 from django.contrib.auth.models import User
+from apps.audit.services import log_audit_action
+from apps.audit.utils import serialize_instance
 
 logger = logging.getLogger(__name__)
+
+CONTRACT_AUDIT_FIELDS = [
+    "id",
+    "shop_id",
+    "start_date",
+    "end_date",
+    "monthly_rent",
+    "deposit",
+    "payment_cycle",
+    "status",
+    "reviewed_by_id",
+    "reviewed_at",
+    "review_comment",
+]
 
 
 @shared_task(bind=True, max_retries=3)
@@ -133,8 +149,17 @@ def auto_expire_contracts_task(**kwargs):
                 
                 try:
                     # 标记为过期
+                    before_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
                     contract.status = Contract.Status.EXPIRED
                     contract.save(update_fields=['status', 'updated_at'])
+                    after_data = serialize_instance(contract, CONTRACT_AUDIT_FIELDS)
+                    log_audit_action(
+                        action="expire_contract",
+                        module="contract",
+                        instance=contract,
+                        before_data=before_data,
+                        after_data=after_data,
+                    )
                     result['marked_as_expired'] += 1
                     logger.info(f"Contract {contract.id} automatically marked as expired")
                     

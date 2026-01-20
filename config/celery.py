@@ -8,6 +8,9 @@ Celery 配置文件（支持 Celery 可选依赖）
 注：使用 Celery 需要先安装: pip install celery redis
 """
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 CELERY_AVAILABLE = False
 
@@ -19,9 +22,9 @@ except ImportError:
     # Celery 未安装，定义虚拟类以避免错误
     class crontab:
         def __init__(self, *args, **kwargs):
-            pass
+            return None
     
-    print("Warning: Celery is not installed. Run 'pip install celery redis' to enable async tasks.")
+    logger.warning("Celery is not installed. Run 'pip install celery redis' to enable async tasks.")
 
 
 if CELERY_AVAILABLE:
@@ -107,17 +110,38 @@ if CELERY_AVAILABLE:
         },
     }
 
+    try:
+        from config.otel import configure_otel
+        configure_otel(instrument_celery=True)
+    except Exception as exc:
+        logger.warning('OpenTelemetry Celery instrumentation skipped: %s', exc)
+
+    try:
+        import apps.core.celery_monitor  # noqa: F401
+    except Exception as exc:
+        logger.warning('Celery monitoring signals not loaded: %s', exc)
+
+    try:
+        from prometheus_client import start_http_server
+        metrics_port = int(os.getenv('CELERY_METRICS_PORT', '0'))
+        if metrics_port:
+            start_http_server(metrics_port)
+            logger.info('Celery metrics server started on port %s', metrics_port)
+    except Exception as exc:
+        logger.warning('Celery metrics server not started: %s', exc)
+
+
     @app.task(bind=True)
     def debug_task(self):
         """调试任务 - 用于测试Celery配置是否正常"""
-        print(f'Request: {self.request!r}')
+        logger.debug("Celery debug_task request=%r", self.request)
         return 'Celery is working!'
 
 else:
     # Celery 未安装时，创建虚拟 app 对象
     class DummyCeleryApp:
         def autodiscover_tasks(self, *args, **kwargs):
-            pass
+            return None
         
         def task(self, *args, **kwargs):
             def decorator(func):
@@ -127,9 +151,9 @@ else:
         class Conf:
             beat_schedule = {}
             def update(self, *args, **kwargs):
-                pass
+                return None
             def config_from_object(self, *args, **kwargs):
-                pass
+                return None
         
         conf = Conf()
     

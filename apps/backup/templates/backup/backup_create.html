@@ -10,12 +10,10 @@
 
 
 {% block content %}
-<div class="container mt-4 page-shell" style="max-width: 700px;">
-    <div class="card section-card">
-        <div class="card-header bg-primary text-white">
-            <h4 class="mb-0"><i class="fas fa-plus"></i> &#x521B;&#x5EFA;&#x6570;&#x636E;&#x5907;&#x4EFD;</h4>
-        </div>
-        <div class="card-body">
+<div class="container page-shell" style="max-width: 700px;">
+    {% include 'partials/page_header.html' with title="&#x521B;&#x5EFA;&#x6570;&#x636E;&#x5907;&#x4EFD;" subtitle="&#x9009;&#x62E9;&#x5907;&#x4EFD;&#x7C7B;&#x578B;&#x4E0E;&#x6570;&#x636E;" %}
+    <div class="card shadow-sm section-card">
+<div class="card-body">
             <form method="post">
                 {% csrf_token %}
 
@@ -146,10 +144,7 @@
 
     <!-- &#x4FE1;&#x606F;&#x63D0;&#x793A; -->
     <div class="card mt-4">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">&#x5907;&#x4EFD;&#x987B;&#x77E5;</h5>
-        </div>
-        <div class="card-body">
+<div class="card-body">
             <h6>&#x5907;&#x4EFD;&#x7C7B;&#x578B;&#x8BF4;&#x660E;</h6>
             <p><strong>&#x5168;&#x91CF;&#x5907;&#x4EFD; (FULL)&#xFF1A;</strong>&#x5907;&#x4EFD;&#x7CFB;&#x7EDF;&#x4E2D;&#x6240;&#x6709;&#x6570;&#x636E;&#xFF0C;&#x5305;&#x62EC;&#x5386;&#x53F2;&#x8BB0;&#x5F55;&#x3002;&#x8FD9;&#x7C7B;&#x5907;&#x4EFD;&#x6587;&#x4EF6;&#x8F83;&#x5927;&#xFF0C;&#x6062;&#x590D;&#x901F;&#x5EA6;&#x5FEB;&#xFF0C;&#x9002;&#x5408;&#x5B9A;&#x671F;&#x5B8C;&#x6574;&#x5907;&#x4EFD;&#x3002;</p>
             <p><strong>&#x589E;&#x91CF;&#x5907;&#x4EFD; (INCREMENTAL)&#xFF1A;</strong>&#x4EC5;&#x5907;&#x4EFD;&#x4E0A;&#x6B21;&#x5907;&#x4EFD;&#x540E;&#x65B0;&#x589E;&#x6216;&#x4FEE;&#x6539;&#x7684;&#x6570;&#x636E;&#x3002;&#x6587;&#x4EF6;&#x8F83;&#x5C0F;&#xFF0C;&#x6062;&#x590D;&#x9700;&#x8981;&#x4E0E;&#x524D;&#x6B21;&#x5907;&#x4EFD;&#x914D;&#x5408;&#x4F7F;&#x7528;&#x3002;</p>

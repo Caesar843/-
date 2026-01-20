@@ -2,14 +2,14 @@
 
 {% block title %}创建财务记录{% endblock %}
 
-{% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">创建财务记录</h1>
 
-    <div class="card">
-        <div class="card-header">
-            <h2 class="h5 mb-0">财务记录信息</h2>
-        </div>
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
+{% block content %}
+<div class="container page-shell">
+    {% include 'partials/page_header.html' with title="创建财务记录" subtitle="填写账单周期与费用信息" %}
+<div class="card shadow-sm section-card">
         <div class="card-body">
             <form method="post">
                 {% csrf_token %}
@@ -25,8 +25,10 @@
                     {% endfor %}
                 </div>
                 {% endfor %}
-                <button type="submit" class="btn btn-primary">创建</button>
-                <a href="{% url 'finance:finance_list' %}" class="btn btn-secondary ml-2">取消</a>
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'finance:finance_list' %}" class="btn btn-secondary">取消</a>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
             </form>
         </div>
     </div>

@@ -56,12 +56,12 @@ class RateLimitStrategy(ABC):
         Returns:
             (是否允许, 限流信息字典)
         """
-        pass
+        raise NotImplementedError("RateLimitStrategy.is_allowed must be implemented")
     
     @abstractmethod
     def reset(self, key: str) -> None:
         """重置限流记录"""
-        pass
+        raise NotImplementedError("RateLimitStrategy.reset must be implemented")
 
 
 class LeakyBucketStrategy(RateLimitStrategy):

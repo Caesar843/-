@@ -1,10 +1,13 @@
 import logging
+from django.conf import settings
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 import pandas as pd
 from io import BytesIO, StringIO
+from apps.data_governance.models import DailyFinanceAgg
 from apps.store.models import Shop, Contract
 from apps.operations.models import DeviceData, ManualOperationData, OperationAnalysis
 from apps.finance.models import FinanceRecord
@@ -104,34 +107,59 @@ class ReportService:
         Returns:
             dict: 租金收缴情况
         """
-        # 获取店铺列表
         if shop_id:
-            shops = Shop.objects.filter(id=shop_id, is_deleted=False)
+            shop_qs = Shop.objects.filter(id=shop_id, is_deleted=False)
         else:
-            shops = Shop.objects.filter(is_deleted=False)
-        
+            shop_qs = Shop.objects.filter(is_deleted=False)
+
+        shops = list(shop_qs)
+        shop_ids = [shop.id for shop in shops]
+
+        offline_agg_summary = None
+        agg_paid_amount = Decimal('0')
+        agg_rent_paid_amount = Decimal('0')
+        agg_map = {}
+        if getattr(settings, "ENABLE_OFFLINE_AGG", False) and shop_ids:
+            agg_rows = DailyFinanceAgg.objects.filter(
+                shop_id__in=shop_ids,
+                agg_date__range=[start_date, end_date],
+            ).values('shop_id').annotate(
+                paid_amount=Sum('paid_amount'),
+                rent_paid_amount=Sum('rent_paid_amount'),
+            )
+
+            for row in agg_rows:
+                agg_paid_amount += row['paid_amount'] or Decimal('0')
+                agg_rent_paid_amount += row['rent_paid_amount'] or Decimal('0')
+                agg_map[row['shop_id']] = {
+                    'paid_amount': row['paid_amount'] or Decimal('0'),
+                    'rent_paid_amount': row['rent_paid_amount'] or Decimal('0'),
+                }
+
+            offline_agg_summary = {
+                'paid_amount': agg_paid_amount,
+                'rent_paid_amount': agg_rent_paid_amount,
+                'source': 'daily_finance_agg'
+            }
+
         report_data = []
         total_rent_due = Decimal('0')
         total_rent_collected = Decimal('0')
-        
+
         for shop in shops:
-            # 获取合同
             contracts = Contract.objects.filter(
                 shop=shop,
                 status__in=[Contract.Status.ACTIVE, Contract.Status.EXPIRED],
                 end_date__gte=start_date
             )
-            
+
             for contract in contracts:
-                # 计算合同期间
                 contract_start = max(contract.start_date, start_date)
                 contract_end = min(contract.end_date, end_date)
                 
-                # 计算应缴租金
                 months = (contract_end.year - contract_start.year) * 12 + (contract_end.month - contract_start.month) + 1
                 rent_due = contract.monthly_rent * months
-                
-                # 获取已收租金（假设从财务记录中获取）
+
                 finance_records = FinanceRecord.objects.filter(
                     contract=contract,
                     fee_type=FinanceRecord.FeeType.RENT,
@@ -139,10 +167,10 @@ class ReportService:
                     paid_at__date__range=[start_date, end_date]
                 )
                 rent_collected = sum(record.amount for record in finance_records)
-                
-                # 计算未收租金
+
                 rent_outstanding = rent_due - rent_collected
-                
+
+                shop_agg = agg_map.get(shop.id)
                 report_data.append({
                     'shop_name': shop.name,
                     'contract_id': contract.id,
@@ -153,22 +181,31 @@ class ReportService:
                     'rent_due': rent_due,
                     'rent_collected': rent_collected,
                     'rent_outstanding': rent_outstanding,
-                    'collection_rate': (rent_collected / rent_due * 100) if rent_due > 0 else 0
+                    'collection_rate': (rent_collected / rent_due * 100) if rent_due > 0 else 0,
+                    'aggregated_shop_paid': shop_agg['paid_amount'] if shop_agg else None,
+                    'aggregated_shop_rent_paid': shop_agg['rent_paid_amount'] if shop_agg else None,
                 })
-                
-                # 累加总计
+
                 total_rent_due += rent_due
                 total_rent_collected += rent_collected
-        
-        return {
+
+        result = {
             'report_data': report_data,
             'total_rent_due': total_rent_due,
-            'total_rent_collected': total_rent_collected,
-            'total_rent_outstanding': total_rent_due - total_rent_collected,
-            'total_collection_rate': (total_rent_collected / total_rent_due * 100) if total_rent_due > 0 else 0,
+            'total_rent_collected': agg_rent_paid_amount if offline_agg_summary else total_rent_collected,
+            'total_rent_outstanding': total_rent_due - (agg_rent_paid_amount if offline_agg_summary else total_rent_collected),
+            'total_collection_rate': (
+                (agg_rent_paid_amount if offline_agg_summary else total_rent_collected)
+                / total_rent_due * 100
+            ) if total_rent_due > 0 else 0,
             'start_date': start_date,
-            'end_date': end_date
+            'end_date': end_date,
         }
+
+        if offline_agg_summary:
+            result['offline_agg_summary'] = offline_agg_summary
+
+        return result
     
     @staticmethod
     def get_business_type_analysis(start_date, end_date):

@@ -10,6 +10,8 @@ from django.core.cache import cache
 import shutil
 import logging
 from apps.core.response import APIResponse
+from apps.core.forms import ShopUserRegistrationForm
+from apps.user_management.models import Role, UserProfile
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +161,46 @@ class LoginView(View):
             messages.error(request, '用户名或密码错误')
         
         return render(request, self.template_name)
+
+
+class RegisterView(View):
+    """Shop owner registration view (no admin roles)."""
+
+    template_name = 'core/register.html'
+
+    def get(self, request):
+        if request.user.is_authenticated:
+            return redirect('dashboard:index')
+        form = ShopUserRegistrationForm()
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        if request.user.is_authenticated:
+            return redirect('dashboard:index')
+        form = ShopUserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            # Enforce non-admin account for self-registration.
+            user.is_staff = False
+            user.is_superuser = False
+            user.is_active = True
+            user.save()
+
+            # Ensure role is SHOP regardless of any client-side tampering.
+            role, _ = Role.objects.get_or_create(
+                role_type=Role.RoleType.SHOP,
+                defaults={'name': '店铺负责人'},
+            )
+            profile, _ = UserProfile.objects.get_or_create(user=user, defaults={'role': role})
+            if profile.role_id != role.id:
+                profile.role = role
+                profile.save(update_fields=['role'])
+
+            messages.success(request, '注册成功，请使用新账号登录')
+            return redirect('core:login')
+
+        messages.error(request, '注册失败，请检查输入信息')
+        return render(request, self.template_name, {'form': form})
 
 
 class LogoutView(View):

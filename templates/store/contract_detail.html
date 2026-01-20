@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Contract Detail - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="container page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Contract Detail</h1>
+            <div class="page-subtitle">Contract #{{ contract.id }}</div>
+        </div>
+        <div class="action-row">
+            <a href="{% url 'store:contract_list' %}" class="btn btn-outline-secondary">Back</a>
+        </div>
+    </div>
+
+    <div class="table-responsive table-card">
+        <table class="table table-striped align-middle">
+            <tbody>
+                <tr>
+                    <th>Shop</th>
+                    <td>{{ contract.shop.name }}</td>
+                </tr>
+                <tr>
+                    <th>Start Date</th>
+                    <td>{{ contract.start_date }}</td>
+                </tr>
+                <tr>
+                    <th>End Date</th>
+                    <td>{{ contract.end_date }}</td>
+                </tr>
+                <tr>
+                    <th>Monthly Rent</th>
+                    <td>{{ contract.monthly_rent }}</td>
+                </tr>
+                <tr>
+                    <th>Deposit</th>
+                    <td>{{ contract.deposit }}</td>
+                </tr>
+                <tr>
+                    <th>Status</th>
+                    <td>{{ contract.get_status_display }}</td>
+                </tr>
+                <tr>
+                    <th>Reviewed By</th>
+                    <td>{{ contract.reviewed_by }}</td>
+                </tr>
+                <tr>
+                    <th>Reviewed At</th>
+                    <td>{{ contract.reviewed_at }}</td>
+                </tr>
+                <tr>
+                    <th>Review Comment</th>
+                    <td>{{ contract.review_comment }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

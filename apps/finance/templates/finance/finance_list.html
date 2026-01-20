@@ -1,318 +1,208 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+
+{% block title %}财务记录列表{% endblock %}
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
+
 
 {% block content %}
 <div class="container page-shell">
-    <div class="page-header">
-    <div>
-        <h1 class="page-title">财务记录管理</h1>
+        <div class="page-header">
+        <div>
+            <h1 class="page-title">财务记录管理</h1>
+            <div class="page-subtitle">财务记录列表</div>
+        </div>
+        <div class="action-row">
+
+                    <a href="{% url 'finance:finance_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> 创建财务记录
+                    </a>
+                    <a href="{% url 'finance:finance_reminders' %}" class="btn btn-outline-secondary ms-2">
+                        <i class="fas fa-bell"></i> 缴费提醒
+                    </a>
+                    <a href="{% url 'finance:finance_history' %}" class="btn btn-outline-secondary ms-2">
+                        <i class="fas fa-history"></i> 缴费历史
+                    </a>
+                
+        </div>
     </div>
-    <div class="action-row">
 
-        <a href="{% url 'finance:finance_create' %}" class="btn btn-primary">创建费用记录</a>
-        <a href="{% url 'finance:finance_reminders' %}" class="btn btn-outline-secondary">缴费提醒</a>
-        <a href="{% url 'finance:finance_history' %}" class="btn btn-outline-secondary">缴费历史</a>
-    
+    <div class="table-responsive table-card">
+        <div class="card-body">
+            {% if finance_records %}
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>记录ID</th>
+                        <th>合同</th>
+                        <th>费用类型</th>
+                        <th>金额</th>
+                        <th>账单周期</th>
+                        <th>状态</th>
+                        <th>缴费方式</th>
+                        <th>缴费时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in finance_records %}
+                    <tr>
+                        <td>{{ record.id }}</td>
+                        <td>{{ record.contract }}</td>
+                        <td>{{ record.get_fee_type_display }}</td>
+                        <td class="numeric">¥{{ record.amount }}</td>
+                        <td>{{ record.billing_period_start }} 至 {{ record.billing_period_end }}</td>
+                        <td>
+                            {% if record.status == 'UNPAID' %}
+                            <span class="status-badge danger">未支付</span>
+                            {% elif record.status == 'PAID' %}
+                            <span class="status-badge success">已支付</span>
+                            {% else %}
+                            <span class="status-badge neutral">已作废</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ record.get_payment_method_display|default:'-' }}</td>
+                        <td>{{ record.paid_at|date:"Y-m-d H:i"|default:'-' }}</td>
+                        <td>
+                            <a href="{% url 'finance:finance_detail' record.id %}" class="btn btn-sm btn-info">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if record.status == 'UNPAID' %}
+                            <button type="button" class="btn btn-sm btn-success ms-1" data-bs-toggle="modal"
+                                data-bs-target="#payModal{{ record.id }}">
+                                <i class="fas fa-credit-card"></i> 缴费
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-info">
+                没有财务记录
+            </div>
+            {% endif %}
+        </div>
     </div>
-</div>
-
-<div class="table-responsive table-card">
-    <table class="table table-striped table-hover align-middle">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>合同</th>
-                <th>费用类型</th>
-                <th>金额</th>
-                <th>账单周期</th>
-                <th>状态</th>
-                <th>缴费方式</th>
-                <th>缴费时间</th>
-                <th>创建时间</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for record in finance_records %}
-            <tr>
-                <td>{{ record.id }}</td>
-                <td>{{ record.contract }}</td>
-                <td>
-                    {% if record.fee_type == 'RENT' %}租金
-                    {% elif record.fee_type == 'PROPERTY_FEE' %}物业费
-                    {% elif record.fee_type == 'UTILITY_FEE' %}水电费
-                    {% elif record.fee_type == 'OTHER' %}其他费用
-                    {% endif %}
-                </td>
-                <td class="numeric">¥{{ record.amount }}</td>
-                <td>{{ record.billing_period_start }} 至 {{ record.billing_period_end }}</td>
-                <td>
-                    {% if record.status == 'UNPAID' %}
-                    <span class="status-badge warning">未支付</span>
-                    {% elif record.status == 'PAID' %}
-                    <span class="status-badge success">已支付</span>
-                    {% elif record.status == 'VOID' %}
-                    <span class="status-badge danger">已作废</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if record.payment_method %}
-                    {% if record.payment_method == 'WECHAT' %}微信支付
-                    {% elif record.payment_method == 'ALIPAY' %}支付宝
-                    {% elif record.payment_method == 'BANK_TRANSFER' %}银行转账
-                    {% elif record.payment_method == 'CASH' %}现金
-                    {% endif %}
-                    {% else %}
-                    -
-                    {% endif %}
-                </td>
-                <td>{{ record.paid_at|default:"-" }}</td>
-                <td>{{ record.created_at }}</td>
-                <td>
-                    <a href="{% url 'finance:finance_detail' record.id %}" class="btn btn-sm btn-info">详情</a>
-                    {% if record.status == 'UNPAID' %}
-                    <button type="button" class="btn btn-sm btn-primary" data-record-id="{{ record.id }}">支付</button>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <!-- 分页 -->
-    {% if is_paginated %}
-    <nav aria-label="Page navigation">
-        <ul class="pagination">
-            {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">上一页</a>
-            </li>
-            {% else %}
-            <li class="page-item disabled">
-                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">上一页</a>
-            </li>
-            {% endif %}
-
-            {% for num in page_obj.paginator.page_range %}
-            {% if page_obj.number == num %}
-            <li class="page-item active" aria-current="page">
-                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-            </li>
-            {% else %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-            </li>
-            {% endif %}
-            {% endfor %}
-
-            {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}">下一页</a>
-            </li>
-            {% else %}
-            <li class="page-item disabled">
-                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">下一页</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
 </div>
 
 <!-- 缴费模态框 -->
-<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+{% for record in finance_records %}
+{% if record.status == 'UNPAID' %}
+<div class="modal fade" id="payModal{{ record.id }}" tabindex="-1" aria-labelledby="payModalLabel{{ record.id }}"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="paymentModalLabel">缴费</h5>
-                <button type="button" class="btn-close" aria-label="Close"></button>
+                <h5 class="modal-title" id="payModalLabel{{ record.id }}">缴费 - {{ record.contract }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <!-- 费用明细显示区域 -->
-                <div id="paymentDetails" class="mb-4 p-3 bg-light rounded">
-                    <h6 class="mb-2">费用明细</h6>
-                    <div class="row mb-2">
-                        <div class="col-sm-4"><strong>合同：</strong></div>
-                        <div class="col-sm-8" id="detailContract">-</div>
+            <form method="post" action="{% url 'finance:finance_pay' record.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <!-- 财务明细 -->
+                    
+                        <div class="card mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">财务明细</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>店铺名称：</strong>{{ record.contract.shop.name }}</p>
+                                    <p><strong>费用类型：</strong>{{ record.get_fee_type_display }}</p>
+                                    <p><strong>本期应付金额：</strong>¥{{ record.amount }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p>
+                                        <strong>账单周期：</strong>
+                                        {{ record.billing_period_start|date:"Y-m-d" }}
+                                        至
+                                        {{ record.billing_period_end|date:"Y-m-d" }}
+                                    </p>
+                                    <p><strong>缴费周期：</strong>{{ record.contract.get_payment_cycle_display }}</p>
+                                    <p><strong>押金金额：</strong>¥{{ record.contract.deposit }}</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="row mb-2">
-                        <div class="col-sm-4"><strong>费用类型：</strong></div>
-                        <div class="col-sm-8" id="detailFeeType">-</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-sm-4"><strong>金额：</strong></div>
-                        <div class="col-sm-8" id="detailAmount">-</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-sm-4"><strong>账单周期：</strong></div>
-                        <div class="col-sm-8" id="detailBillingPeriod">-</div>
-                    </div>
-                </div>
 
-                <!-- 微信支付和支付宝支付的二维码显示区域 -->
-                <div id="paymentQrCode" class="mb-4 text-center" style="display: none;">
-                    <h6 class="mb-2">扫码支付</h6>
-                    <div id="qrcodeContainer" class="mx-auto"
-                        style="width: 200px; height: 200px; border: 1px solid #dee2e6; padding: 10px;"></div>
-                    <p class="mt-2" id="paymentAmountText"></p>
-                </div>
-
-                <form id="paymentForm" method="post" action="">
-                    {% csrf_token %}
-                    <input type="hidden" name="record_id" id="recordId">
-                    <div class="mb-3">
-                        <label for="paymentMethod" class="form-label">缴费方式</label>
-                        <select class="form-select" id="paymentMethod" name="payment_method" required>
-                            <option value="">请选择缴费方式</option>
+                    <!-- 支付方式选择 -->
+                    <div class="form-group mb-4">
+                        <label for="payment_method{{ record.id }}">选择支付方式</label>
+                        <select class="form-control" id="payment_method{{ record.id }}" name="payment_method" required>
+                            <option value="">请选择支付方式</option>
                             <option value="WECHAT">微信支付</option>
                             <option value="ALIPAY">支付宝</option>
                             <option value="BANK_TRANSFER">银行转账</option>
                             <option value="CASH">现金</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label for="transactionId" class="form-label">交易单号</label>
-                        <input type="text" class="form-control" id="transactionId" name="transaction_id"
+
+                    <!-- 交易单号 -->
+                    <div class="form-group mb-4">
+                        <label for="transaction_id{{ record.id }}">交易单号（选填）</label>
+                        <input type="text" class="form-control" id="transaction_id{{ record.id }}" name="transaction_id"
                             placeholder="请输入交易单号">
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary">取消</button>
-                <button type="button" id="confirmPaymentBtn" class="btn btn-primary">确认缴费</button>
-            </div>
+
+                    <!-- 支付二维码（模拟） -->
+                    <div id="paymentQr{{ record.id }}" class="mb-4 hidden">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h6>请使用选择的支付方式扫码支付</h6>
+                                <div class="mt-2 mb-2">
+                                    <div
+                                        style="width: 200px; height: 200px; background-color: #f8f9fa; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 1px solid #dee2e6;">
+                                        <span id="paymentMethodText{{ record.id }}">微信支付二维码</span>
+                                    </div>
+                                </div>
+                                <p class="text-muted">金额：¥{{ record.amount }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" id="showQrBtn{{ record.id }}" class="btn btn-outline-secondary me-2">显示支付二维码</button>
+                    <button type="submit" class="btn btn-primary">确认支付</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+{% endif %}
+{% endfor %}
 
 <script>
-    // 确保DOM加载完成后执行
-    document.addEventListener('DOMContentLoaded', function () {
-        console.log('Finance list page DOM loaded');
+    // 显示支付二维码
+    {% for record in finance_records %}
+    {% if record.status == 'UNPAID' %}
+    document.getElementById('showQrBtn{{ record.id }}').addEventListener('click', function () {
+        const paymentMethod = document.getElementById('payment_method{{ record.id }}').value;
+        const qrDiv = document.getElementById('paymentQr{{ record.id }}');
+        const paymentMethodText = document.getElementById('paymentMethodText{{ record.id }}');
 
-        // 检查Bootstrap是否加载
-        if (typeof bootstrap === 'undefined') {
-            console.error('Bootstrap is not loaded!');
+        if (!paymentMethod) {
+            alert('请先选择支付方式');
             return;
         }
 
-        console.log('Bootstrap loaded, initializing payment functionality...');
+        // 根据选择的支付方式显示不同的二维码提示
+        const methodNames = {
+            'WECHAT': '微信支付二维码',
+            'ALIPAY': '支付宝二维码',
+            'BANK_TRANSFER': '银行转账信息',
+            'CASH': '现金支付提示'
+        };
 
-        // 获取元素
-        const paymentModal = document.getElementById('paymentModal');
-        const cancelBtn = document.querySelector('.btn-secondary');
-        const closeBtn = document.querySelector('.btn-close');
-        const payButtons = document.querySelectorAll('[data-record-id]');
-        const paymentMethodSelect = document.getElementById('paymentMethod');
-        const paymentQrCode = document.getElementById('paymentQrCode');
-        const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
-
-        console.log('Elements found:');
-        console.log('paymentModal:', paymentModal);
-        console.log('cancelBtn:', cancelBtn);
-        console.log('closeBtn:', closeBtn);
-        console.log('payButtons:', payButtons.length);
-        console.log('paymentMethodSelect:', paymentMethodSelect);
-        console.log('paymentQrCode:', paymentQrCode);
-        console.log('confirmPaymentBtn:', confirmPaymentBtn);
-
-        // 创建模态框实例
-        let modalInstance = null;
-        try {
-            modalInstance = new bootstrap.Modal(paymentModal, {
-                backdrop: 'static',
-                keyboard: true
-            });
-            console.log('Modal instance created successfully');
-        } catch (error) {
-            console.error('Error creating modal instance:', error);
-            return;
-        }
-
-        // 为支付按钮添加点击事件
-        payButtons.forEach(button => {
-            button.addEventListener('click', function () {
-                const recordId = this.getAttribute('data-record-id');
-                console.log('Pay button clicked for record:', recordId);
-
-                // 设置表单数据
-                const form = document.getElementById('paymentForm');
-                form.action = `/finance/records/${recordId}/pay/`;
-                document.getElementById('recordId').value = recordId;
-
-                // 获取并设置费用明细
-                const row = this.closest('tr');
-                if (row) {
-                    const contract = row.cells[1].textContent.trim();
-                    const feeType = row.cells[2].textContent.trim();
-                    const amount = row.cells[3].textContent.trim();
-                    // 修复账单周期显示，使用textContent避免乱码
-                    const billingPeriod = row.cells[4].textContent.trim();
-
-                    console.log('Fee details:', { contract, feeType, amount, billingPeriod });
-
-                    document.getElementById('detailContract').textContent = contract;
-                    document.getElementById('detailFeeType').textContent = feeType;
-                    document.getElementById('detailAmount').textContent = amount;
-                    document.getElementById('detailBillingPeriod').textContent = billingPeriod;
-                }
-
-                // 显示模态框
-                console.log('Showing modal...');
-                modalInstance.show();
-            });
-        });
-
-        // 为取消按钮添加点击事件
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', function () {
-                console.log('Cancel button clicked');
-                if (modalInstance) {
-                    console.log('Closing modal...');
-                    modalInstance.hide();
-                }
-            });
-        }
-
-        // 为关闭按钮添加点击事件
-        if (closeBtn) {
-            closeBtn.addEventListener('click', function () {
-                console.log('Close button clicked');
-                if (modalInstance) {
-                    console.log('Closing modal...');
-                    modalInstance.hide();
-                }
-            });
-        }
-
-        // 为缴费方式选择添加事件
-        if (paymentMethodSelect) {
-            paymentMethodSelect.addEventListener('change', function () {
-                const method = this.value;
-                console.log('Payment method changed to:', method);
-
-                if (method === 'WECHAT' || method === 'ALIPAY') {
-                    paymentQrCode.style.display = 'block';
-                    const amount = document.getElementById('detailAmount').textContent;
-                    document.getElementById('paymentAmountText').textContent = `请扫描二维码支付 ${amount}`;
-                    document.getElementById('qrcodeContainer').innerHTML = `<div style="width: 180px; height: 180px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; font-size: 12px; text-align: center;">${method === 'WECHAT' ? '微信支付' : '支付宝'}<br>二维码<br>模拟显示</div>`;
-                } else {
-                    paymentQrCode.style.display = 'none';
-                }
-            });
-        }
-
-        // 为确认缴费按钮添加点击事件
-        if (confirmPaymentBtn) {
-            confirmPaymentBtn.addEventListener('click', function () {
-                const paymentMethod = document.getElementById('paymentMethod').value;
-                if (!paymentMethod) {
-                    alert('请选择缴费方式');
-                    return;
-                }
-                console.log('Confirming payment with method:', paymentMethod);
-                document.getElementById('paymentForm').submit();
-            });
-        }
+        paymentMethodText.textContent = methodNames[paymentMethod] || '支付二维码';
+        qrDiv.classList.remove('hidden');
+        qrDiv.classList.add('show');
     });
+    {% endif %}
+    {% endfor %}
 </script>
 {% endblock %}

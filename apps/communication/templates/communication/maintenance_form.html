@@ -1,10 +1,17 @@
 {% extends 'base.html' %}
 
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">{% if object %}编辑维修请求{% else %}提交维修请求{% endif %}</h1>
-    
-    <div class="card">
+<div class="container page-shell">
+{% if object %}
+    {% include 'partials/page_header.html' with title="编辑维修请求" subtitle="更新维修问题信息" %}
+{% else %}
+    {% include 'partials/page_header.html' with title="提交维修请求" subtitle="填写维修问题信息" %}
+{% endif %}
+<div class="card shadow-sm section-card">
         <div class="card-body">
             <form method="post">
                 {% csrf_token %}

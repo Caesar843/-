@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from apps.store.models import Contract
+from apps.tenants.managers import TenantManager
 
 
 class FinanceRecord(models.Model):
@@ -37,6 +38,12 @@ class FinanceRecord(models.Model):
         CASH = 'CASH', _('现金')
 
     # 外键关联：使用 PROTECT 防止误删包含账单的合同
+    tenant = models.ForeignKey(
+        'tenants.Tenant',
+        on_delete=models.PROTECT,
+        related_name='finance_records',
+        verbose_name=_("租户")
+    )
     contract = models.ForeignKey(
         Contract,
         on_delete=models.PROTECT,
@@ -113,6 +120,8 @@ class FinanceRecord(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("创建时间"))
     updated_at = models.DateTimeField(auto_now=True, verbose_name=_("更新时间"))
 
+    objects = TenantManager()
+
     @property
     def due_date(self):
         """Compatibility alias for legacy code that expects a due_date field."""
@@ -122,6 +131,10 @@ class FinanceRecord(models.Model):
         verbose_name = _("财务记录")
         verbose_name_plural = verbose_name
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=["tenant", "status"]),
+            models.Index(fields=["tenant", "billing_period_end"]),
+        ]
         constraints = [
             # 数据库级数据完整性约束：账单周期结束日期必须晚于开始日期
             models.CheckConstraint(
@@ -134,3 +147,8 @@ class FinanceRecord(models.Model):
 
     def __str__(self):
         return f"{self.contract} - {self.get_fee_type_display()} - {self.get_status_display()} - ¥{self.amount}"
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id and self.contract_id:
+            self.tenant = self.contract.tenant
+        super().save(*args, **kwargs)

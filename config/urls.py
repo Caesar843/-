@@ -22,6 +22,9 @@ urlpatterns = [
     # Health Check (Root Level)
     # -------------------------------------------------------------------------
     path('health/', HealthCheckView.as_view(), name='health-root'),
+
+    # Prometheus metrics
+    path('metrics/', include('django_prometheus.urls')),
     
     # -------------------------------------------------------------------------
     # Infrastructure & Administration

@@ -1,12 +1,23 @@
-from django.db import transaction
-from django.utils import timezone
+import logging
+
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import List, Optional
-from apps.store.models import Contract
-from apps.finance.models import FinanceRecord
+
+from django.conf import settings
+from django.db import IntegrityError, transaction
+from django.utils import timezone
+
+from apps.data_governance.models import IdempotencyKey
+from apps.data_governance.utils import hash_payload
 from apps.finance.dtos import FinanceGenerateDTO, FinancePayDTO, FinanceRecordCreateDTO
+from apps.finance.models import FinanceRecord
+from apps.audit.services import log_audit_action
+from apps.audit.utils import serialize_instance
 from apps.core.exceptions import BusinessValidationError, StateConflictException, ResourceNotFoundException
+from apps.store.models import Contract
+
+logger = logging.getLogger(__name__)
 
 
 class FinanceService:
@@ -14,6 +25,20 @@ class FinanceService:
     财务服务类
     提供财务记录的生成、支付等核心业务逻辑
     """
+
+    FINANCE_AUDIT_FIELDS = [
+        "id",
+        "contract_id",
+        "amount",
+        "fee_type",
+        "billing_period_start",
+        "billing_period_end",
+        "status",
+        "payment_method",
+        "transaction_id",
+        "paid_at",
+        "reminder_sent",
+    ]
 
     @staticmethod
     @transaction.atomic
@@ -66,6 +91,14 @@ class FinanceService:
                 billing_period_start=current_date,
                 billing_period_end=period_end,
                 status=FinanceRecord.Status.UNPAID
+            )
+            after_data = serialize_instance(rent_record, FinanceService.FINANCE_AUDIT_FIELDS)
+            log_audit_action(
+                action="generate_finance_record",
+                module="finance",
+                instance=rent_record,
+                before_data=None,
+                after_data=after_data,
             )
             generated_records.append(rent_record)
 
@@ -127,11 +160,23 @@ class FinanceService:
             status=FinanceRecord.Status.UNPAID
         )
 
+        after_data = serialize_instance(record, FinanceService.FINANCE_AUDIT_FIELDS)
+        log_audit_action(
+            action="create_finance_record",
+            module="finance",
+            instance=record,
+            actor_id=operator_id,
+            before_data=None,
+            after_data=after_data,
+        )
+
         return record
 
     @staticmethod
     @transaction.atomic
-    def mark_as_paid(dto: FinancePayDTO, operator_id: int) -> FinanceRecord:
+    def mark_as_paid(
+        dto: FinancePayDTO, operator_id: int, idempotency_key: Optional[str] = None
+    ) -> FinanceRecord:
         """
         标记财务记录为已支付
         状态流转：UNPAID → PAID
@@ -148,15 +193,62 @@ class FinanceService:
             ResourceNotFoundException: 财务记录不存在
             StateConflictException: 财务记录状态不是 UNPAID
         """
-        # 查找财务记录
+        payload = {
+            "record_id": dto.record_id,
+            "payment_method": dto.payment_method,
+            "transaction_id": dto.transaction_id,
+        }
+
+        if getattr(settings, "ENABLE_IDEMPOTENCY", False):
+            if not idempotency_key:
+                raise BusinessValidationError(
+                    "Idempotency key is required for payment operations",
+                    data={"field": "idempotency_key"},
+                )
+
+            normalized_key = idempotency_key.strip()
+            if not normalized_key:
+                raise BusinessValidationError(
+                    "Idempotency key must be a non-empty string",
+                    data={"field": "idempotency_key"},
+                )
+
+            request_hash = hash_payload(payload)
+            try:
+                IdempotencyKey.objects.create(
+                    key=normalized_key,
+                    scope="finance.mark_as_paid",
+                    request_hash=request_hash,
+                    object_type="FinanceRecordPayment",
+                    object_id=str(dto.record_id),
+                )
+            except IntegrityError:
+                logger.info(
+                    "Idempotent replay detected for FinanceRecord %s (key=%s)",
+                    dto.record_id,
+                    normalized_key,
+                )
+                try:
+                    existing_record = FinanceRecord.objects.get(id=dto.record_id)
+                except FinanceRecord.DoesNotExist:
+                    raise ResourceNotFoundException(
+                        f"Finance record with id {dto.record_id} not found"
+                    )
+
+                if existing_record.status == FinanceRecord.Status.PAID:
+                    return existing_record
+
+                raise BusinessValidationError(
+                    "Payment is already being processed, please wait",
+                    data={"field": "idempotency_key"},
+                )
+
         try:
-            record = FinanceRecord.objects.get(id=dto.record_id)
+            record = FinanceRecord.objects.select_for_update().get(id=dto.record_id)
         except FinanceRecord.DoesNotExist:
             raise ResourceNotFoundException(f"Finance record with id {dto.record_id} not found")
 
-        # 检查状态
         if record.status == FinanceRecord.Status.PAID:
-            # 幂等性处理：已经是 PAID 状态，直接返回
             return record
 
         if record.status != FinanceRecord.Status.UNPAID:
@@ -164,12 +256,22 @@ class FinanceService:
                 f"Finance record must be in UNPAID status to mark as paid, current status: {record.status}"
             )
 
-        # 更新状态和支付信息
+        before_data = serialize_instance(record, FinanceService.FINANCE_AUDIT_FIELDS)
         record.status = FinanceRecord.Status.PAID
         record.payment_method = dto.payment_method
         record.transaction_id = dto.transaction_id
         record.paid_at = timezone.now()
         record.save(update_fields=['status', 'payment_method', 'transaction_id', 'paid_at', 'updated_at'])
+
+        after_data = serialize_instance(record, FinanceService.FINANCE_AUDIT_FIELDS)
+        log_audit_action(
+            action="mark_finance_paid",
+            module="finance",
+            instance=record,
+            actor_id=operator_id,
+            before_data=before_data,
+            after_data=after_data,
+        )
 
         return record
 

@@ -1,0 +1,55 @@
+groups:
+  - name: core-api-slo
+    rules:
+      - alert: HighErrorRateCoreAPI
+        expr: |
+          (
+            sum(rate(django_http_requests_total{status=~"5..",view=~"apps.core.views.LoginView|apps.store.views.ShopListView|apps.store.views.ContractListView|apps.finance.views.FinancePayView|apps.finance.views.FinanceListView"}[5m]))
+          )
+          /
+          clamp_min(
+            sum(rate(django_http_requests_total{view=~"apps.core.views.LoginView|apps.store.views.ShopListView|apps.store.views.ContractListView|apps.finance.views.FinancePayView|apps.finance.views.FinanceListView"}[5m])),
+            1
+          )
+          > 0.02
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Core API 5xx rate > 2%
+          description: 5xx ratio above 2% for core APIs over 5 minutes.
+
+      - alert: HighLatencyCoreAPI
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(
+              rate(django_http_requests_latency_seconds_bucket{view=~"apps.core.views.LoginView|apps.store.views.ShopListView|apps.store.views.ContractListView|apps.finance.views.FinancePayView|apps.finance.views.FinanceListView"}[5m])
+            ) by (le)
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Core API p95 latency > 1s
+          description: p95 latency above 1s for core APIs over 10 minutes.
+
+  - name: celery-slo
+    rules:
+      - alert: TaskFailureRate
+        expr: |
+          (
+            sum(rate(celery_task_total{status=~"FAILED|FAILURE"}[5m]))
+          )
+          /
+          clamp_min(
+            sum(rate(celery_task_total[5m])),
+            1
+          )
+          > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Celery task failure rate > 5%
+          description: Task failures above 5% over 10 minutes.

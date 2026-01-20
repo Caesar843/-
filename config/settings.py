@@ -15,18 +15,68 @@ import os
 import logging
 
 # ============================================
-# 环境变量配置（优先）
+# ??????????
 # ============================================
+from django.core.exceptions import ImproperlyConfigured
+# Note: Previously DEBUG/SECRET_KEY/ALLOWED_HOSTS were defined twice (config() then hardcoded).
+# This block enforces a single source of truth.
+
+def _parse_bool(value, default=False):
+    if value is None:
+        return default
+    return str(value).strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def _parse_hosts(value):
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple)):
+        return [str(item).strip() for item in value if str(item).strip()]
+    return [item.strip() for item in str(value).split(',') if item.strip()]
+
+
 try:
-    from decouple import config, Csv
-    DEBUG = config('DEBUG', default=True, cast=bool)
-    SECRET_KEY = config('SECRET_KEY', default='django-insecure-placeholder-secret-key')
-    ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,testserver', cast=Csv())
+    from decouple import config
+
+    def _env(name, default=None, cast=None):
+        if cast is None:
+            return config(name, default=default)
+        return config(name, default=default, cast=cast)
 except ImportError:
-    # 如果 decouple 未安装，使用默认值
-    DEBUG = True
-    SECRET_KEY = 'django-insecure-placeholder-secret-key'
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+    def _env(name, default=None, cast=None):
+        value = os.environ.get(name, default)
+        if cast is bool:
+            return _parse_bool(value, default=bool(default))
+        return value
+    config = _env
+
+# ENV / ENVIRONMENT ??????? ENV?
+ENV = _env('ENV', default=_env('ENVIRONMENT', default='development'))
+ENV = str(ENV).strip().lower()
+
+# DEBUG: ?? DJANGO_DEBUG -> DEBUG??????? False
+DEBUG = _env('DJANGO_DEBUG', default=_env('DEBUG', default=(ENV != 'production')), cast=bool)
+if ENV == 'production':
+    DEBUG = False
+
+# SECRET_KEY: ?? DJANGO_SECRET_KEY -> SECRET_KEY
+SECRET_KEY = _env('DJANGO_SECRET_KEY', default=_env('SECRET_KEY', default=None))
+if not SECRET_KEY:
+    if ENV == 'production' or not DEBUG:
+        raise ImproperlyConfigured(
+            'SECRET_KEY is required in production or when DEBUG is False.'
+        )
+    SECRET_KEY = 'django-insecure-development-placeholder'
+
+# ALLOWED_HOSTS: ?? DJANGO_ALLOWED_HOSTS -> ALLOWED_HOSTS
+ALLOWED_HOSTS_RAW = _env('DJANGO_ALLOWED_HOSTS', default=_env('ALLOWED_HOSTS', default=None))
+ALLOWED_HOSTS = _parse_hosts(ALLOWED_HOSTS_RAW)
+if not ALLOWED_HOSTS:
+    if ENV == 'production' or not DEBUG:
+        raise ImproperlyConfigured(
+            'ALLOWED_HOSTS is required in production or when DEBUG is False.'
+        )
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -47,6 +97,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Application definition
 
 INSTALLED_APPS = [
+    'django_prometheus',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -56,7 +107,9 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'drf_spectacular',
+    'apps.audit',
     'apps.core',
+    'apps.tenants',
     'apps.store',
     'apps.finance',
     'apps.dashboard',
@@ -67,18 +120,24 @@ INSTALLED_APPS = [
     'apps.user_management',
     'apps.backup',
     'apps.notification',
+    'apps.data_governance',
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.tenants.middleware.TenantMiddleware',
+    'apps.audit.middleware.AuditRequestMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'apps.core.middleware.ExceptionMiddleware',  # 添加异常处理中间件
+    'apps.core.middleware.MetricsAccessMiddleware',
+    'apps.core.middleware.ExceptionMiddleware',  # Exception handling
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -313,85 +372,58 @@ LOGGING = {
 os.makedirs(BASE_DIR / 'logs', exist_ok=True)
 
 # ============================================
-# 安全配置（生产环境优化）
+# Security settings (prod-safe, dev-friendly)
 # ============================================
 
-# 安全中间件配置
-if not DEBUG:
-    # HTTPS 相关
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    
-    # HSTS (HTTP Strict Transport Security)
-    SECURE_HSTS_SECONDS = 31536000  # 1 年
+# Optional toggles for local pre-prod testing (default off in DEBUG)
+ENABLE_SECURITY_HEADERS = _env('ENABLE_SECURITY_HEADERS', default=False, cast=bool)
+FORCE_HTTPS = _env('FORCE_HTTPS', default=False, cast=bool)
+
+# Session and CSRF defaults (safe for dev)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Strict'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_AGE = 3600
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Strict'
+CSRF_FAILURE_VIEW = 'apps.core.views.csrf_failure'
+
+# CSRF trusted origins from env (comma-separated)
+CSRF_TRUSTED_ORIGINS_RAW = _env('CSRF_TRUSTED_ORIGINS', default=None)
+CSRF_TRUSTED_ORIGINS = _parse_hosts(CSRF_TRUSTED_ORIGINS_RAW)
+if not CSRF_TRUSTED_ORIGINS and DEBUG:
+    CSRF_TRUSTED_ORIGINS = ['http://localhost:3000', 'http://localhost:8080', 'http://localhost:5173']
+if not CSRF_TRUSTED_ORIGINS and (ENV == 'production' or not DEBUG):
+    raise ImproperlyConfigured(
+        'CSRF_TRUSTED_ORIGINS is required in production or when DEBUG is False.'
+    )
+
+# Production-only security (or opt-in for debug testing)
+if not DEBUG or ENABLE_SECURITY_HEADERS or FORCE_HTTPS:
+    SECURE_SSL_REDIRECT = True if (not DEBUG or FORCE_HTTPS) else False
+    SESSION_COOKIE_SECURE = True if (not DEBUG or FORCE_HTTPS) else False
+    CSRF_COOKIE_SECURE = True if (not DEBUG or FORCE_HTTPS) else False
+
+    SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    
-    # 内容安全策略
+
     SECURE_CONTENT_SECURITY_POLICY = {
         'DEFAULT_SRC': ("'self'",),
-        'SCRIPT_SRC': ("'self'", "'unsafe-inline'"),  # 开发时可能需要 unsafe-inline，生产应移除
+        'SCRIPT_SRC': ("'self'", "'unsafe-inline'"),
         'STYLE_SRC': ("'self'", "'unsafe-inline'"),
-        'IMG_SRC': ("'self'", "data:", "https:"),
-        'FONT_SRC': ("'self'", "data:"),
+        'IMG_SRC': ("'self'", 'data:', 'https:'),
+        'FONT_SRC': ("'self'", 'data:'),
         'CONNECT_SRC': ("'self'",),
         'FRAME_ANCESTORS': ("'none'",),
     }
-    
-    # X-Frame-Options: DENY 防止 clickjacking 攻击
+
     X_FRAME_OPTIONS = 'DENY'
-    
-    # 浏览器 XSS 防护
     SECURE_BROWSER_XSS_FILTER = True
-    
-    # 防止内容类型嗅探
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# Session 安全配置
-SESSION_COOKIE_HTTPONLY = True  # 防止 JavaScript 访问 session cookie
-SESSION_COOKIE_SAMESITE = 'Strict'  # 防止 CSRF 攻击
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # 生产环境可能需要
-SESSION_COOKIE_AGE = 3600  # 1 小时（开发时），生产可改为 86400（24小时）
-
-# CSRF 保护
-CSRF_COOKIE_HTTPONLY = True
-CSRF_COOKIE_SAMESITE = 'Strict'
-CSRF_FAILURE_VIEW = 'apps.core.views.csrf_failure'  # 自定义 CSRF 失败视图
-
-# 密码验证政策
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': {
-            'min_length': 8,  # 最少 8 个字符
-        }
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
-
-# 重定向配置（防止 Open Redirect 攻击）
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000',
-    'http://localhost:8080',
-    'http://localhost:5173',
-    'https://yourdomain.com',
-]
-
-# 安全中间件
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # 如果使用反向代理
-
-# 防止缓存敏感数据
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-
+# Reverse proxy header (keep single definition)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # ============================================
 # 管理员和用户界面安全
 # ============================================
@@ -474,3 +506,19 @@ if SENTRY_ENABLED:
     logging.getLogger(__name__).info(
         f'Sentry 已初始化，DSN: {SENTRY_DSN[:50]}..., 环境: {config("ENVIRONMENT", default="production")}'
     )
+
+# ============================================
+# Observability settings
+# ============================================
+METRICS_ALLOW_ALL = _env('METRICS_ALLOW_ALL', default=DEBUG, cast=bool)
+METRICS_ALLOWED_IPS_RAW = _env('METRICS_ALLOWED_IPS', default=None)
+METRICS_ALLOWED_IPS = _parse_hosts(METRICS_ALLOWED_IPS_RAW)
+METRICS_TOKEN = _env('METRICS_TOKEN', default=None)
+
+# ============================================
+# Data governance feature flags
+# ============================================
+ENABLE_DATA_QUALITY_CHECK = _env('ENABLE_DATA_QUALITY_CHECK', default=False, cast=bool)
+ENABLE_IDEMPOTENCY = _env('ENABLE_IDEMPOTENCY', default=False, cast=bool)
+ENABLE_JOB_LOCK = _env('ENABLE_JOB_LOCK', default=False, cast=bool)
+ENABLE_OFFLINE_AGG = _env('ENABLE_OFFLINE_AGG', default=False, cast=bool)
