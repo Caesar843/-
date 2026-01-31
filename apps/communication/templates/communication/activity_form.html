@@ -2,7 +2,70 @@
 
 
 {% block extra_css %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
 {% include 'partials/modern_theme.html' %}
+<style>
+    .communication-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .communication-form p {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .communication-form label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--ops-muted);
+        font-weight: 600;
+    }
+
+    .communication-form input,
+    .communication-form select,
+    .communication-form textarea {
+        border-radius: var(--ops-radius-md);
+        border: 1px solid var(--ops-border);
+        padding: 10px 12px;
+        font-size: 14px;
+        background: var(--input-bg);
+        color: var(--input-text);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .communication-form input:focus,
+    .communication-form select:focus,
+    .communication-form textarea:focus {
+        border-color: var(--input-focus);
+        box-shadow: 0 0 0 0.2rem var(--focus-ring);
+        outline: none;
+    }
+
+    .communication-form textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .communication-form .errorlist {
+        margin: 4px 0 0;
+        padding: 0;
+        list-style: none;
+        color: var(--danger);
+        font-size: 12px;
+    }
+
+    .communication-form .helptext,
+    .communication-form .form-text {
+        display: none;
+    }
+</style>
 {% endblock %}
 {% block content %}
 <div class="container page-shell">
@@ -11,18 +74,18 @@
 {% else %}
     {% include 'partials/page_header.html' with title="提交活动申请" subtitle="填写活动信息与时间" %}
 {% endif %}
-<div class="card shadow-sm section-card">
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
+    <div class="ui-card ui-section">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="communication-form">
                 {{ form.as_p }}
-                
-                <button type="submit" class="btn btn-primary">
-                    {% if object %}更新{% else %}提交{% endif %}
-                </button>
-                <a href="{% url 'communication:activity_list' %}" class="btn btn-secondary">取消</a>
-            </form>
-        </div>
+            </div>
+            
+            <button type="submit" class="ui-btn ui-btn-primary">
+                {% if object %}更新{% else %}提交{% endif %}
+            </button>
+            <a href="{% url 'communication:activity_list' %}" class="ui-btn ui-btn-outline">取消</a>
+        </form>
     </div>
 </div>
 {% endblock %}

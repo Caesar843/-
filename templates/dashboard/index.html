@@ -3,17 +3,20 @@
 {% block title %}&#x6570;&#x636E;&#x6982;&#x89C8; - {{ block.super }}{% endblock %}
 
 {% block extra_css %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
 <style>
     :root {
-        --dash-primary: #3B82F6;
-        --dash-secondary: #10B981;
-        --dash-accent: #F59E0B;
-        --dash-bg: #F3F4F6;
-        --dash-surface: #FFFFFF;
-        --dash-text: #111827;
-        --dash-muted: #6B7280;
-        --dash-border: #E5E7EB;
-        --dash-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        --dash-primary: var(--primary);
+        --dash-secondary: var(--success);
+        --dash-accent: var(--warning);
+        --dash-bg: var(--bg);
+        --dash-surface: var(--surface);
+        --dash-text: var(--text);
+        --dash-muted: var(--text-muted);
+        --dash-border: var(--border);
+        --dash-shadow: var(--shadow);
     }
 
     .dashboard-wrap {
@@ -91,13 +94,13 @@
         justify-content: center;
         font-size: 18px;
         color: var(--dash-primary);
-        background: rgba(59, 130, 246, 0.12);
+        background: var(--surface-2);
     }
 
     .dashboard-card-meta {
         margin-top: 14px;
         font-size: 13px;
-        color: #16A34A;
+        color: var(--success);
         display: flex;
         align-items: center;
         gap: 6px;
@@ -127,8 +130,8 @@
     .dashboard-chart-placeholder {
         height: 320px;
         border-radius: 12px;
-        border: 2px dashed #CBD5F5;
-        background: #F8FAFC;
+        border: 2px dashed var(--dash-border);
+        background: var(--surface-2);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -138,10 +141,15 @@
         gap: 6px;
     }
 
+    .dashboard-chart-hint {
+        font-size: 12px;
+        color: var(--dash-muted);
+    }
+
     .dashboard-table-placeholder {
         border-radius: 12px;
-        border: 1px solid #DBEAFE;
-        background: #EFF6FF;
+        border: 1px solid var(--dash-border);
+        background: var(--surface-2);
         padding: 28px;
         text-align: center;
         color: var(--dash-muted);
@@ -157,25 +165,29 @@
         border-radius: 999px;
         padding: 6px 16px;
         font-size: 13px;
-        border: none;
-        background: #DBEAFE;
-        color: #1D4ED8;
+        border: 1px solid var(--dash-border);
+        background: var(--surface-2);
+        color: var(--dash-text);
         font-weight: 600;
         cursor: pointer;
     }
 
     .dashboard-pill.secondary {
-        background: #F3F4F6;
         color: var(--dash-muted);
     }
 
     .dashboard-pill.is-active {
-        background: #1D4ED8;
-        color: #FFFFFF;
+        background: var(--dash-primary);
+        color: var(--text-inverse);
     }
 
     .dashboard-actions a {
         text-decoration: none;
+    }
+
+    .dashboard-actions .ui-btn {
+        min-height: 36px;
+        padding: 8px 16px;
     }
 
     @media (max-width: 768px) {
@@ -200,7 +212,7 @@
     </div>
 
     <div class="dashboard-grid mb-4">
-        <div class="dashboard-card" style="border-top-color: #3B82F6;">
+        <div class="dashboard-card" style="border-top-color: var(--primary);">
             <div class="dashboard-card-header">
                 <div>
                     <div class="dashboard-card-label">&#x95E8;&#x5E97;&#x603B;&#x6570;</div>
@@ -211,48 +223,48 @@
             <div class="dashboard-card-meta">&#x8FD0;&#x884C;&#x7A33;&#x5B9A;</div>
         </div>
 
-        <div class="dashboard-card" style="border-top-color: #9CA3AF;">
+        <div class="dashboard-card" style="border-top-color: var(--border);">
             <div class="dashboard-card-header">
                 <div>
                     <div class="dashboard-card-label">&#x5408;&#x540C;&#x603B;&#x6570;</div>
                     <div class="dashboard-card-value">{{ total_contracts|default:"0" }}</div>
                 </div>
-                <div class="dashboard-card-icon" style="background: #F3F4F6; color: #6B7280;">C</div>
+                <div class="dashboard-card-icon" style="background: var(--surface-2); color: var(--text-muted);">C</div>
             </div>
             <div class="dashboard-card-meta dashboard-card-muted">&#x6682;&#x65E0;&#x6570;&#x636E;</div>
         </div>
 
-        <div class="dashboard-card" style="border-top-color: #10B981;">
+        <div class="dashboard-card" style="border-top-color: var(--success);">
             <div class="dashboard-card-header">
                 <div>
                     <div class="dashboard-card-label">&#x751F;&#x6548;&#x5408;&#x540C;</div>
                     <div class="dashboard-card-value">{{ active_contracts|default:"0" }}</div>
                 </div>
-                <div class="dashboard-card-icon" style="background: rgba(16, 185, 129, 0.15); color: #059669;">A</div>
+                <div class="dashboard-card-icon" style="background: var(--surface-2); color: var(--success);">A</div>
             </div>
             <div class="dashboard-card-meta dashboard-card-muted">&#x6682;&#x65E0;&#x6D3B;&#x8DC3;&#x6570;&#x636E;</div>
         </div>
 
-        <div class="dashboard-card" style="border-top-color: #06B6D4;">
+        <div class="dashboard-card" style="border-top-color: var(--info);">
             <div class="dashboard-card-header">
                 <div>
                     <div class="dashboard-card-label">&#x5DF2;&#x6536;&#x91D1;&#x989D;</div>
                     <div class="dashboard-card-value">&#xA5;{{ paid_amount|default:"0.00"|floatformat:2 }}</div>
                 </div>
-                <div class="dashboard-card-icon" style="background: rgba(6, 182, 212, 0.15); color: #0891B2;">P</div>
+                <div class="dashboard-card-icon" style="background: var(--surface-2); color: var(--info);">P</div>
             </div>
-            <div class="dashboard-card-meta" style="color: #0891B2;">&#x672C;&#x6708;&#x7EDF;&#x8BA1;</div>
+            <div class="dashboard-card-meta" style="color: var(--info);">&#x672C;&#x6708;&#x7EDF;&#x8BA1;</div>
         </div>
 
-        <div class="dashboard-card" style="border-top-color: #F59E0B;">
+        <div class="dashboard-card" style="border-top-color: var(--warning);">
             <div class="dashboard-card-header">
                 <div>
                     <div class="dashboard-card-label">&#x5F85;&#x6536;&#x91D1;&#x989D;</div>
                     <div class="dashboard-card-value">&#xA5;{{ unpaid_amount|default:"0.00"|floatformat:2 }}</div>
                 </div>
-                <div class="dashboard-card-icon" style="background: rgba(245, 158, 11, 0.18); color: #D97706;">U</div>
+                <div class="dashboard-card-icon" style="background: var(--surface-2); color: var(--warning);">U</div>
             </div>
-            <div class="dashboard-card-meta" style="color: #D97706;">&#x5F85;&#x5904;&#x7406;&#x4E8B;&#x9879;</div>
+            <div class="dashboard-card-meta" style="color: var(--warning);">&#x5F85;&#x5904;&#x7406;&#x4E8B;&#x9879;</div>
         </div>
     </div>
 
@@ -267,7 +279,7 @@
         </div>
         <div class="dashboard-chart-placeholder mt-3">
             <div>&#x4EA4;&#x4E92;&#x5F0F;&#x8D22;&#x52A1;&#x6570;&#x636E;&#x56FE;&#x8868;&#x533A;&#x57DF;</div>
-            <div class="dashboard-chart-hint" style="font-size: 12px; color: #94A3B8;">&#x8BF7;&#x9009;&#x62E9;&#x7EDF;&#x8BA1;&#x5468;&#x671F;&#x4EE5;&#x67E5;&#x770B;&#x8BE6;&#x7EC6;&#x5206;&#x6790;&#x6570;&#x636E;</div>
+            <div class="dashboard-chart-hint">&#x8BF7;&#x9009;&#x62E9;&#x7EDF;&#x8BA1;&#x5468;&#x671F;&#x4EE5;&#x67E5;&#x770B;&#x8BE6;&#x7EC6;&#x5206;&#x6790;&#x6570;&#x636E;</div>
         </div>
     </div>
 
@@ -278,9 +290,9 @@
                 <div class="text-muted" style="font-size: 14px;">&#x7BA1;&#x7406;&#x5E76;&#x8FFD;&#x8E2A;&#x6240;&#x6709;&#x4EA4;&#x6613;&#x5386;&#x53F2;</div>
             </div>
             <div class="dashboard-actions">
-                <a class="btn btn-primary" href="{% url 'finance:finance_create' %}">&#x521B;&#x5EFA;&#x8D22;&#x52A1;&#x8BB0;&#x5F55;</a>
-                <a class="btn btn-warning" href="{% url 'finance:finance_reminders' %}">&#x50AC;&#x6B3E;&#x63D0;&#x9192;</a>
-                <a class="btn btn-info" href="{% url 'finance:finance_history' %}">&#x4ED8;&#x6B3E;&#x5386;&#x53F2;</a>
+                <a class="ui-btn ui-btn-primary" href="{% url 'finance:finance_create' %}">&#x521B;&#x5EFA;&#x8D22;&#x52A1;&#x8BB0;&#x5F55;</a>
+                <a class="ui-btn ui-btn-warning" href="{% url 'finance:finance_reminders' %}">&#x50AC;&#x6B3E;&#x63D0;&#x9192;</a>
+                <a class="ui-btn ui-btn-info" href="{% url 'finance:finance_history' %}">&#x4ED8;&#x6B3E;&#x5386;&#x53F2;</a>
             </div>
         </div>
         <div class="dashboard-table-placeholder">

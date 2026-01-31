@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="container page-shell">
+    {% include 'partials/page_header.html' with title="申请处理" subtitle="查看申请详情并更新状态" %}
+    <div class="card shadow-sm section-card mb-4">
+        <div class="card-header">
+            <h2>{{ request_obj.title }}</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>店铺：</strong>{{ request_obj.shop.name }}</p>
+                    <p><strong>申请人：</strong>{{ request_obj.created_by.username|default:"-" }}</p>
+                    <p><strong>类型：</strong>
+                        {% if kind == "maintenance" %}
+                        {{ request_obj.get_request_type_display }}
+                        {% else %}
+                        {{ request_obj.get_activity_type_display }}
+                        {% endif %}
+                    </p>
+                    <p><strong>状态：</strong>{{ request_obj.get_status_display }}</p>
+                    <p><strong>创建时间：</strong>{{ request_obj.created_at|date:"Y-m-d H:i" }}</p>
+                    {% if request_obj.attachment %}
+                    <p><strong>附件：</strong><a href="{{ request_obj.attachment.url }}">查看附件</a></p>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <p><strong>描述：</strong></p>
+                    <p>{{ request_obj.description }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm section-card mb-4">
+        <div class="card-header">
+            <h3>处理操作</h3>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">状态</label>
+                        <select class="form-select ui-input" name="status">
+                            {% if kind == "maintenance" %}
+                            <option value="PENDING" {% if request_obj.status == "PENDING" %}selected{% endif %}>待处理</option>
+                            <option value="ASSIGNED" {% if request_obj.status == "ASSIGNED" %}selected{% endif %}>已指派</option>
+                            <option value="IN_PROGRESS" {% if request_obj.status == "IN_PROGRESS" %}selected{% endif %}>处理中</option>
+                            <option value="COMPLETED" {% if request_obj.status == "COMPLETED" %}selected{% endif %}>已完成</option>
+                            <option value="CANCELLED" {% if request_obj.status == "CANCELLED" %}selected{% endif %}>已取消</option>
+                            {% else %}
+                            <option value="PENDING" {% if request_obj.status == "PENDING" %}selected{% endif %}>待审核</option>
+                            <option value="APPROVED" {% if request_obj.status == "APPROVED" %}selected{% endif %}>已批准</option>
+                            <option value="REJECTED" {% if request_obj.status == "REJECTED" %}selected{% endif %}>已拒绝</option>
+                            <option value="CANCELLED" {% if request_obj.status == "CANCELLED" %}selected{% endif %}>已取消</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    {% if kind == "maintenance" %}
+                    <div class="col-md-6">
+                        <label class="form-label">指派处理人</label>
+                        <input type="text" class="form-control ui-input" name="assigned_to" value="{{ request_obj.assigned_to|default:'' }}">
+                    </div>
+                    {% endif %}
+                    <div class="col-12">
+                        <label class="form-label">处理意见</label>
+                        <textarea class="form-control ui-input" name="notes" rows="4">{% if kind == "maintenance" %}{{ request_obj.handling_notes }}{% else %}{{ request_obj.review_comments }}{% endif %}</textarea>
+                    </div>
+                </div>
+                <div class="mt-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">更新</button>
+                    <a href="{% url 'communication:admin_request_list' %}" class="btn btn-secondary">返回列表</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>流程日志</h3>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for log in logs %}
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>{{ log.get_action_display }}</strong> - {{ log.description }}
+                        </div>
+                        <div class="text-muted">
+                            {{ log.created_at|date:"Y-m-d H:i" }}
+                        </div>
+                    </div>
+                    <div class="text-sm text-muted">
+                        操作人：{{ log.operator }}
+                    </div>
+                </li>
+                {% empty %}
+                <li class="list-group-item">暂无日志记录</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

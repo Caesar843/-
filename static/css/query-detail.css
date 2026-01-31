@@ -1,0 +1,105 @@
+.query-detail {
+    font-family: "Fira Sans", "Microsoft YaHei", sans-serif;
+    color: var(--ops-text);
+}
+
+.query-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: var(--ops-gap-lg);
+}
+
+.query-detail-bar {
+    width: 10px;
+    height: 36px;
+    background: var(--ops-primary);
+    border-radius: 4px;
+}
+
+.query-detail-title {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.query-detail-subtitle {
+    color: var(--ops-muted);
+    font-size: 14px;
+}
+
+.query-detail-card {
+    border-radius: var(--ops-radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--ops-shadow);
+}
+
+.query-detail-section {
+    margin-bottom: var(--ops-gap-lg);
+}
+
+.query-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--ops-gap-md);
+}
+
+.query-detail-stat {
+    border-radius: var(--ops-radius-md);
+    border: 1px solid var(--border);
+    padding: 16px;
+    background: var(--card-bg);
+    color: var(--card-text);
+    text-align: center;
+}
+
+.query-detail-stat h6 {
+    font-size: 13px;
+    color: var(--card-muted);
+    margin-bottom: 6px;
+}
+
+.query-detail-stat .value {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--card-text);
+}
+
+html[data-theme="dark"] .query-detail-stat {
+    color: var(--text-inverse);
+}
+
+html[data-theme="dark"] .query-detail-stat h6 {
+    color: var(--text-inverse-muted);
+}
+
+html[data-theme="dark"] .query-detail-stat .value {
+    color: var(--text-inverse);
+}
+
+.query-detail-table {
+    border-radius: var(--ops-radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.query-detail-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.query-detail-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+    .query-detail-title {
+        font-size: 22px;
+    }
+}

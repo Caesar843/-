@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+{% include 'partials/modern_theme.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="container page-shell">
+    {% include 'partials/page_header.html' with title="申请详情" subtitle="查看处理状态与管理员意见" %}
+    <div class="card shadow-sm section-card mb-4">
+        <div class="card-header">
+            <h2>{{ request_obj.title }}</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>店铺：</strong>{{ request_obj.shop.name }}</p>
+                    <p><strong>类型：</strong>
+                        {% if kind == "maintenance" %}
+                        {{ request_obj.get_request_type_display }}
+                        {% else %}
+                        {{ request_obj.get_activity_type_display }}
+                        {% endif %}
+                    </p>
+                    <p><strong>状态：</strong>{{ request_obj.get_status_display }}</p>
+                    <p><strong>创建时间：</strong>{{ request_obj.created_at|date:"Y-m-d H:i" }}</p>
+                    {% if request_obj.attachment %}
+                    <p><strong>附件：</strong><a href="{{ request_obj.attachment.url }}">查看附件</a></p>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <p><strong>描述：</strong></p>
+                    <p>{{ request_obj.description }}</p>
+                    {% if kind == "maintenance" %}
+                        {% if request_obj.handling_notes %}
+                        <p><strong>处理意见：</strong></p>
+                        <p>{{ request_obj.handling_notes }}</p>
+                        {% endif %}
+                        <p><strong>处理时间：</strong>{{ request_obj.handled_at|date:"Y-m-d H:i"|default:"-" }}</p>
+                    {% else %}
+                        {% if request_obj.review_comments %}
+                        <p><strong>审核意见：</strong></p>
+                        <p>{{ request_obj.review_comments }}</p>
+                        {% endif %}
+                        <p><strong>审核时间：</strong>{{ request_obj.reviewed_at|date:"Y-m-d H:i"|default:"-" }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'communication:request_list' %}" class="btn btn-secondary">返回列表</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>流程日志</h3>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for log in logs %}
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>{{ log.get_action_display }}</strong> - {{ log.description }}
+                        </div>
+                        <div class="text-muted">
+                            {{ log.created_at|date:"Y-m-d H:i" }}
+                        </div>
+                    </div>
+                    <div class="text-sm text-muted">
+                        操作人：{{ log.operator }}
+                    </div>
+                </li>
+                {% empty %}
+                <li class="list-group-item">暂无日志记录</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

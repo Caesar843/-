@@ -17,8 +17,8 @@
             <div class="page-subtitle">&#x5907;&#x4EFD;&#x60C5;&#x51B5;&#x6982;&#x89C8;&#x4E0E;&#x8FD0;&#x884C;&#x72B6;&#x6001;&#x7EDF;&#x8BA1;</div>
         </div>
         <div class="action-row">
-            <a class="btn btn-outline-secondary" href="{% url 'backup:backup_list' %}">&#x8FD4;&#x56DE;&#x5907;&#x4EFD;&#x5217;&#x8868;</a>
-            <a class="btn btn-primary" href="{% url 'backup:backup_create' %}">&#x521B;&#x5EFA;&#x5907;&#x4EFD;</a>
+            <a class="ui-btn ui-btn-outline" href="{% url 'backup:backup_list' %}">&#x8FD4;&#x56DE;&#x5907;&#x4EFD;&#x5217;&#x8868;</a>
+            <a class="ui-btn ui-btn-primary" href="{% url 'backup:backup_create' %}">&#x521B;&#x5EFA;&#x5907;&#x4EFD;</a>
         </div>
     </div>
 
@@ -30,19 +30,19 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stat-card" style="border-top-color: #10B981;">
+            <div class="stat-card" style="border-top-color: var(--success);">
                 <h5>&#x6210;&#x529F;</h5>
                 <div class="stat-value numeric">{{ stats.success }}</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stat-card" style="border-top-color: #EF4444;">
+            <div class="stat-card" style="border-top-color: var(--danger);">
                 <h5>&#x5931;&#x8D25;</h5>
                 <div class="stat-value numeric">{{ stats.failed }}</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stat-card" style="border-top-color: #F59E0B;">
+            <div class="stat-card" style="border-top-color: var(--warning);">
                 <h5>&#x8FD0;&#x884C;&#x4E2D;</h5>
                 <div class="stat-value numeric">{{ stats.running }}</div>
             </div>

@@ -1,0 +1,58 @@
+.ops-analysis {
+    font-family: "Fira Sans", "Microsoft YaHei", sans-serif;
+    color: var(--ops-text);
+}
+
+.ops-analysis-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: var(--ops-gap-lg);
+}
+
+.ops-analysis-bar {
+    width: 10px;
+    height: 36px;
+    background: var(--ops-primary);
+    border-radius: 4px;
+}
+
+.ops-analysis-title {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.ops-analysis-subtitle {
+    color: var(--ops-muted);
+    font-size: 14px;
+}
+
+.ops-analysis-section {
+    margin-bottom: var(--ops-gap-lg);
+}
+
+.ops-analysis-table {
+    border-radius: var(--ops-radius-md);
+    overflow: hidden;
+    border: 1px solid #eef2ff;
+}
+
+.ops-analysis-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--ops-gap-md);
+}
+
+.ops-analysis-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: var(--ops-gap-md);
+}
+
+@media (max-width: 768px) {
+    .ops-analysis-title {
+        font-size: 22px;
+    }
+}

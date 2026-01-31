@@ -4,7 +4,32 @@
 
 
 {% block extra_css %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
 {% include 'partials/modern_theme.html' %}
+<style>
+    .contract-form .date-wrap {
+        position: relative;
+    }
+
+    .contract-form .form-control.ui-input[type="date"] {
+        border-radius: var(--ops-radius-md);
+        border: 1.5px solid var(--ops-border);
+        background: var(--input-bg);
+        color: var(--input-text);
+        padding: 10px 12px;
+    }
+
+    .contract-form .form-control.ui-input[type="date"]:focus {
+        border-color: var(--input-focus);
+        box-shadow: 0 0 0 0.2rem var(--focus-ring);
+    }
+
+    .contract-form .date-wrap input[type="date"] {
+        padding-right: 36px;
+    }
+</style>
 {% endblock %}
 
 
@@ -16,10 +41,9 @@
     {% else %}
     {% include 'partials/page_header.html' with title="新建合同" subtitle="填写合同周期与费用信息" %}
     {% endif %}
-        <div class="card shadow-sm section-card">
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
+    <div class="ui-card ui-section contract-form">
+        <form method="post">
+            {% csrf_token %}
 
                 {% if form.errors %}
                 <div class="alert alert-danger mb-4">
@@ -43,14 +67,24 @@
                 </div>
                 <div class="form-group mb-3">
                     <label for="id_start_date" class="form-label">开始日期</label>
-                    {{ form.start_date }}
+                    <input type="date"
+                           class="form-control ui-input{% if form.start_date.errors %} is-invalid{% endif %}"
+                           id="{{ form.start_date.id_for_label }}"
+                           name="{{ form.start_date.html_name }}"
+                           value="{{ form.start_date.value|default_if_none:'' }}"
+                           {% if form.start_date.field.required %}required{% endif %}>
                     {% if form.start_date.errors %}
                     <div class="text-danger small">{{ form.start_date.errors.0 }}</div>
                     {% endif %}
                 </div>
                 <div class="form-group mb-3">
                     <label for="id_end_date" class="form-label">结束日期</label>
-                    {{ form.end_date }}
+                    <input type="date"
+                           class="form-control ui-input{% if form.end_date.errors %} is-invalid{% endif %}"
+                           id="{{ form.end_date.id_for_label }}"
+                           name="{{ form.end_date.html_name }}"
+                           value="{{ form.end_date.value|default_if_none:'' }}"
+                           {% if form.end_date.field.required %}required{% endif %}>
                     {% if form.end_date.errors %}
                     <div class="text-danger small">{{ form.end_date.errors.0 }}</div>
                     {% endif %}
@@ -77,11 +111,10 @@
                     {% endif %}
                 </div>
                 <div class="d-flex justify-content-end gap-2">
-                    <a href="{% url 'store:contract_list' %}" class="btn btn-secondary">取消</a>
-                    <button type="submit" class="btn btn-primary">保存</button>
+                    <a href="{% url 'store:contract_list' %}" class="ui-btn ui-btn-outline">取消</a>
+                    <button type="submit" class="ui-btn ui-btn-primary">保存</button>
                 </div>
             </form>
-        </div>
     </div>
 </div>
 {% endblock %}

@@ -1,84 +1,96 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}合同列表 - {{ block.super }}{% endblock %}
-
+{% block title %}&#x5408;&#x540C;&#x5217;&#x8868; - {{ block.super }}{% endblock %}
 
 {% block extra_css %}
-{% include 'partials/modern_theme.html' %}
+<link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
+<link rel="stylesheet" href="{% static 'css/store-management.css' %}">
 {% endblock %}
 
-
-
 {% block content %}
-<div class="container page-shell">
-    <div class="page-header">
-        <div>
-            <h1 class="page-title">合同管理</h1>
-            <div class="page-subtitle">合同状态与续签情况一览</div>
+<div class="container store-page">
+    <div class="store-header">
+        <div class="store-title-wrap">
+            <span class="store-title-bar"></span>
+            <div>
+                <div class="store-title">&#x5408;&#x540C;&#x7BA1;&#x7406;</div>
+                <div class="store-subtitle">&#x5408;&#x540C;&#x72B6;&#x6001;&#x4E0E;&#x7EED;&#x7B7E;&#x60C5;&#x51B5;&#x4E00;&#x89C8;</div>
+            </div>
         </div>
         {% if user.is_authenticated %}
-        <div class="action-row">
-            <a href="{% url 'store:contract_expiry' %}" class="btn btn-outline-secondary">合同到期提醒</a>
-            <a href="{% url 'store:contract_create' %}" class="btn btn-primary">+ 新建合同</a>
+        <div class="store-actions">
+            <a href="{% url 'store:contract_expiry' %}" class="ui-btn ui-btn-outline">&#x5408;&#x540C;&#x5230;&#x671F;&#x63D0;&#x9192;</a>
+            <a href="{% url 'store:contract_create' %}" class="ui-btn ui-btn-primary">&#x65B0;&#x5EFA;&#x5408;&#x540C;</a>
         </div>
         {% endif %}
     </div>
 
     {% if contracts %}
-    <div class="table-responsive table-card">
-        <table class="table table-striped table-hover align-middle">
-            <thead class="table-dark">
-                <tr>
-                    <th>店铺名称</th>
-                    <th>开始日期</th>
-                    <th>结束日期</th>
-                    <th>月租金 (元)</th>
-                    <th>状态</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for contract in contracts %}
-                <tr>
-                    <td>{{ contract.shop.name }}</td>
-                    <td>{{ contract.start_date }}</td>
-                    <td>{{ contract.end_date }}</td>
-                    <td class="numeric">{{ contract.monthly_rent }}</td>
-                    <td>
-                        {% if contract.status == 'ACTIVE' %}
-                        <span class="status-badge success">{{ contract.get_status_display }}</span>
-                        {% elif contract.status == 'DRAFT' %}
-                        <span class="status-badge warning">{{ contract.get_status_display }}</span>
-                        {% elif contract.status == 'TERMINATED' or contract.status == 'EXPIRED' %}
-                        <span class="status-badge danger">{{ contract.get_status_display }}</span>
-                        {% else %}
-                        <span class="status-badge neutral">{{ contract.get_status_display }}</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if user.is_authenticated %}
-                        <a href="{% url 'store:contract_detail' contract.pk %}" class="btn btn-sm btn-outline-primary">Details</a>
-                        {% if contract.status == 'DRAFT' %}
-                        <a href="{% url 'store:contract_activate' contract.pk %}" class="btn btn-sm btn-success">激活</a>
-                        {% elif contract.status == 'ACTIVE' %}
-                        <a href="{% url 'store:contract_terminate' contract.pk %}" class="btn btn-sm btn-danger">终止</a>
-                        <a href="{% url 'finance:finance_list' %}?contract_id={{ contract.pk }}"
-                            class="btn btn-sm btn-info ms-1">财务记录</a>
-                        {% elif contract.status in 'TERMINATED,EXPIRED' %}
-                        <a href="{% url 'store:contract_delete' contract.pk %}" class="btn btn-sm btn-secondary">删除</a>
-                        <a href="{% url 'finance:finance_list' %}?contract_id={{ contract.pk }}"
-                            class="btn btn-sm btn-info ms-1">财务记录</a>
-                        {% endif %}
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="ui-card ui-section store-table-card">
+        <div class="table-responsive">
+            <table class="ui-table">
+                <thead>
+                    <tr>
+                        <th>&#x5E97;&#x94FA;&#x540D;&#x79F0;</th>
+                        <th>&#x5F00;&#x59CB;&#x65E5;&#x671F;</th>
+                        <th>&#x7ED3;&#x675F;&#x65E5;&#x671F;</th>
+                        <th>&#x6708;&#x79DF;&#x91D1; (&#x5143;)</th>
+                        <th>&#x72B6;&#x6001;</th>
+                        <th>&#x64CD;&#x4F5C;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contract in contracts %}
+                    <tr>
+                        <td>{{ contract.shop.name }}</td>
+                        <td>{{ contract.start_date }}</td>
+                        <td>{{ contract.end_date }}</td>
+                        <td class="numeric">{{ contract.monthly_rent }}</td>
+                        <td>
+                            {% if contract.status == 'ACTIVE' %}
+                            <span class="status-badge success">{{ contract.get_status_display }}</span>
+                            {% elif contract.status == 'DRAFT' %}
+                            <span class="status-badge warning">{{ contract.get_status_display }}</span>
+                            {% elif contract.status == 'TERMINATED' or contract.status == 'EXPIRED' %}
+                            <span class="status-badge danger">{{ contract.get_status_display }}</span>
+                            {% else %}
+                            <span class="status-badge neutral">{{ contract.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_authenticated %}
+                            <a href="{% url 'store:contract_detail' contract.pk %}" class="ui-btn ui-btn-outline ui-btn-sm">详情</a>
+                            {% if contract.status == 'DRAFT' %}
+                            <form method="post" action="{% url 'store:contract_activate' contract.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="ui-btn ui-btn-success ui-btn-sm">&#x6FC0;&#x6D3B;</button>
+                            </form>
+                            {% elif contract.status == 'ACTIVE' %}
+                            <form method="post" action="{% url 'store:contract_terminate' contract.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="ui-btn ui-btn-warning ui-btn-sm">&#x7EC8;&#x6B62;</button>
+                            </form>
+                            {% endif %}
+                            <a href="{% url 'finance:finance_list' %}?contract_id={{ contract.pk }}" class="ui-btn ui-btn-info ui-btn-sm">&#x8D22;&#x52A1;&#x8BB0;&#x5F55;</a>
+                            {% if contract.status == 'TERMINATED' or contract.status == 'EXPIRED' %}
+                            <form method="post" action="{% url 'store:contract_delete' contract.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="ui-btn ui-btn-outline ui-btn-sm">&#x5220;&#x9664;</button>
+                            </form>
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     {% else %}
-    <div class="alert alert-info">
-        <strong>暂无合同</strong>，请点击上方按钮创建新合同。
+    <div class="ui-alert">
+        <strong>&#x6682;&#x65E0;&#x5408;&#x540C;</strong>&#xFF0C;&#x8BF7;&#x70B9;&#x51FB;&#x4E0A;&#x65B9;&#x6309;&#x94AE;&#x521B;&#x5EFA;&#x65B0;&#x5408;&#x540C;&#x3002;
     </div>
     {% endif %}
 </div>

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}申请绑定店铺 - 商场店铺智能运营管理系统{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 680px;">
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">申请绑定店铺</h4>
+        </div>
+        <div class="card-body">
+            {% if request_obj %}
+            <div class="alert alert-info">
+                当前状态：<strong>{{ request_obj.get_status_display }}</strong>
+            </div>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="{{ form.requested_shop_name.id_for_label }}" class="form-label">申请店铺名称</label>
+                    {{ form.requested_shop_name }}
+                </div>
+                <div class="mb-3">
+                    <label for="{{ form.contact_phone.id_for_label }}" class="form-label">联系电话</label>
+                    {{ form.contact_phone }}
+                </div>
+                <div class="mb-3">
+                    <label for="{{ form.note.id_for_label }}" class="form-label">备注</label>
+                    {{ form.note }}
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">提交申请</button>
+                    <a href="{% url 'dashboard:index' %}" class="btn btn-secondary">返回首页</a>
+                </div>
+            </form>
+        </div>
+        <div class="card-footer text-muted">
+            管理员审核后会将账号绑定到对应店铺。
+        </div>
+    </div>
+</div>
+{% endblock %}

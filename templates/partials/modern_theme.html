@@ -4,9 +4,9 @@
         --page-surface: var(--surface);
         --page-bg: var(--bg);
         --page-text: var(--text);
-        --page-muted: var(--muted);
+        --page-muted: var(--text-muted);
         --page-border: var(--border);
-        --page-shadow: var(--shadow-1);
+        --page-shadow: var(--shadow);
         --page-radius: var(--radius);
     }
 
@@ -77,7 +77,7 @@
     .stat-card .stat-value {
         font-size: 22px;
         font-weight: 700;
-        color: #1F2937;
+        color: var(--page-text);
     }
 
     .action-row {
@@ -107,7 +107,7 @@
     }
 
     .table tbody tr:hover {
-        background: #f1f5f9;
+        background: var(--table-row-hover);
     }
 
     .info-grid {
@@ -120,7 +120,7 @@
         padding: 12px 14px;
         border-radius: 12px;
         border: 1px solid var(--page-border);
-        background: #f8fafc;
+        background: var(--surface-2);
     }
 
     .info-label {
@@ -148,23 +148,23 @@
     }
 
     .status-badge.success {
-        background: #dcfce7;
-        color: #166534;
+        background: var(--surface-2);
+        color: var(--success);
     }
 
     .status-badge.warning {
-        background: #fef3c7;
-        color: #92400e;
+        background: var(--surface-2);
+        color: var(--warning);
     }
 
     .status-badge.danger {
-        background: #fee2e2;
-        color: #991b1b;
+        background: var(--surface-2);
+        color: var(--danger);
     }
 
     .status-badge.neutral {
-        background: #e2e8f0;
-        color: #334155;
+        background: var(--surface-2);
+        color: var(--page-text);
     }
 
     .btn-outline-secondary {
@@ -173,29 +173,75 @@
     }
 
     .btn-outline-secondary:hover {
-        background: #f8fafc;
+        background: var(--surface-2);
         border-color: var(--page-border);
         color: var(--page-text);
     }
 
     .btn-cta {
-        background: var(--cta);
-        border-color: var(--cta);
-        color: #ffffff;
+        background: var(--page-primary);
+        border-color: var(--page-primary);
+        color: var(--text-inverse);
     }
 
     .btn-cta:hover {
-        background: #ea580c;
-        border-color: #ea580c;
-        color: #ffffff;
+        background: var(--primary-hover);
+        border-color: var(--primary-hover);
+        color: var(--text-inverse);
     }
 
     .btn:focus-visible,
     .form-control:focus-visible,
     .form-select:focus-visible {
-        outline: 2px solid rgba(59, 130, 246, 0.6);
+        outline: 2px solid var(--focus-ring);
         outline-offset: 2px;
         box-shadow: none;
+    }
+
+    .date-wrap {
+        position: relative;
+    }
+
+    .date-wrap input[type="date"] {
+        padding-right: 32px;
+    }
+
+    .date-placeholder {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--page-muted);
+        font-style: italic;
+        pointer-events: none;
+    }
+
+    .date-wrap.has-value .date-placeholder,
+    .date-wrap input[type="date"]:focus + .date-placeholder {
+        opacity: 0;
+    }
+
+    .date-wrap:not(.has-value) input[type="date"] {
+        color: transparent;
+    }
+
+    .date-wrap:not(.has-value) input[type="date"]::-webkit-datetime-edit,
+    .date-wrap:not(.has-value) input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+    .date-wrap:not(.has-value) input[type="date"]::-webkit-datetime-edit-text,
+    .date-wrap:not(.has-value) input[type="date"]::-webkit-datetime-edit-month-field,
+    .date-wrap:not(.has-value) input[type="date"]::-webkit-datetime-edit-day-field,
+    .date-wrap:not(.has-value) input[type="date"]::-webkit-datetime-edit-year-field {
+        color: transparent;
+    }
+
+    .date-wrap.has-value input[type="date"],
+    .date-wrap.has-value input[type="date"]::-webkit-datetime-edit,
+    .date-wrap.has-value input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+    .date-wrap.has-value input[type="date"]::-webkit-datetime-edit-text,
+    .date-wrap.has-value input[type="date"]::-webkit-datetime-edit-month-field,
+    .date-wrap.has-value input[type="date"]::-webkit-datetime-edit-day-field,
+    .date-wrap.has-value input[type="date"]::-webkit-datetime-edit-year-field {
+        color: var(--page-text);
     }
 
     @media (max-width: 768px) {

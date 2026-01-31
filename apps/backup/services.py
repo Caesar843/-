@@ -1,4 +1,4 @@
-"""
+﻿"""
 数据备份和恢复服务模块
 
 [架构职责]
@@ -57,10 +57,11 @@ class BackupService:
     def __init__(self):
         """初始化备份服务"""
         # 确保备份目录存在
-        Path(self.BACKUP_DIR).mkdir(parents=True, exist_ok=True)
+        self.backup_dir = Path(self.BACKUP_DIR)
+        self.backup_dir.mkdir(parents=True, exist_ok=True)
     
-    def create_backup(self, data_types=None, backup_type='FULL', user=None, 
-                     description=''):
+    def create_backup(self, data_types=None, backup_type='FULL', user=None,
+                     description='', backup_name=None, backup_dir=None):
         """
         创建数据备份
         
@@ -79,8 +80,9 @@ class BackupService:
             data_types = ['SHOP', 'CONTRACT', 'OPERATION', 'FINANCE', 'LOG']
         
         # 生成备份文件名
+        self.backup_dir = self._resolve_backup_dir(backup_dir)
         timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
-        backup_name = f"backup_{backup_type.lower()}_{timestamp}"
+        backup_name = self._sanitize_backup_name(backup_name) or f"backup_{backup_type.lower()}_{timestamp}"
         
         try:
             # 创建备份记录
@@ -248,7 +250,7 @@ class BackupService:
         Returns:
             str: 压缩文件路径
         """
-        backup_path = os.path.join(self.BACKUP_DIR, f"{backup_name}.tar.gz")
+        backup_path = os.path.join(self.backup_dir, f"{backup_name}.tar.gz")
         
         # 使用tar.gz格式压缩
         shutil.make_archive(
@@ -273,6 +275,52 @@ class BackupService:
         """获取Django版本"""
         import django
         return django.get_version()
+
+    def _resolve_backup_dir(self, backup_dir):
+        """Resolve backup directory (server-side path)."""
+        allowed_dirs = getattr(settings, 'BACKUP_ALLOWED_DIRS', None)
+        if not allowed_dirs:
+            allowed_dirs = [self.BACKUP_DIR]
+
+        if not backup_dir:
+            path = Path(self.BACKUP_DIR)
+        else:
+            expanded = os.path.expanduser(backup_dir)
+            path = Path(expanded)
+            if not path.is_absolute():
+                path = Path(settings.BASE_DIR) / path
+
+        allowed_paths = []
+        for entry in allowed_dirs:
+            expanded = os.path.expanduser(str(entry))
+            base_path = Path(expanded)
+            if not base_path.is_absolute():
+                base_path = Path(settings.BASE_DIR) / base_path
+            allowed_paths.append(base_path)
+
+        if not self._is_allowed_path(path, allowed_paths):
+            raise BusinessValidationError('备份路径不在允许的目录范围内')
+
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def _sanitize_backup_name(self, backup_name):
+        """Avoid path traversal in backup file names."""
+        if not backup_name:
+            return None
+        return Path(str(backup_name)).name.strip() or None
+
+    @staticmethod
+    def _is_allowed_path(path, allowed_paths):
+        target = os.path.normcase(os.path.abspath(str(path)))
+        for base in allowed_paths:
+            base_str = os.path.normcase(os.path.abspath(str(base)))
+            try:
+                if os.path.commonpath([target, base_str]) == base_str:
+                    return True
+            except ValueError:
+                continue
+        return False
     
     def delete_old_backups(self, days=30):
         """

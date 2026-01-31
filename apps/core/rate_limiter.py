@@ -290,12 +290,33 @@ class RateLimiter:
         """初始化限流管理器"""
         self.config = self.DEFAULT_CONFIG.copy()
         self.strategies = {}
+        self.endpoint_strategies = {}
         self._initialize_strategies()
         self.stats = defaultdict(lambda: {
             'requests': 0,
             'denied': 0,
             'allowed': 0,
         })
+
+    def _get_endpoint_strategy(self, endpoint: str):
+        try:
+            from apps.core.rate_limit_config import RateLimitConfig
+        except Exception:
+            return self.strategies['endpoint']
+
+        limit = RateLimitConfig.get_endpoint_limit(endpoint)
+        if not limit:
+            return self.strategies['endpoint']
+
+        key = f"{endpoint}:{limit['rate']}:{limit['period']}"
+        strategy = self.endpoint_strategies.get(key)
+        if strategy:
+            return strategy
+
+        strategy_class = self.STRATEGIES.get(self.config['endpoint']['strategy'])
+        strategy = strategy_class(rate=limit['rate'], period=limit['period'])
+        self.endpoint_strategies[key] = strategy
+        return strategy
     
     def _initialize_strategies(self) -> None:
         """初始化所有限流策略"""
@@ -345,7 +366,8 @@ class RateLimiter:
         endpoint_allowed = True
         endpoint_info = {}
         if endpoint:
-            endpoint_allowed, endpoint_info = self.strategies['endpoint'].is_allowed(
+            endpoint_strategy = self._get_endpoint_strategy(endpoint)
+            endpoint_allowed, endpoint_info = endpoint_strategy.is_allowed(
                 f'endpoint:{endpoint}'
             )
         

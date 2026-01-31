@@ -8,6 +8,7 @@ from apps.backup.views import (
     BackupDeleteView,
     BackupVerifyView,
     BackupStatsView,
+    BackupDirectoryBrowseView,
 )
 
 """
@@ -28,6 +29,7 @@ urlpatterns = [
     
     # 备份创建和管理
     path('create/', BackupCreateView.as_view(), name='backup_create'),
+    path('dir-picker/', BackupDirectoryBrowseView.as_view(), name='backup_dir_picker'),
     path('<int:pk>/', BackupDetailView.as_view(), name='backup_detail'),
     path('<int:pk>/download/', BackupDownloadView.as_view(), name='backup_download'),
     path('<int:pk>/restore/', BackupRestoreView.as_view(), name='backup_restore'),

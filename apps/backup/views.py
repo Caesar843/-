@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.views.generic import ListView, DetailView
@@ -7,12 +8,39 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.conf import settings
 from django.db.models import Q
 
 from apps.backup.models import BackupRecord, BackupLog
 from apps.backup.services import BackupService, RestoreService
 from apps.core.mixins import StandardViewMixin
 from apps.core.exceptions import BusinessValidationError, StateConflictException
+
+
+def _get_allowed_backup_roots():
+    allowed = getattr(settings, 'BACKUP_ALLOWED_DIRS', None)
+    if not allowed:
+        allowed = [getattr(settings, 'BACKUP_DIR', os.path.join(settings.BASE_DIR, 'backups'))]
+    roots = []
+    for entry in allowed:
+        expanded = os.path.expanduser(str(entry))
+        path = Path(expanded)
+        if not path.is_absolute():
+            path = Path(settings.BASE_DIR) / path
+        roots.append(path)
+    return roots
+
+
+def _is_within_allowed(path, roots):
+    target = os.path.normcase(os.path.abspath(str(path)))
+    for base in roots:
+        base_str = os.path.normcase(os.path.abspath(str(base)))
+        try:
+            if os.path.commonpath([target, base_str]) == base_str:
+                return True
+        except ValueError:
+            continue
+    return False
 
 
 class AdminRequiredMixin(UserPassesTestMixin):
@@ -124,7 +152,10 @@ class BackupCreateView(LoginRequiredMixin, AdminRequiredMixin, StandardViewMixin
     
     def get(self, request):
         """显示备份创建表单"""
-        return render(request, 'backup/backup_create.html')
+        default_backup_dir = getattr(settings, 'BACKUP_DIR', os.path.join(settings.BASE_DIR, 'backups'))
+        return render(request, 'backup/backup_create.html', {
+            'default_backup_dir': default_backup_dir
+        })
     
     def post(self, request):
         """执行备份操作"""
@@ -132,6 +163,8 @@ class BackupCreateView(LoginRequiredMixin, AdminRequiredMixin, StandardViewMixin
             backup_type = request.POST.get('backup_type', 'FULL')
             data_types = request.POST.getlist('data_types')
             description = request.POST.get('description', '')
+            backup_name = request.POST.get('backup_name', '').strip()
+            backup_dir = request.POST.get('backup_dir', '').strip()
             
             if not data_types:
                 data_types = ['SHOP', 'CONTRACT', 'OPERATION', 'FINANCE', 'LOG']
@@ -142,9 +175,26 @@ class BackupCreateView(LoginRequiredMixin, AdminRequiredMixin, StandardViewMixin
                 data_types=data_types,
                 backup_type=backup_type,
                 user=request.user,
-                description=description
+                description=description,
+                backup_name=backup_name or None,
+                backup_dir=backup_dir or None
             )
             
+            download_after = request.POST.get('download_after') == 'on'
+            if download_after and backup_record.file_path and os.path.exists(backup_record.file_path):
+                BackupLog.objects.create(
+                    backup_record=backup_record,
+                    operation='DOWNLOAD',
+                    log_level='INFO',
+                    message='创建备份后下载文件',
+                    operated_by=request.user
+                )
+                return FileResponse(
+                    open(backup_record.file_path, 'rb'),
+                    as_attachment=True,
+                    filename=f'{backup_record.backup_name}.tar.gz'
+                )
+
             messages.success(
                 request,
                 f'备份 {backup_record.backup_name} 创建成功，'
@@ -165,6 +215,55 @@ class BackupCreateView(LoginRequiredMixin, AdminRequiredMixin, StandardViewMixin
                 return f'{size:.2f} {unit}'
             size /= 1024
         return f'{size:.2f} TB'
+
+
+class BackupDirectoryBrowseView(LoginRequiredMixin, AdminRequiredMixin, View):
+    """
+    备份目录选择视图
+    """
+
+    def get(self, request):
+        roots = _get_allowed_backup_roots()
+        if not roots:
+            return JsonResponse({'error': '未配置允许的备份目录'}, status=500)
+
+        requested = request.GET.get('path')
+        if requested:
+            path = Path(os.path.expanduser(requested))
+            if not path.is_absolute():
+                path = Path(settings.BASE_DIR) / path
+        else:
+            path = roots[0]
+
+        if not _is_within_allowed(path, roots):
+            return JsonResponse({'error': '路径不在允许范围内'}, status=403)
+        if not path.exists():
+            return JsonResponse({'error': '目录不存在'}, status=404)
+        if not path.is_dir():
+            return JsonResponse({'error': '路径不是目录'}, status=400)
+
+        entries = []
+        try:
+            with os.scandir(path) as iterator:
+                for entry in iterator:
+                    if entry.is_dir():
+                        entries.append({
+                            'name': entry.name,
+                            'path': str(Path(entry.path))
+                        })
+        except PermissionError:
+            return JsonResponse({'error': '无权限访问该目录'}, status=403)
+
+        entries.sort(key=lambda item: item['name'].lower())
+        parent = path.parent
+        parent_path = str(parent) if _is_within_allowed(parent, roots) else ''
+
+        return JsonResponse({
+            'current': str(path),
+            'parent': parent_path,
+            'entries': entries,
+            'roots': [str(root) for root in roots]
+        })
 
 
 class BackupDownloadView(LoginRequiredMixin, AdminRequiredMixin, View):

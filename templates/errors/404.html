@@ -35,26 +35,28 @@
         text-align: center;
         padding: 40px;
         border-radius: 8px;
-        background: #f8f9fa;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
         max-width: 600px;
     }
     
     .error-code {
         font-size: 120px;
-        color: #17a2b8;
+        color: var(--info);
         margin: 0;
         font-weight: bold;
     }
     
     .error-title {
         font-size: 28px;
-        color: #333;
+        color: var(--text);
         margin: 20px 0 10px;
     }
     
     .error-message {
         font-size: 16px;
-        color: #666;
+        color: var(--text-muted);
         line-height: 1.6;
         margin: 20px 0;
     }
@@ -73,26 +75,27 @@
     }
     
     .btn-primary {
-        background: #007bff;
-        color: white;
+        background: var(--primary);
+        color: var(--text-inverse);
     }
     
     .btn-primary:hover {
-        background: #0056b3;
+        background: var(--primary-hover);
     }
     
     .btn-secondary {
-        background: #6c757d;
-        color: white;
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
     }
     
     .btn-secondary:hover {
-        background: #545b62;
+        background: var(--surface-2);
     }
     
     .error-help {
         font-size: 14px;
-        color: #999;
+        color: var(--text-muted);
         margin-top: 30px;
     }
 </style>

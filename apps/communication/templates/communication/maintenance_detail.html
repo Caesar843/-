@@ -7,7 +7,7 @@
 {% block content %}
 <div class="container page-shell">
     {% include 'partials/page_header.html' with title="维修详情" subtitle="查看处理状态与流程记录" %}
-<div class="card shadow-sm section-card mb-4">
+    <div class="card shadow-sm section-card mb-4">
         <div class="card-header">
             <h2>{{ request.title }}</h2>
         </div>
@@ -18,27 +18,36 @@
                     <p><strong>类型：</strong>{{ request.get_request_type_display }}</p>
                     <p><strong>优先级：</strong>{{ request.get_priority_display }}</p>
                     <p><strong>状态：</strong>
-                        <span class="badge {% if request.status == 'PENDING' %}badge-warning{% elif request.status == 'ASSIGNED' %}badge-info{% elif request.status == 'IN_PROGRESS' %}badge-primary{% elif request.status == 'COMPLETED' %}badge-success{% else %}badge-danger{% endif %}">
+                        <span class="badge {% if request.status == 'PENDING' %}badge-warning{% elif request.status == 'ASSIGNED' %}badge-info{% elif request.status == 'IN_PROGRESS' %}badge-primary{% elif request.status == 'COMPLETED' %}badge-success{% else %}badge-secondary{% endif %}">
                             {{ request.get_status_display }}
                         </span>
                     </p>
                     <p><strong>指派人员：</strong>{{ request.assigned_to|default:"未指派" }}</p>
-                    <p><strong>预估费用：</strong>¥{{ request.estimated_cost|default:"0" }}</p>
-                    <p><strong>实际费用：</strong>¥{{ request.actual_cost|default:"0" }}</p>
-                    <p><strong>完成日期：</strong>{{ request.completion_date|date:"Y-m-d"|default:"未完成" }}</p>
+                    <p><strong>处理人员：</strong>{{ request.handled_by|default:"未处理" }}</p>
+                    <p><strong>处理时间：</strong>{{ request.handled_at|date:"Y-m-d H:i"|default:"-" }}</p>
+                    <p><strong>预估费用：</strong>{{ request.estimated_cost|default:"-" }}</p>
+                    <p><strong>实际费用：</strong>{{ request.actual_cost|default:"-" }}</p>
+                    <p><strong>完成日期：</strong>{{ request.completion_date|date:"Y-m-d"|default:"-" }}</p>
                     <p><strong>创建时间：</strong>{{ request.created_at|date:"Y-m-d H:i" }}</p>
                     <p><strong>更新时间：</strong>{{ request.updated_at|date:"Y-m-d H:i" }}</p>
+                    {% if request.attachment %}
+                    <p><strong>附件：</strong><a href="{{ request.attachment.url }}">查看附件</a></p>
+                    {% endif %}
                 </div>
                 <div class="col-md-6">
                     <p><strong>描述：</strong></p>
                     <p>{{ request.description }}</p>
+                    {% if request.handling_notes %}
+                    <p><strong>处理意见：</strong></p>
+                    <p>{{ request.handling_notes }}</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
         <div class="card-footer">
             <a href="{% url 'communication:maintenance_list' %}" class="btn btn-secondary">返回列表</a>
-            {% if request.status != 'COMPLETED' and request.status != 'CANCELLED' %}
-            <a href="{% url 'communication:maintenance_update' request.id %}" class="btn btn-primary">编辑</a>
+            {% if request.status != 'COMPLETED' and request.status != 'CANCELLED' and (user.is_superuser or user.profile.role.role_type == 'ADMIN') %}
+            <a href="{% url 'communication:maintenance_update' request.id %}" class="btn btn-primary">处理</a>
             {% endif %}
         </div>
     </div>

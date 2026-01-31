@@ -27,7 +27,7 @@ class FinanceListView(RoleRequiredMixin, ShopDataAccessMixin, ListView):
     model = FinanceRecord
     template_name = 'finance/finance_list.html'
     context_object_name = 'finance_records'
-    allowed_roles = ['SUPER_ADMIN', 'MANAGEMENT', 'OPERATION', 'FINANCE', 'SHOP']
+    allowed_roles = ['ADMIN', 'MANAGEMENT', 'OPERATION', 'FINANCE', 'SHOP']
     
     def get_queryset(self):
         """重写 get_queryset 方法，支持通过 contract_id 过滤财务记录，店铺用户只能看到自己店铺的财务记录"""
@@ -45,7 +45,7 @@ class FinanceListView(RoleRequiredMixin, ShopDataAccessMixin, ListView):
 
 class FinancePayView(RoleRequiredMixin, View):
     """财务记录支付视图"""
-    allowed_roles = ['SUPER_ADMIN', 'FINANCE']
+    allowed_roles = ['ADMIN', 'FINANCE']
     
     def post(self, request, pk):
         try:
@@ -93,7 +93,7 @@ class FinanceCreateView(RoleRequiredMixin, CreateView):
     template_name = 'finance/finance_form.html'
     form_class = FinanceRecordCreateForm
     success_url = '/finance/records/'
-    allowed_roles = ['SUPER_ADMIN', 'FINANCE']
+    allowed_roles = ['ADMIN', 'FINANCE']
     
     def get_context_data(self, **kwargs):
         """添加合同列表到上下文"""
@@ -126,7 +126,7 @@ class FinanceCreateView(RoleRequiredMixin, CreateView):
 
 class FinanceDetailView(RoleRequiredMixin, ShopDataAccessMixin, View):
     """财务记录详情视图"""
-    allowed_roles = ['SUPER_ADMIN', 'MANAGEMENT', 'OPERATION', 'FINANCE', 'SHOP']
+    allowed_roles = ['ADMIN', 'MANAGEMENT', 'OPERATION', 'FINANCE', 'SHOP']
     
     def get(self, request, pk):
         try:
@@ -149,7 +149,7 @@ class FinanceDetailView(RoleRequiredMixin, ShopDataAccessMixin, View):
 
 class FinanceStatementView(RoleRequiredMixin, ShopDataAccessMixin, View):
     """费用明细单生成视图"""
-    allowed_roles = ['SUPER_ADMIN', 'MANAGEMENT', 'OPERATION', 'FINANCE', 'SHOP']
+    allowed_roles = ['ADMIN', 'MANAGEMENT', 'OPERATION', 'FINANCE', 'SHOP']
     
     def get(self, request, contract_id):
         try:
@@ -201,7 +201,7 @@ class FinanceStatementView(RoleRequiredMixin, ShopDataAccessMixin, View):
 
 class FinanceReminderView(RoleRequiredMixin, View):
     """缴费提醒视图"""
-    allowed_roles = ['SUPER_ADMIN', 'FINANCE']
+    allowed_roles = ['ADMIN', 'FINANCE']
     
     def get(self, request):
         try:
@@ -227,7 +227,7 @@ class FinanceHistoryView(RoleRequiredMixin, ShopDataAccessMixin, ListView):
     model = FinanceRecord
     template_name = 'finance/finance_history.html'
     context_object_name = 'records'
-    allowed_roles = ['SUPER_ADMIN', 'MANAGEMENT', 'OPERATION', 'FINANCE', 'SHOP']
+    allowed_roles = ['ADMIN', 'MANAGEMENT', 'OPERATION', 'FINANCE', 'SHOP']
     
     def get_queryset(self):
         """获取已支付的财务记录，店铺用户只能看到自己店铺的缴费历史"""

@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect
 from django.views.generic import TemplateView
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
+from django.urls import reverse
+from urllib.parse import urlencode
 from datetime import datetime, date, timedelta
 from django.contrib import messages
 from apps.reports.services import ReportService
@@ -16,7 +18,7 @@ class ReportView(RoleRequiredMixin, ShopDataAccessMixin, TemplateView):
     """
     
     template_name = 'reports/report_list.html'
-    allowed_roles = ['SUPER_ADMIN', 'MANAGEMENT', 'OPERATION', 'FINANCE', 'SHOP']
+    allowed_roles = ['ADMIN', 'MANAGEMENT', 'OPERATION', 'FINANCE', 'SHOP']
     
     def get_context_data(self, **kwargs):
         """
@@ -53,7 +55,7 @@ class ReportView(RoleRequiredMixin, ShopDataAccessMixin, TemplateView):
         
         # 根据角色设置可用的报表类型
         available_report_types = []
-        if user_role in ['SUPER_ADMIN', 'MANAGEMENT']:
+        if user_role in ['ADMIN', 'MANAGEMENT']:
             # 超级管理员和管理层可以访问所有报表
             available_report_types = [
                 ('shop_operation', '店铺运营报表'),
@@ -99,13 +101,24 @@ class ReportView(RoleRequiredMixin, ShopDataAccessMixin, TemplateView):
         end_date = request.POST.get('end_date')
         shop_id = request.POST.get('shop_id')
         export_format = request.POST.get('export_format')
+
+        if not start_date:
+            start_date = (timezone.now() - timedelta(days=30)).date().strftime('%Y-%m-%d')
+        if not end_date:
+            end_date = timezone.now().date().strftime('%Y-%m-%d')
         
         if export_format:
             # 处理导出请求
             return self._export_report(report_type, start_date, end_date, shop_id, export_format)
         else:
             # 处理生成报表请求
-            return redirect(f"?report_type={report_type}&start_date={start_date}&end_date={end_date}&shop_id={shop_id}")
+            query = urlencode({
+                'report_type': report_type,
+                'start_date': start_date,
+                'end_date': end_date,
+                'shop_id': shop_id or ''
+            })
+            return redirect(f"{reverse('reports:report_list')}?{query}")
     
     def _get_report_data(self, report_type, start_date, end_date, shop_id):
         """

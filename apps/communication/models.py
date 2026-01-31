@@ -1,6 +1,7 @@
+﻿from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.core.exceptions import ValidationError
 
 from apps.store.models import Shop
 
@@ -54,6 +55,15 @@ class MaintenanceRequest(models.Model):
         related_name="maintenance_requests",
         help_text=_("提交请求的店铺")
     )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("Applicant"),
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="maintenance_requests",
+        help_text=_("Request applicant")
+    )
     title = models.CharField(
         verbose_name=_("标题"),
         max_length=200,
@@ -62,6 +72,13 @@ class MaintenanceRequest(models.Model):
     description = models.TextField(
         verbose_name=_("描述"),
         help_text=_("维修请求详细描述")
+    )
+    attachment = models.FileField(
+        verbose_name=_("Attachment"),
+        upload_to="requests/maintenance/",
+        blank=True,
+        null=True,
+        help_text=_("Optional attachment")
     )
     request_type = models.CharField(
         verbose_name=_("请求类型"),
@@ -90,6 +107,25 @@ class MaintenanceRequest(models.Model):
         blank=True,
         null=True,
         help_text=_("处理该请求的人员")
+    )
+    handled_by = models.CharField(
+        verbose_name=_("处理人员"),
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text=_("最终处理请求的人员")
+    )
+    handled_at = models.DateTimeField(
+        verbose_name=_("处理时间"),
+        blank=True,
+        null=True,
+        help_text=_("处理该请求的时间")
+    )
+    handling_notes = models.TextField(
+        verbose_name=_("处理意见"),
+        blank=True,
+        null=True,
+        help_text=_("处理意见与备注")
     )
     estimated_cost = models.DecimalField(
         verbose_name=_("预估费用"),
@@ -189,6 +225,15 @@ class ActivityApplication(models.Model):
         related_name="activity_applications",
         help_text=_("提交申请的店铺")
     )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("Applicant"),
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="activity_applications",
+        help_text=_("Request applicant")
+    )
     title = models.CharField(
         verbose_name=_("标题"),
         max_length=200,
@@ -197,6 +242,13 @@ class ActivityApplication(models.Model):
     description = models.TextField(
         verbose_name=_("描述"),
         help_text=_("活动申请详细描述")
+    )
+    attachment = models.FileField(
+        verbose_name=_("Attachment"),
+        upload_to="requests/activity/",
+        blank=True,
+        null=True,
+        help_text=_("Optional attachment")
     )
     activity_type = models.CharField(
         verbose_name=_("活动类型"),
@@ -241,6 +293,12 @@ class ActivityApplication(models.Model):
         blank=True,
         null=True,
         help_text=_("审核意见和备注")
+    )
+    reviewed_at = models.DateTimeField(
+        verbose_name=_("审核时间"),
+        blank=True,
+        null=True,
+        help_text=_("审核处理时间")
     )
 
     # 审计字段
@@ -341,3 +399,5 @@ class ProcessLog(models.Model):
     def __str__(self):
         """字符串表示"""
         return f"{self.content_type} #{self.object_id} - {self.action} - {self.created_at}"
+
+

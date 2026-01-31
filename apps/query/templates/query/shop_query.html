@@ -1,281 +1,283 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
+<link rel="stylesheet" href="{% static 'css/query-detail.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">🏬 店铺查询</h1>
-    
-    <div class="card mb-4">
-        <div class="card-body">
-            <h5 class="card-title">选择店铺</h5>
-            <form method="get" action="{% url 'query:shop_query' %}">
-                <div class="form-row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="shop_id">店铺名称</label>
-                            <select class="form-control" id="shop_id" name="shop_id">
-                                <option value="">-- 请选择店铺 --</option>
-                                {% for shop in shops %}
-                                <option value="{{ shop.id }}" {% if selected_shop and selected_shop.id == shop.id %}selected{% endif %}>
-                                    {{ shop.name }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-6 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary btn-block">查询</button>
-                    </div>
-                </div>
-            </form>
+<div class="query-detail">
+    <div class="query-detail-header">
+        <span class="query-detail-bar"></span>
+        <div>
+            <div class="query-detail-title">&#x5E97;&#x94FA;&#x67E5;&#x8BE2;</div>
+            <div class="query-detail-subtitle">&#x6839;&#x636E;&#x5E97;&#x94FA;&#x8054;&#x52A8;&#x67E5;&#x770B;&#x5408;&#x7EA6;&#x3001;&#x8D22;&#x52A1;&#x4E0E;&#x8FD0;&#x8425;&#x6570;&#x636E;</div>
         </div>
     </div>
-    
+
+    <div class="ui-card ui-section query-detail-section">
+        <div class="query-detail-header-row">
+            <div class="ui-title">&#x9009;&#x62E9;&#x5E97;&#x94FA;</div>
+            <span class="ui-text-muted">&#x8BF7;&#x5148;&#x9009;&#x62E9;&#x76EE;&#x6807;&#x5E97;&#x94FA;</span>
+        </div>
+        <form method="get" action="{% url 'query:shop_query' %}">
+            <div class="query-detail-grid">
+                <div>
+                    <label for="shop_id" class="form-label">&#x5E97;&#x94FA;&#x540D;&#x79F0;</label>
+                    <select class="form-control ui-input" id="shop_id" name="shop_id">
+                        <option value="">-- &#x8BF7;&#x9009;&#x62E9;&#x5E97;&#x94FA; --</option>
+                        {% for shop in shops %}
+                        <option value="{{ shop.id }}" {% if selected_shop and selected_shop.id == shop.id %}selected{% endif %}>
+                            {{ shop.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="query-detail-actions">
+                    <button type="submit" class="ui-btn ui-btn-primary">&#x67E5;&#x8BE2;</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
     {% if selected_shop %}
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="card-title">{{ selected_shop.name }} - 详细信息</h5>
+    <div class="ui-card ui-section query-detail-section">
+        <div class="query-detail-header-row">
+            <div class="ui-title">{{ selected_shop.name }} - &#x8BE6;&#x7EC6;&#x4FE1;&#x606F;</div>
+            <span class="ui-text-muted">&#x57FA;&#x7840;&#x4FE1;&#x606F;&#x4E0E;&#x4E1A;&#x6001;&#x4FE1;&#x606F;</span>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong>业态类型：</strong>{{ selected_shop.get_business_type_display }}</p>
-                    <p><strong>经营面积：</strong>{{ selected_shop.area }} 平方米</p>
-                    <p><strong>租金：</strong>¥{{ selected_shop.rent }}/月</p>
-                    <p><strong>联系人：</strong>{{ selected_shop.contact_person }}</p>
-                    <p><strong>联系方式：</strong>{{ selected_shop.contact_phone }}</p>
-                    <p><strong>入驻日期：</strong>{{ selected_shop.entry_date|date:"Y-m-d" }}</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>描述：</strong>{{ selected_shop.description|default:"无" }}</p>
-                    <p><strong>创建时间：</strong>{{ selected_shop.created_at|date:"Y-m-d H:i" }}</p>
-                    <p><strong>更新时间：</strong>{{ selected_shop.updated_at|date:"Y-m-d H:i" }}</p>
-                </div>
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>&#x4E1A;&#x6001;&#x7C7B;&#x578B;&#xFF1A;</strong>{{ selected_shop.get_business_type_display }}</p>
+                <p><strong>&#x7ECF;&#x8425;&#x9762;&#x79EF;&#xFF1A;</strong>{{ selected_shop.area }} &#x5E73;&#x65B9;&#x7C73;</p>
+                <p><strong>&#x79DF;&#x91D1;&#xFF1A;</strong>&#xA5;{{ selected_shop.rent }}/&#x6708;</p>
+                <p><strong>&#x8054;&#x7CFB;&#x4EBA;&#xFF1A;</strong>{{ selected_shop.contact_person }}</p>
+                <p><strong>&#x8054;&#x7CFB;&#x65B9;&#x5F0F;&#xFF1A;</strong>{{ selected_shop.contact_phone }}</p>
+                <p><strong>&#x5165;&#x9A7B;&#x65E5;&#x671F;&#xFF1A;</strong>{{ selected_shop.entry_date|date:"Y-m-d" }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>&#x63CF;&#x8FF0;&#xFF1A;</strong>{{ selected_shop.description|default:"&#x65E0;" }}</p>
+                <p><strong>&#x521B;&#x5EFA;&#x65F6;&#x95F4;&#xFF1A;</strong>{{ selected_shop.created_at|date:"Y-m-d H:i" }}</p>
+                <p><strong>&#x66F4;&#x65B0;&#x65F6;&#x95F4;&#xFF1A;</strong>{{ selected_shop.updated_at|date:"Y-m-d H:i" }}</p>
             </div>
         </div>
     </div>
-    
-    <!-- 合约详情 -->
-    <div class="card mb-4">
-        <div class="card-header bg-info text-white">
-            <h5 class="card-title">合约详情</h5>
+
+    <div class="ui-card ui-section query-detail-section">
+        <div class="query-detail-header-row">
+            <div class="ui-title">&#x5408;&#x7EA6;&#x8BE6;&#x60C5;</div>
+            <span class="ui-text-muted">&#x5E97;&#x94FA;&#x76F8;&#x5173;&#x5408;&#x7EA6;&#x5217;&#x8868;</span>
         </div>
-        <div class="card-body">
-            {% if contracts %}
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>合同ID</th>
-                            <th>开始日期</th>
-                            <th>结束日期</th>
-                            <th>月租金</th>
-                            <th>押金</th>
-                            <th>缴费周期</th>
-                            <th>状态</th>
-                            <th>创建时间</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for contract in contracts %}
-                        <tr>
-                            <td>{{ contract.id }}</td>
-                            <td>{{ contract.start_date|date:"Y-m-d" }}</td>
-                            <td>{{ contract.end_date|date:"Y-m-d" }}</td>
-                            <td>¥{{ contract.monthly_rent }}</td>
-                            <td>¥{{ contract.deposit }}</td>
-                            <td>{{ contract.get_payment_cycle_display }}</td>
-                            <td>
-                                <span class="badge {% if contract.status == 'ACTIVE' %}badge-success{% elif contract.status == 'DRAFT' %}badge-warning{% elif contract.status == 'EXPIRED' %}badge-secondary{% else %}badge-danger{% endif %}">
-                                    {{ contract.get_status_display }}
-                                </span>
-                            </td>
-                            <td>{{ contract.created_at|date:"Y-m-d H:i" }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p class="text-center text-muted">暂无合约信息</p>
-            {% endif %}
+        {% if contracts %}
+        <div class="table-responsive query-detail-table">
+            <table class="ui-table">
+                <thead>
+                    <tr>
+                        <th>&#x5408;&#x540C;ID</th>
+                        <th>&#x5F00;&#x59CB;&#x65E5;&#x671F;</th>
+                        <th>&#x7ED3;&#x675F;&#x65E5;&#x671F;</th>
+                        <th>&#x6708;&#x79DF;&#x91D1;</th>
+                        <th>&#x62BC;&#x91D1;</th>
+                        <th>&#x7F34;&#x8D39;&#x5468;&#x671F;</th>
+                        <th>&#x72B6;&#x6001;</th>
+                        <th>&#x521B;&#x5EFA;&#x65F6;&#x95F4;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contract in contracts %}
+                    <tr>
+                        <td>{{ contract.id }}</td>
+                        <td>{{ contract.start_date|date:"Y-m-d" }}</td>
+                        <td>{{ contract.end_date|date:"Y-m-d" }}</td>
+                        <td>&#xA5;{{ contract.monthly_rent }}</td>
+                        <td>&#xA5;{{ contract.deposit }}</td>
+                        <td>{{ contract.get_payment_cycle_display }}</td>
+                        <td>
+                            <span class="status-badge {% if contract.status == 'ACTIVE' %}success{% elif contract.status == 'DRAFT' %}warning{% elif contract.status == 'EXPIRED' %}neutral{% else %}danger{% endif %}">
+                                {{ contract.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ contract.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+        <p class="text-center ui-text-muted">&#x6682;&#x65E0;&#x5408;&#x7EA6;&#x4FE1;&#x606F;</p>
+        {% endif %}
     </div>
-    
-    <!-- 缴费记录 -->
-    <div class="card mb-4">
-        <div class="card-header bg-warning text-white">
-            <h5 class="card-title">缴费记录</h5>
+
+    <div class="ui-card ui-section query-detail-section">
+        <div class="query-detail-header-row">
+            <div class="ui-title">&#x7F34;&#x8D39;&#x8BB0;&#x5F55;</div>
+            <span class="ui-text-muted">&#x5E97;&#x94FA;&#x76F8;&#x5173;&#x6536;&#x7F34;&#x60C5;&#x51B5;</span>
         </div>
-        <div class="card-body">
-            {% if finance_records %}
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>记录ID</th>
-                            <th>费用类型</th>
-                            <th>金额</th>
-                            <th>账单周期</th>
-                            <th>状态</th>
-                            <th>缴费方式</th>
-                            <th>缴费时间</th>
-                            <th>创建时间</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for record in finance_records %}
-                        <tr>
-                            <td>{{ record.id }}</td>
-                            <td>{{ record.get_fee_type_display }}</td>
-                            <td>¥{{ record.amount }}</td>
-                            <td>{{ record.billing_period_start|date:"Y-m-d" }} 至 {{ record.billing_period_end|date:"Y-m-d" }}</td>
-                            <td>
-                                <span class="badge {% if record.status == 'PAID' %}badge-success{% elif record.status == 'UNPAID' %}badge-danger{% else %}badge-secondary{% endif %}">
-                                    {{ record.get_status_display }}
-                                </span>
-                            </td>
-                            <td>{{ record.get_payment_method_display|default:"未支付" }}</td>
-                            <td>{{ record.paid_at|date:"Y-m-d H:i"|default:"未支付" }}</td>
-                            <td>{{ record.created_at|date:"Y-m-d H:i" }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p class="text-center text-muted">暂无缴费记录</p>
-            {% endif %}
+        {% if finance_records %}
+        <div class="table-responsive query-detail-table">
+            <table class="ui-table">
+                <thead>
+                    <tr>
+                        <th>&#x8BB0;&#x5F55;ID</th>
+                        <th>&#x8D39;&#x7528;&#x7C7B;&#x578B;</th>
+                        <th>&#x91D1;&#x989D;</th>
+                        <th>&#x8D26;&#x5355;&#x5468;&#x671F;</th>
+                        <th>&#x72B6;&#x6001;</th>
+                        <th>&#x7F34;&#x8D39;&#x65B9;&#x5F0F;</th>
+                        <th>&#x7F34;&#x8D39;&#x65F6;&#x95F4;</th>
+                        <th>&#x521B;&#x5EFA;&#x65F6;&#x95F4;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in finance_records %}
+                    <tr>
+                        <td>{{ record.id }}</td>
+                        <td>{{ record.get_fee_type_display }}</td>
+                        <td>&#xA5;{{ record.amount }}</td>
+                        <td>{{ record.billing_period_start|date:"Y-m-d" }} &#x81F3; {{ record.billing_period_end|date:"Y-m-d" }}</td>
+                        <td>
+                            <span class="status-badge {% if record.status == 'PAID' %}success{% elif record.status == 'UNPAID' %}danger{% else %}neutral{% endif %}">
+                                {{ record.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ record.get_payment_method_display|default:"&#x672A;&#x652F;&#x4ED8;" }}</td>
+                        <td>{{ record.paid_at|date:"Y-m-d H:i"|default:"&#x672A;&#x652F;&#x4ED8;" }}</td>
+                        <td>{{ record.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+        <p class="text-center ui-text-muted">&#x6682;&#x65E0;&#x7F34;&#x8D39;&#x8BB0;&#x5F55;</p>
+        {% endif %}
     </div>
-    
-    <!-- 运营数据 -->
-    <div class="card mb-4">
-        <div class="card-header bg-success text-white">
-            <h5 class="card-title">运营数据</h5>
+
+    <div class="ui-card ui-section query-detail-section">
+        <div class="finance-section-header">
+            <div class="ui-title">&#x8FD0;&#x8425;&#x6570;&#x636E;</div>
+            <span class="ui-text-muted">&#x65E5;&#x5EA6;&#x8FD0;&#x8425;&#x4E0E;&#x6570;&#x636E;&#x4E0A;&#x4F20;&#x8BB0;&#x5F55;</span>
         </div>
-        <div class="card-body">
-            {% if operation_data %}
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>日期</th>
-                            <th>客流量</th>
-                            <th>销售额</th>
-                            <th>交易笔数</th>
-                            <th>客单价</th>
-                            <th>上传人</th>
-                            <th>上传时间</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for data in operation_data %}
-                        <tr>
-                            <td>{{ data.data_date|date:"Y-m-d" }}</td>
-                            <td>{{ data.foot_traffic }}</td>
-                            <td>¥{{ data.sales_amount }}</td>
-                            <td>{{ data.transaction_count }}</td>
-                            <td>¥{{ data.average_transaction_value }}</td>
-                            <td>{{ data.uploaded_by }}</td>
-                            <td>{{ data.uploaded_at|date:"Y-m-d H:i" }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p class="text-center text-muted">暂无运营数据</p>
-            {% endif %}
+        {% if operation_data %}
+        <div class="table-responsive query-detail-table">
+            <table class="ui-table">
+                <thead>
+                    <tr>
+                        <th>&#x65E5;&#x671F;</th>
+                        <th>&#x5BA2;&#x6D41;&#x91CF;</th>
+                        <th>&#x9500;&#x552E;&#x989D;</th>
+                        <th>&#x4EA4;&#x6613;&#x7B14;&#x6570;</th>
+                        <th>&#x5BA2;&#x5355;&#x4EF7;</th>
+                        <th>&#x4E0A;&#x4F20;&#x4EBA;</th>
+                        <th>&#x4E0A;&#x4F20;&#x65F6;&#x95F4;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in operation_data %}
+                    <tr>
+                        <td>{{ data.data_date|date:"Y-m-d" }}</td>
+                        <td>{{ data.foot_traffic }}</td>
+                        <td>&#xA5;{{ data.sales_amount }}</td>
+                        <td>{{ data.transaction_count }}</td>
+                        <td>&#xA5;{{ data.average_transaction_value }}</td>
+                        <td>{{ data.uploaded_by }}</td>
+                        <td>{{ data.uploaded_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+        <p class="text-center ui-text-muted">&#x6682;&#x65E0;&#x8FD0;&#x8425;&#x6570;&#x636E;</p>
+        {% endif %}
     </div>
-    
-    <!-- 事务申请进度 -->
-    <div class="row mb-4">
+
+    <div class="row query-detail-section">
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h5 class="card-title">维修请求进度</h5>
+            <div class="ui-card ui-section query-detail-card">
+                <div class="query-detail-header-row">
+                    <div class="ui-title">&#x7EF4;&#x4FEE;&#x8BF7;&#x6C42;&#x8FDB;&#x5EA6;</div>
+                    <span class="ui-text-muted">&#x6700;&#x65B0;&#x8FDB;&#x5EA6;&#x8FFD;&#x8E2A;</span>
                 </div>
-                <div class="card-body">
-                    {% if maintenance_requests %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>标题</th>
-                                    <th>类型</th>
-                                    <th>优先级</th>
-                                    <th>状态</th>
-                                    <th>创建时间</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for request in maintenance_requests %}
-                                <tr>
-                                    <td>{{ request.id }}</td>
-                                    <td>{{ request.title }}</td>
-                                    <td>{{ request.get_request_type_display }}</td>
-                                    <td>{{ request.get_priority_display }}</td>
-                                    <td>
-                                        <span class="badge {% if request.status == 'PENDING' %}badge-warning{% elif request.status == 'ASSIGNED' %}badge-info{% elif request.status == 'IN_PROGRESS' %}badge-primary{% elif request.status == 'COMPLETED' %}badge-success{% else %}badge-danger{% endif %}">
-                                            {{ request.get_status_display }}
-                                        </span>
-                                    </td>
-                                    <td>{{ request.created_at|date:"Y-m-d H:i" }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <p class="text-center text-muted">暂无维修请求</p>
-                    {% endif %}
+                {% if maintenance_requests %}
+                <div class="table-responsive query-detail-table">
+                    <table class="ui-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>&#x6807;&#x9898;</th>
+                                <th>&#x7C7B;&#x578B;</th>
+                                <th>&#x4F18;&#x5148;&#x7EA7;</th>
+                                <th>&#x72B6;&#x6001;</th>
+                                <th>&#x521B;&#x5EFA;&#x65F6;&#x95F4;</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in maintenance_requests %}
+                            <tr>
+                                <td>{{ request.id }}</td>
+                                <td>{{ request.title }}</td>
+                                <td>{{ request.get_request_type_display }}</td>
+                                <td>{{ request.get_priority_display }}</td>
+                                <td>
+                                    <span class="status-badge {% if request.status == 'PENDING' %}warning{% elif request.status == 'ASSIGNED' %}neutral{% elif request.status == 'IN_PROGRESS' %}warning{% elif request.status == 'COMPLETED' %}success{% else %}danger{% endif %}">
+                                        {{ request.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ request.created_at|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
+                {% else %}
+                <p class="text-center ui-text-muted">&#x6682;&#x65E0;&#x7EF4;&#x4FEE;&#x8BF7;&#x6C42;</p>
+                {% endif %}
             </div>
         </div>
-        
+
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h5 class="card-title">活动申请进度</h5>
+            <div class="ui-card ui-section query-detail-card">
+                <div class="query-detail-header-row">
+                    <div class="ui-title">&#x6D3B;&#x52A8;&#x7533;&#x8BF7;&#x8FDB;&#x5EA6;</div>
+                    <span class="ui-text-muted">&#x5BA1;&#x6279;&#x4E0E;&#x6267;&#x884C;&#x72B6;&#x6001;</span>
                 </div>
-                <div class="card-body">
-                    {% if activity_applications %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>标题</th>
-                                    <th>类型</th>
-                                    <th>状态</th>
-                                    <th>开始日期</th>
-                                    <th>创建时间</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for application in activity_applications %}
-                                <tr>
-                                    <td>{{ application.id }}</td>
-                                    <td>{{ application.title }}</td>
-                                    <td>{{ application.get_activity_type_display }}</td>
-                                    <td>
-                                        <span class="badge {% if application.status == 'PENDING' %}badge-warning{% elif application.status == 'APPROVED' %}badge-success{% elif application.status == 'REJECTED' %}badge-danger{% else %}badge-secondary{% endif %}">
-                                            {{ application.get_status_display }}
-                                        </span>
-                                    </td>
-                                    <td>{{ application.start_date|date:"Y-m-d H:i" }}</td>
-                                    <td>{{ application.created_at|date:"Y-m-d H:i" }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <p class="text-center text-muted">暂无活动申请</p>
-                    {% endif %}
+                {% if activity_applications %}
+                <div class="table-responsive query-detail-table">
+                    <table class="ui-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>&#x6807;&#x9898;</th>
+                                <th>&#x7C7B;&#x578B;</th>
+                                <th>&#x72B6;&#x6001;</th>
+                                <th>&#x5F00;&#x59CB;&#x65E5;&#x671F;</th>
+                                <th>&#x521B;&#x5EFA;&#x65F6;&#x95F4;</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for application in activity_applications %}
+                            <tr>
+                                <td>{{ application.id }}</td>
+                                <td>{{ application.title }}</td>
+                                <td>{{ application.get_activity_type_display }}</td>
+                                <td>
+                                    <span class="status-badge {% if application.status == 'PENDING' %}warning{% elif application.status == 'APPROVED' %}success{% elif application.status == 'REJECTED' %}danger{% else %}neutral{% endif %}">
+                                        {{ application.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ application.start_date|date:"Y-m-d H:i" }}</td>
+                                <td>{{ application.created_at|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
+                {% else %}
+                <p class="text-center ui-text-muted">&#x6682;&#x65E0;&#x6D3B;&#x52A8;&#x7533;&#x8BF7;</p>
+                {% endif %}
             </div>
         </div>
     </div>

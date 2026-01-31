@@ -14,13 +14,13 @@ class Role(models.Model):
     """
     
     class RoleType(models.TextChoices):
-        """角色类型枚举"""
-        SHOP = 'SHOP', _('入驻店铺')
-        OPERATION = 'OPERATION', _('商场运营专员')
-        FINANCE = 'FINANCE', _('财务管理员')
-        MANAGEMENT = 'MANAGEMENT', _('商场管理层')
-        SUPER_ADMIN = 'SUPER_ADMIN', _('超级管理员')
-    
+        """Role type choices"""
+        SHOP = 'SHOP', _('Shop')
+        OPERATION = 'OPERATION', _('Operation')
+        FINANCE = 'FINANCE', _('Finance')
+        MANAGEMENT = 'MANAGEMENT', _('Management')
+        ADMIN = 'ADMIN', _('Admin')
+
     role_type = models.CharField(
         max_length=20,
         choices=RoleType.choices,
@@ -302,3 +302,84 @@ class ApprovalRecord(models.Model):
 
     def __str__(self):
         return f"{self.action} {self.content_type}:{self.object_id}"
+
+
+class ShopBindingRequest(models.Model):
+    """
+    店铺绑定申请
+    SHOP 用户提交申请，管理员审核后绑定到具体店铺。
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", _("待审核")
+        APPROVED = "APPROVED", _("已批准")
+        REJECTED = "REJECTED", _("已拒绝")
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="shop_binding_request",
+        verbose_name=_("用户"),
+    )
+    requested_shop_name = models.CharField(
+        max_length=120,
+        verbose_name=_("申请店铺名称"),
+    )
+    contact_phone = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name=_("联系电话"),
+    )
+    note = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name=_("备注"),
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        verbose_name=_("状态"),
+    )
+    approved_shop = models.ForeignKey(
+        "store.Shop",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="binding_requests",
+        verbose_name=_("审核通过店铺"),
+    )
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="reviewed_binding_requests",
+        verbose_name=_("审核人"),
+    )
+    reviewed_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name=_("审核时间"),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("创建时间"),
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("更新时间"),
+    )
+
+    class Meta:
+        verbose_name = _("店铺绑定申请")
+        verbose_name_plural = _("店铺绑定申请")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_status_display()}"
+
+    def clean(self):
+        if self.status == self.Status.APPROVED and not self.approved_shop:
+            raise ValidationError(_("批准时必须选择店铺"))

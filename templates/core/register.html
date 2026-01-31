@@ -1,6 +1,78 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}&#x7528;&#x6237;&#x6CE8;&#x518C; - &#x5546;&#x573A;&#x5E97;&#x94FA;&#x667A;&#x80FD;&#x8FD0;&#x8425;&#x7BA1;&#x7406;&#x7CFB;&#x7EDF;{% endblock %}
+
+{% block extra_css %}
+<style>
+    .input-with-icon {
+        position: relative;
+    }
+
+    .input-with-icon.has-left-icon .form-control {
+        padding-left: 40px;
+    }
+
+    .input-with-icon.has-toggle .form-control {
+        padding-right: 46px;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        pointer-events: none;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .toggle-password {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        padding: 4px;
+        color: var(--muted);
+        cursor: pointer;
+    }
+
+    .toggle-password .icon-eye-off {
+        display: none;
+    }
+
+    .toggle-password.is-visible .icon-eye {
+        display: none;
+    }
+
+    .toggle-password.is-visible .icon-eye-off {
+        display: inline;
+    }
+
+    .input-with-icon:focus-within .input-icon,
+    .input-with-icon:focus-within .toggle-password {
+        color: #1d4ed8;
+    }
+
+    .input-with-icon.is-invalid .input-icon,
+    .input-with-icon.is-invalid .toggle-password {
+        color: #dc3545;
+    }
+
+    .input-with-icon.is-invalid .form-control {
+        border-color: #dc3545;
+    }
+
+    .toggle-password:focus-visible {
+        outline: 2px solid rgba(59, 130, 246, 0.6);
+        outline-offset: 2px;
+        border-radius: 6px;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -11,7 +83,7 @@
                     <h4 class="mb-0">&#x5E97;&#x94FA;&#x8D1F;&#x8D23;&#x4EBA;&#x6CE8;&#x518C;</h4>
                 </div>
                 <div class="card-body">
-                    <form method="post">
+                    <form method="post" id="registerForm" novalidate>
                         {% csrf_token %}
 
                         {% if messages %}
@@ -29,15 +101,123 @@
 
                         <div class="mb-3">
                             <label for="{{ form.username.id_for_label }}" class="form-label">&#x7528;&#x6237;&#x540D;</label>
-                            {{ form.username }}
+                            <div class="input-with-icon has-left-icon{% if form.username.errors %} is-invalid{% endif %}">
+                                <span class="input-icon" aria-hidden="true">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="1.6"/>
+                                        <path d="M4 20a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                                    </svg>
+                                </span>
+                                {{ form.username }}
+                            </div>
                             {% if form.username.errors %}
                             <div class="text-danger small">{{ form.username.errors }}</div>
                             {% endif %}
                         </div>
 
                         <div class="mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">&#x90AE;&#x7BB1;</label>
+                            <div class="input-with-icon has-left-icon{% if form.email.errors %} is-invalid{% endif %}">
+                                <span class="input-icon" aria-hidden="true">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.6"/>
+                                        <path d="m22 8-8 6-8-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </span>
+                                {{ form.email }}
+                            </div>
+                            {% if form.email.errors %}
+                            <div class="text-danger small">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.phone.id_for_label }}" class="form-label">&#x624B;&#x673A;&#x53F7;</label>
+                            <div class="input-with-icon has-left-icon{% if form.phone.errors %} is-invalid{% endif %}">
+                                <span class="input-icon" aria-hidden="true">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <rect x="7" y="2.5" width="10" height="19" rx="2" stroke="currentColor" stroke-width="1.6"/>
+                                        <path d="M11 18h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                                    </svg>
+                                </span>
+                                {{ form.phone }}
+                            </div>
+                            {% if form.phone.errors %}
+                            <div class="text-danger small">{{ form.phone.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">验证码接收方式</label>
+                            <div class="d-flex gap-3">
+                                {% for radio in form.verification_channel %}
+                                <label class="form-check form-check-inline m-0">
+                                    {{ radio.tag }}
+                                    <span class="form-check-label">{{ radio.choice_label }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            {% if form.verification_channel.errors %}
+                            <div class="text-danger small">{{ form.verification_channel.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.verification_code.id_for_label }}" class="form-label">验证码</label>
+                            <div class="input-group">
+                                {{ form.verification_code }}
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-primary"
+                                    data-verification-send
+                                    data-scene="REGISTER"
+                                    data-channel-source="verification_channel"
+                                    data-destination-email="{{ form.email.id_for_label }}"
+                                    data-destination-sms="{{ form.phone.id_for_label }}"
+                                    data-send-url="/api/core/verification/send/"
+                                    data-status-url="/api/core/verification/status/"
+                                    data-message-target="registerVerificationMessage"
+                                >发送验证码</button>
+                            </div>
+                            {% if form.verification_code.errors %}
+                            <div class="text-danger small">{{ form.verification_code.errors }}</div>
+                            {% endif %}
+                            <div class="mt-2 d-flex gap-2">
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary"
+                                    data-verification-verify
+                                    data-scene="REGISTER"
+                                    data-channel-source="verification_channel"
+                                    data-destination-email="{{ form.email.id_for_label }}"
+                                    data-destination-sms="{{ form.phone.id_for_label }}"
+                                    data-code-input="{{ form.verification_code.id_for_label }}"
+                                    data-verify-url="/api/core/verification/verify/"
+                                    data-token-output="{{ form.verification_ticket.id_for_label }}"
+                                    data-message-target="registerVerificationMessage"
+                                >校验验证码</button>
+                            </div>
+                            <div id="registerVerificationMessage" class="text-muted small mt-2"></div>
+                        </div>
+
+                        {{ form.verification_ticket }}
+
+                        <div class="mb-3">
                             <label for="{{ form.password1.id_for_label }}" class="form-label">&#x5BC6;&#x7801;</label>
-                            {{ form.password1 }}
+                            <div class="input-with-icon has-toggle{% if form.password1.errors %} is-invalid{% endif %}">
+                                {{ form.password1 }}
+                                <button type="button" class="toggle-password" aria-label="&#x663E;&#x793A;&#x5BC6;&#x7801;">
+                                    <svg class="icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z" stroke="currentColor" stroke-width="1.6"/>
+                                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/>
+                                    </svg>
+                                    <svg class="icon-eye-off" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M3 4.5 21 19.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                                        <path d="M4.5 6.5C2.6 8.4 2 12 2 12s4 7 10 7c2.1 0 3.9-.5 5.4-1.3" stroke="currentColor" stroke-width="1.6"/>
+                                        <path d="M9.8 9.8A3 3 0 0 0 12 15a3 3 0 0 0 2.2-1" stroke="currentColor" stroke-width="1.6"/>
+                                    </svg>
+                                </button>
+                            </div>
                             {% if form.password1.errors %}
                             <div class="text-danger small">{{ form.password1.errors }}</div>
                             {% endif %}
@@ -45,14 +225,27 @@
 
                         <div class="mb-3">
                             <label for="{{ form.password2.id_for_label }}" class="form-label">&#x786E;&#x8BA4;&#x5BC6;&#x7801;</label>
-                            {{ form.password2 }}
+                            <div class="input-with-icon has-toggle{% if form.password2.errors %} is-invalid{% endif %}">
+                                {{ form.password2 }}
+                                <button type="button" class="toggle-password" aria-label="&#x663E;&#x793A;&#x5BC6;&#x7801;">
+                                    <svg class="icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z" stroke="currentColor" stroke-width="1.6"/>
+                                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/>
+                                    </svg>
+                                    <svg class="icon-eye-off" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M3 4.5 21 19.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                                        <path d="M4.5 6.5C2.6 8.4 2 12 2 12s4 7 10 7c2.1 0 3.9-.5 5.4-1.3" stroke="currentColor" stroke-width="1.6"/>
+                                        <path d="M9.8 9.8A3 3 0 0 0 12 15a3 3 0 0 0 2.2-1" stroke="currentColor" stroke-width="1.6"/>
+                                    </svg>
+                                </button>
+                            </div>
                             {% if form.password2.errors %}
                             <div class="text-danger small">{{ form.password2.errors }}</div>
                             {% endif %}
                         </div>
 
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">&#x6CE8;&#x518C;</button>
+                            <button type="submit" class="btn btn-primary btn-lg" data-default-text="&#x6CE8;&#x518C;" data-loading-text="&#x6CE8;&#x518C;&#x4E2D;&#x2026;">&#x6CE8;&#x518C;</button>
                         </div>
                     </form>
                 </div>
@@ -66,4 +259,57 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/verification.js' %}" defer></script>
+<script>
+    (function () {
+        const form = document.getElementById('registerForm');
+        if (!form) return;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                const firstInvalid = form.querySelector(':invalid');
+                if (firstInvalid) firstInvalid.focus();
+                return;
+            }
+            const ticketInput = form.querySelector('#{{ form.verification_ticket.id_for_label }}');
+            if (!ticketInput || !ticketInput.value) {
+                event.preventDefault();
+                event.stopPropagation();
+                const msg = document.getElementById('registerVerificationMessage');
+                if (msg) {
+                    msg.textContent = '请先完成验证码校验。';
+                }
+                return;
+            }
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = submitBtn.getAttribute('data-loading-text') || submitBtn.textContent;
+                submitBtn.setAttribute('aria-busy', 'true');
+            }
+        });
+
+        const serverErrorField = form.querySelector('.is-invalid input, .is-invalid select, .is-invalid textarea');
+        if (serverErrorField) {
+            serverErrorField.focus();
+        }
+    })();
+
+    document.querySelectorAll('.toggle-password').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const wrapper = button.closest('.input-with-icon');
+            if (!wrapper) return;
+            const input = wrapper.querySelector('input');
+            if (!input) return;
+            const isVisible = input.type === 'text';
+            input.type = isVisible ? 'password' : 'text';
+            button.classList.toggle('is-visible', !isVisible);
+            button.setAttribute('aria-label', isVisible ? '显示密码' : '隐藏密码');
+        });
+    });
+</script>
 {% endblock %}

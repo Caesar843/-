@@ -22,7 +22,7 @@
                     <label for="csv_file" class="form-label">选择CSV文件</label>
                     <input type="file" name="csv_file" id="csv_file" class="form-control" accept=".csv" required>
                 </div>
-                <div class="alert alert-info mb-4">
+                <div class="ui-alert mb-4">
                     <h4 class="alert-heading">导入说明</h4>
                     <ul>
                         <li>请确保CSV文件包含以下字段：店铺名称、业态类型、经营面积、租金</li>
@@ -34,8 +34,8 @@
                     </ul>
                 </div>
                 <div class="d-flex justify-content-end gap-2">
-                    <a href="{% url 'store:shop_list' %}" class="btn btn-secondary">取消</a>
-                    <button type="submit" class="btn btn-primary">开始导入</button>
+                    <a href="{% url 'store:shop_list' %}" class="ui-btn ui-btn-outline">取消</a>
+                    <button type="submit" class="ui-btn ui-btn-primary">开始导入</button>
                 </div>
             </form>
         </div>

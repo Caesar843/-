@@ -5,6 +5,7 @@ from apps.user_management.models import (
     UserProfile,
     ObjectPermissionGrant,
     ApprovalRecord,
+    ShopBindingRequest,
 )
 
 
@@ -54,3 +55,19 @@ class ApprovalRecordAdmin(admin.ModelAdmin):
     list_filter = ("action", "content_type")
     search_fields = ("object_id", "approved_by__username", "signature_hash")
     raw_id_fields = ("approved_by",)
+
+
+@admin.register(ShopBindingRequest)
+class ShopBindingRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "requested_shop_name",
+        "status",
+        "approved_shop",
+        "reviewed_by",
+        "reviewed_at",
+        "created_at",
+    )
+    list_filter = ("status",)
+    search_fields = ("user__username", "requested_shop_name", "contact_phone")
+    raw_id_fields = ("user", "approved_shop", "reviewed_by")

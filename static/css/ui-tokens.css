@@ -1,0 +1,18 @@
+:root {
+    --ops-primary: var(--primary);
+    --ops-success: var(--success);
+    --ops-warning: var(--warning);
+    --ops-info: var(--info);
+    --ops-text: var(--text);
+    --ops-muted: var(--text-muted);
+    --ops-border: var(--border);
+    --ops-bg: var(--bg);
+    --ops-surface: var(--surface);
+    --ops-shadow: var(--shadow);
+    --ops-radius-lg: 16px;
+    --ops-radius-md: 12px;
+    --ops-radius-sm: 10px;
+    --ops-gap-lg: 24px;
+    --ops-gap-md: 16px;
+    --ops-gap-sm: 10px;
+}

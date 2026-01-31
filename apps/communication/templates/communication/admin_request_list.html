@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
+<link rel="stylesheet" href="{% static 'css/communication-management.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container comm-page">
+    <div class="comm-header">
+        <div class="comm-title-wrap">
+            <span class="comm-title-bar"></span>
+            <div>
+                <div class="comm-title">申请管理</div>
+                <div class="comm-subtitle">统一查看店铺申请并进行处理</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ui-card ui-section comm-table-card mb-3">
+        <form method="get">
+            <div class="comm-filter-grid">
+                <div>
+                    <label class="form-label">类型</label>
+                    <select class="form-select ui-input" name="kind">
+                        <option value="" {% if not kind_filter %}selected{% endif %}>全部</option>
+                        <option value="maintenance" {% if kind_filter == "maintenance" %}selected{% endif %}>维修申请</option>
+                        <option value="activity" {% if kind_filter == "activity" %}selected{% endif %}>活动申请</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">状态</label>
+                    <select class="form-select ui-input" name="status">
+                        <option value="" {% if not status_filter %}selected{% endif %}>全部</option>
+                        <option value="PENDING" {% if status_filter == "PENDING" %}selected{% endif %}>待处理/待审核</option>
+                        <option value="ASSIGNED" {% if status_filter == "ASSIGNED" %}selected{% endif %}>已指派</option>
+                        <option value="IN_PROGRESS" {% if status_filter == "IN_PROGRESS" %}selected{% endif %}>处理中</option>
+                        <option value="APPROVED" {% if status_filter == "APPROVED" %}selected{% endif %}>已批准</option>
+                        <option value="REJECTED" {% if status_filter == "REJECTED" %}selected{% endif %}>已拒绝</option>
+                        <option value="COMPLETED" {% if status_filter == "COMPLETED" %}selected{% endif %}>已完成</option>
+                        <option value="CANCELLED" {% if status_filter == "CANCELLED" %}selected{% endif %}>已取消</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">店铺</label>
+                    <select class="form-select ui-input" name="shop_id">
+                        <option value="" {% if not shop_filter %}selected{% endif %}>全部店铺</option>
+                        {% for shop in shops %}
+                        <option value="{{ shop.id }}" {% if shop_filter == shop.id|stringformat:"s" %}selected{% endif %}>{{ shop.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">起始日期</label>
+                    <input type="date" class="form-control ui-input" name="start_date" value="{{ start_date }}">
+                </div>
+                <div>
+                    <label class="form-label">结束日期</label>
+                    <input type="date" class="form-control ui-input" name="end_date" value="{{ end_date }}">
+                </div>
+            </div>
+            <div class="comm-filter-actions">
+                <button type="submit" class="ui-btn ui-btn-primary">筛选</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="ui-card ui-section comm-table-card">
+        <div class="table-responsive">
+            <table class="ui-table">
+                <thead>
+                    <tr>
+                        <th>店铺</th>
+                        <th>申请人</th>
+                        <th>标题</th>
+                        <th>类型</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in requests %}
+                    <tr>
+                        <td>{{ row.shop_name }}</td>
+                        <td>{{ row.applicant }}</td>
+                        <td>{{ row.title }}</td>
+                        <td>{{ row.type_display }}</td>
+                        <td>{{ row.status_display }}</td>
+                        <td>{{ row.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <a href="{% url 'communication:admin_request_detail' row.kind row.id %}" class="ui-btn ui-btn-primary ui-btn-sm">处理</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="ui-text-muted text-center">暂无申请记录</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

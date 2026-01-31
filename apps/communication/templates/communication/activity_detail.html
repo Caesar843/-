@@ -7,7 +7,7 @@
 {% block content %}
 <div class="container page-shell">
     {% include 'partials/page_header.html' with title="活动详情" subtitle="查看审核状态与流程记录" %}
-<div class="card shadow-sm section-card mb-4">
+    <div class="card shadow-sm section-card mb-4">
         <div class="card-header">
             <h2>{{ application.title }}</h2>
         </div>
@@ -28,6 +28,9 @@
                     <p><strong>审核人员：</strong>{{ application.reviewer|default:"未审核" }}</p>
                     <p><strong>创建时间：</strong>{{ application.created_at|date:"Y-m-d H:i" }}</p>
                     <p><strong>更新时间：</strong>{{ application.updated_at|date:"Y-m-d H:i" }}</p>
+                    {% if application.attachment %}
+                    <p><strong>附件：</strong><a href="{{ application.attachment.url }}">查看附件</a></p>
+                    {% endif %}
                 </div>
                 <div class="col-md-6">
                     <p><strong>描述：</strong></p>
@@ -41,7 +44,7 @@
         </div>
         <div class="card-footer">
             <a href="{% url 'communication:activity_list' %}" class="btn btn-secondary">返回列表</a>
-            {% if application.status == 'PENDING' %}
+            {% if application.status == 'PENDING' and (user.is_superuser or user.profile.role.role_type == 'ADMIN') %}
             <a href="{% url 'communication:activity_review' application.id %}" class="btn btn-primary">审核</a>
             {% endif %}
         </div>

@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
             name='Role',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('role_type', models.CharField(choices=[('SHOP', '入驻店铺'), ('OPERATION', '商场运营专员'), ('FINANCE', '财务管理员'), ('MANAGEMENT', '商场管理层'), ('SUPER_ADMIN', '超级管理员')], help_text='系统预定义的角色类型', max_length=20, unique=True, verbose_name='角色类型')),
+                ('role_type', models.CharField(choices=[('SHOP', '入驻店铺'), ('OPERATION', '商场运营专员'), ('FINANCE', '财务管理员'), ('MANAGEMENT', '商场管理层'), ('ADMIN', '超级管理员')], help_text='系统预定义的角色类型', max_length=20, unique=True, verbose_name='角色类型')),
                 ('name', models.CharField(help_text='角色的显示名称', max_length=50, verbose_name='角色名称')),
                 ('description', models.TextField(blank=True, help_text='角色的详细描述', null=True, verbose_name='角色描述')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='创建时间')),

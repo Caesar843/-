@@ -1,28 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}403 - 禁止访问{% endblock %}
+{% block title %}403 - Forbidden{% endblock %}
 
 {% block content %}
 <div class="error-container">
     <div class="error-box">
         <h1 class="error-code">403</h1>
-        <h2 class="error-title">禁止访问</h2>
+        <h2 class="error-title">Access Forbidden</h2>
         <p class="error-message">
             {% if "CSRF" in reason %}
-            您的请求因 CSRF 安全验证而被拒绝。
-            <br>
-            请刷新页面后重新尝试。
+            Your request was blocked by CSRF protection. Please refresh and try again.
             {% else %}
-            抱歉，您没有权限访问此页面。
+            Sorry, you do not have permission to access this page.
             {% endif %}
         </p>
         <div class="error-actions">
-            <a href="/" class="btn btn-primary">返回首页</a>
-            <a href="javascript:history.back()" class="btn btn-secondary">返回上一页</a>
+            <a href="/" class="btn btn-primary">Back to Home</a>
+            <a href="javascript:history.back()" class="btn btn-secondary">Go Back</a>
         </div>
         <p class="error-help">
-            如果您认为这是一个错误，请
-            <a href="/help/contact/">联系我们</a>
+            If you think this is a mistake, please <a href="/help/contact/">contact us</a>.
         </p>
     </div>
 </div>
@@ -35,39 +32,41 @@
         min-height: 60vh;
         padding: 20px;
     }
-    
+
     .error-box {
         text-align: center;
         padding: 40px;
         border-radius: 8px;
-        background: #f8f9fa;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
         max-width: 600px;
     }
-    
+
     .error-code {
         font-size: 120px;
-        color: #ffc107;
+        color: var(--warning);
         margin: 0;
         font-weight: bold;
     }
-    
+
     .error-title {
         font-size: 28px;
-        color: #333;
+        color: var(--text);
         margin: 20px 0 10px;
     }
-    
+
     .error-message {
         font-size: 16px;
-        color: #666;
+        color: var(--text-muted);
         line-height: 1.6;
         margin: 20px 0;
     }
-    
+
     .error-actions {
         margin: 30px 0;
     }
-    
+
     .error-actions .btn {
         display: inline-block;
         margin: 0 10px;
@@ -76,36 +75,37 @@
         text-decoration: none;
         font-weight: 500;
     }
-    
+
     .btn-primary {
-        background: #007bff;
-        color: white;
+        background: var(--primary);
+        color: var(--text-inverse);
     }
-    
+
     .btn-primary:hover {
-        background: #0056b3;
+        background: var(--primary-hover);
     }
-    
+
     .btn-secondary {
-        background: #6c757d;
-        color: white;
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
     }
-    
+
     .btn-secondary:hover {
-        background: #545b62;
+        background: var(--surface-2);
     }
-    
+
     .error-help {
         font-size: 14px;
-        color: #999;
+        color: var(--text-muted);
         margin-top: 30px;
     }
-    
+
     .error-help a {
-        color: #007bff;
+        color: var(--primary);
         text-decoration: none;
     }
-    
+
     .error-help a:hover {
         text-decoration: underline;
     }

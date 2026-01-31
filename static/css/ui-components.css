@@ -1,0 +1,319 @@
+.ui-card {
+    background: var(--card-bg);
+    border-radius: var(--ops-radius-lg);
+    border: 1px solid var(--ops-border);
+    box-shadow: var(--ops-shadow);
+    color: var(--card-text);
+}
+
+.ui-section {
+    padding: 24px;
+}
+
+.ui-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--card-text);
+}
+
+.ui-text-muted {
+    color: var(--card-muted);
+}
+
+.ui-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 14px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.ui-btn:focus-visible {
+    outline: 2px solid var(--input-focus);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.ui-btn:disabled,
+.ui-btn.is-disabled,
+.ui-btn[aria-disabled="true"] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.ui-btn-sm {
+    min-height: 32px;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 10px;
+}
+
+.ui-btn-primary {
+    background: var(--ops-primary);
+    color: var(--text-inverse);
+}
+
+.ui-btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+.ui-btn-success {
+    background: var(--ops-success);
+    color: var(--text-inverse);
+}
+
+.ui-btn-success:hover {
+    filter: brightness(0.95);
+}
+
+.ui-btn-warning {
+    background: var(--ops-warning);
+    color: var(--text-inverse);
+}
+
+.ui-btn-warning:hover {
+    filter: brightness(0.95);
+}
+
+.ui-btn-info {
+    background: var(--ops-info);
+    color: var(--text-inverse);
+}
+
+.ui-btn-info:hover {
+    filter: brightness(0.95);
+}
+
+.ui-btn-outline {
+    background: var(--surface);
+    color: var(--ops-text);
+    border-color: var(--ops-border);
+}
+
+.ui-btn-outline:hover {
+    border-color: var(--input-focus);
+    color: var(--primary);
+}
+
+.ui-input {
+    border-radius: var(--ops-radius-md);
+    border: 1px solid var(--ops-border);
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--ops-text);
+}
+
+.ui-input:focus {
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 0.2rem var(--focus-ring);
+    outline: none;
+}
+
+.ui-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--surface-2);
+    color: var(--primary);
+}
+
+.ui-alert {
+    border-radius: var(--ops-radius-md);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    padding: 12px 16px;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.status-badge.success {
+    background: var(--surface-2);
+    color: var(--success);
+}
+
+.status-badge.warning {
+    background: var(--surface-2);
+    color: var(--warning);
+}
+
+.status-badge.danger {
+    background: var(--surface-2);
+    color: var(--danger);
+}
+
+.status-badge.neutral {
+    background: var(--surface-2);
+    color: var(--text-muted);
+}
+
+.ui-toast {
+    border-radius: var(--ops-radius-md);
+    border: 1px solid var(--ops-border);
+    background: var(--surface);
+    box-shadow: var(--ops-shadow);
+    padding: 12px 16px;
+}
+
+.ui-modal {
+    border-radius: var(--ops-radius-lg);
+    border: 1px solid var(--ops-border);
+    background: var(--surface);
+    box-shadow: var(--ops-shadow);
+}
+
+.ui-pagination {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.ui-pagination a,
+.ui-pagination span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--ops-border);
+    color: var(--ops-text);
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.ui-pagination .is-active {
+    background: var(--ops-primary);
+    color: var(--text-inverse);
+    border-color: var(--ops-primary);
+}
+
+.ui-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.ui-table thead th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--ops-text);
+    padding: 12px 14px;
+    background: var(--table-head-bg);
+    border-bottom: 1px solid var(--ops-border);
+}
+
+.ui-table tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--divider);
+    color: var(--ops-text);
+}
+
+.ui-table tbody tr:hover {
+    background: var(--table-row-hover);
+}
+
+.ui-empty {
+    border-radius: var(--ops-radius-md);
+    border: 2px dashed var(--border);
+    background: var(--empty-bg);
+    color: var(--empty-text);
+    text-align: center;
+    padding: 24px;
+}
+
+.ui-skeleton {
+    border-radius: 8px;
+    background: linear-gradient(90deg, var(--surface-2) 0%, var(--border) 50%, var(--surface-2) 100%);
+    background-size: 200% 100%;
+    animation: ui-skeleton 1.4s ease infinite;
+}
+
+/* Theme bridge for legacy Bootstrap buttons/alerts/tables */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 14px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn.btn-sm {
+    min-height: 32px;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 10px;
+}
+
+.btn:focus-visible {
+    outline: 2px solid var(--input-focus);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.btn:disabled,
+.btn.disabled,
+.btn[aria-disabled="true"] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.btn-primary {
+    background: var(--ops-primary);
+    border-color: var(--ops-primary);
+    color: var(--text-inverse);
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+    color: var(--text-inverse);
+}
+
+.btn-secondary,
+.btn-outline-secondary {
+    background: var(--surface);
+    border-color: var(--ops-border);
+    color: var(--ops-text);
+}
+
+.btn-secondary:hover,
+.btn-outline-secondary:hover {
+    background: var(--surface-2);
+    border-color: var(--input-focus);
+    color: var(--primary);
+}
+
+@keyframes ui-skeleton {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}

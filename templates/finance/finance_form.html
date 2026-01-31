@@ -1,36 +1,142 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}创建财务记录{% endblock %}
-
+{% block title %}&#x521B;&#x5EFA;&#x8D22;&#x52A1;&#x8BB0;&#x5F55;{% endblock %}
 
 {% block extra_css %}
-{% include 'partials/modern_theme.html' %}
+<link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
+<link rel="stylesheet" href="{% static 'css/finance-management.css' %}">
 {% endblock %}
+
 {% block content %}
-<div class="container page-shell">
-    {% include 'partials/page_header.html' with title="创建财务记录" subtitle="填写账单周期与费用信息" %}
-<div class="card shadow-sm section-card">
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
-                {% for field in form %}
-                <div class="form-group">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.help_text %}
-                    <small class="form-text text-muted">{{ field.help_text }}</small>
-                    {% endif %}
-                    {% for error in field.errors %}
-                    <div class="alert alert-danger">{{ error }}</div>
-                    {% endfor %}
-                </div>
-                {% endfor %}
-            <div class="d-flex justify-content-end gap-2">
-                <a href="{% url 'finance:finance_list' %}" class="btn btn-secondary">取消</a>
-                <button type="submit" class="btn btn-primary">保存</button>
+<div class="container finance-page">
+    <div class="finance-header">
+        <div class="finance-title-wrap">
+            <span class="finance-title-bar"></span>
+            <div>
+                <div class="finance-title">&#x521B;&#x5EFA;&#x8D22;&#x52A1;&#x8BB0;&#x5F55;</div>
+                <div class="finance-subtitle">&#x586B;&#x5199;&#x8D26;&#x5355;&#x5468;&#x671F;&#x4E0E;&#x8D39;&#x7528;&#x4FE1;&#x606F;</div>
             </div>
-            </form>
+        </div>
+        <div class="finance-actions">
+            <a href="{% url 'finance:finance_list' %}" class="ui-btn ui-btn-outline">&#x8FD4;&#x56DE;&#x5217;&#x8868;</a>
         </div>
     </div>
+
+    <div class="ui-card ui-section finance-table-card finance-form-minimal" style="max-width: 720px;">
+        <form method="post">
+            {% csrf_token %}
+            <div class="finance-form-grid">
+                <div class="form-group">
+                    <label for="{{ form.contract.id_for_label }}" class="form-label">{{ form.contract.label }}</label>
+                    <div class="select-wrap">
+                        {{ form.contract }}
+                        <span class="input-icon-right" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <span class="input-highlight"></span>
+                    </div>
+                    {% for error in form.contract.errors %}
+                    <div class="ui-alert mt-2">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.fee_type.id_for_label }}" class="form-label">{{ form.fee_type.label }}</label>
+                    <div class="select-wrap">
+                        {{ form.fee_type }}
+                        <span class="input-icon-right" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <span class="input-highlight"></span>
+                    </div>
+                    {% for error in form.fee_type.errors %}
+                    <div class="ui-alert mt-2">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group mt-4">
+                <label for="{{ form.amount.id_for_label }}" class="form-label">{{ form.amount.label }}</label>
+                <div class="input-with-icon has-left-icon amount-input{% if form.amount.errors %} is-invalid{% endif %}">
+                    <span class="input-icon" aria-hidden="true">&#x00A5;</span>
+                    {{ form.amount }}
+                </div>
+                <span class="input-highlight"></span>
+                {% for error in form.amount.errors %}
+                <div class="ui-alert mt-2">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="finance-form-grid mt-4">
+                <div class="form-group">
+                    <label for="{{ form.billing_period_start.id_for_label }}" class="form-label">{{ form.billing_period_start.label }}</label>
+                    <div class="date-wrap">
+                        <input type="date" class="form-control ui-input{% if form.billing_period_start.errors %} is-invalid{% endif %}"
+                            id="{{ form.billing_period_start.id_for_label }}" name="{{ form.billing_period_start.html_name }}"
+                            value="{{ form.billing_period_start.value|default_if_none:'' }}" {% if form.billing_period_start.field.required %}required{% endif %}>
+                        <span class="date-placeholder" aria-hidden="true">&#x5E74;/&#x6708;/&#x65E5;</span>
+                        <span class="input-icon-right" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/>
+                                <path d="M7 3v4M17 3v4M3 9h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <span class="input-highlight"></span>
+                    </div>
+                    {% for error in form.billing_period_start.errors %}
+                    <div class="ui-alert mt-2">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.billing_period_end.id_for_label }}" class="form-label">{{ form.billing_period_end.label }}</label>
+                    <div class="date-wrap">
+                        <input type="date" class="form-control ui-input{% if form.billing_period_end.errors %} is-invalid{% endif %}"
+                            id="{{ form.billing_period_end.id_for_label }}" name="{{ form.billing_period_end.html_name }}"
+                            value="{{ form.billing_period_end.value|default_if_none:'' }}" {% if form.billing_period_end.field.required %}required{% endif %}>
+                        <span class="date-placeholder" aria-hidden="true">&#x5E74;/&#x6708;/&#x65E5;</span>
+                        <span class="input-icon-right" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/>
+                                <path d="M7 3v4M17 3v4M3 9h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <span class="input-highlight"></span>
+                    </div>
+                    {% for error in form.billing_period_end.errors %}
+                    <div class="ui-alert mt-2">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="ui-alert mt-3">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <a href="{% url 'finance:finance_list' %}" class="ui-btn ui-btn-outline">&#x53D6;&#x6D88;</a>
+                <button type="submit" class="ui-btn ui-btn-primary">&#x4FDD;&#x5B58;</button>
+            </div>
+        </form>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('.date-wrap input[type="date"]').forEach(function (input) {
+        const wrapper = input.closest('.date-wrap');
+        const syncState = function () {
+            if (!wrapper) return;
+            wrapper.classList.toggle('has-value', Boolean(input.value));
+        };
+        input.addEventListener('change', syncState);
+        input.addEventListener('input', syncState);
+        syncState();
+    });
+</script>
 {% endblock %}

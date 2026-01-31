@@ -15,7 +15,7 @@ class DashboardView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
     用于系统级只读展示，汇总已有 Store + Finance 的业务成果
     """
     template_name = 'dashboard/index.html'
-    allowed_roles = ['SUPER_ADMIN', 'FINANCE']
+    allowed_roles = ['ADMIN', 'FINANCE']
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -33,7 +33,7 @@ class DashboardView(LoginRequiredMixin, RoleRequiredMixin, TemplateView):
         if user_role == Role.RoleType.SHOP:
             if user_shop:
                 return redirect('store:shop_update', user_shop.id)
-            return redirect('store:shop_create')
+            return redirect('core:shop_binding_request')
 
         return super().dispatch(request, *args, **kwargs)
 

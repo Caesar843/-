@@ -1,47 +1,84 @@
 {% extends "base.html" %}
-
+{% load static %}
 
 {% block extra_css %}
-{% include 'partials/modern_theme.html' %}
+<link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
+<link rel="stylesheet" href="{% static 'css/finance-management.css' %}">
 {% endblock %}
+
 {% block content %}
-<div class="container page-shell">
-    {% include 'partials/page_header.html' with title="缴费历史" subtitle="查看历史缴费记录" %}
-<div class="mb-4">
-        <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
-            <select class="form-select" name="contract_id">
-                <option value="">所有合同</option>
-                {% for contract in contracts %}
-                <option value="{{ contract.id }}" {% if contract_id == contract.id|stringformat:"s" %}selected{% endif %}>{{ contract.shop.name }}</option>
-                {% endfor %}
-            </select>
-            <select class="form-select" name="payment_method">
-                <option value="">所有缴费方式</option>
-                <option value="WECHAT" {% if payment_method == 'WECHAT' %}selected{% endif %}>微信支付</option>
-                <option value="ALIPAY" {% if payment_method == 'ALIPAY' %}selected{% endif %}>支付宝</option>
-                <option value="BANK_TRANSFER" {% if payment_method == 'BANK_TRANSFER' %}selected{% endif %}>银行转账</option>
-                <option value="CASH" {% if payment_method == 'CASH' %}selected{% endif %}>现金</option>
-            </select>
-            <input type="date" class="form-control" name="start_date" placeholder="开始日期" value="{{ start_date }}">
-            <input type="date" class="form-control" name="end_date" placeholder="结束日期" value="{{ end_date }}">
-            <button type="submit" class="btn btn-primary">查询</button>
-            <a href="{% url 'finance:finance_history' %}" class="btn btn-secondary">重置</a>
+<div class="container finance-page">
+    <div class="finance-header">
+        <div class="finance-title-wrap">
+            <span class="finance-title-bar"></span>
+            <div>
+                <div class="finance-title">&#x7F34;&#x8D39;&#x5386;&#x53F2;</div>
+                <div class="finance-subtitle">&#x67E5;&#x770B;&#x5386;&#x53F2;&#x7F34;&#x8D39;&#x8BB0;&#x5F55;</div>
+            </div>
+        </div>
+        <div class="finance-actions">
+            <a href="{% url 'finance:finance_list' %}" class="ui-btn ui-btn-outline">&#x8FD4;&#x56DE;&#x5217;&#x8868;</a>
+        </div>
+    </div>
+
+    <div class="ui-card ui-section finance-filters">
+        <form method="get">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">&#x5408;&#x540C;</label>
+                    <select class="form-select ui-input" name="contract_id">
+                        <option value="">&#x6240;&#x6709;&#x5408;&#x540C;</option>
+                        {% for contract in contracts %}
+                        <option value="{{ contract.id }}" {% if contract_id == contract.id|stringformat:"s" %}selected{% endif %}>{{ contract.shop.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="row g-2 mt-2">
+                <div class="col-md-4">
+                    <label class="form-label">&#x7F34;&#x8D39;&#x65B9;&#x5F0F;</label>
+                    <select class="form-select ui-input" name="payment_method">
+                        <option value="">&#x6240;&#x6709;&#x7F34;&#x8D39;&#x65B9;&#x5F0F;</option>
+                        <option value="WECHAT" {% if payment_method == 'WECHAT' %}selected{% endif %}>&#x5FAE;&#x4FE1;&#x652F;&#x4ED8;</option>
+                        <option value="ALIPAY" {% if payment_method == 'ALIPAY' %}selected{% endif %}>&#x652F;&#x4ED8;&#x5B9D;</option>
+                        <option value="BANK_TRANSFER" {% if payment_method == 'BANK_TRANSFER' %}selected{% endif %}>&#x94F6;&#x884C;&#x8F6C;&#x8D26;</option>
+                        <option value="CASH" {% if payment_method == 'CASH' %}selected{% endif %}>&#x73B0;&#x91D1;</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row g-2 mt-2">
+                <div class="col-md-4">
+                    <label for="start_date" class="form-label">&#x8D77;&#x59CB;&#x65E5;&#x671F;</label>
+                    <input type="date" class="form-control ui-input" id="start_date" name="start_date" value="{{ start_date }}">
+                </div>
+            </div>
+            <div class="row g-2 mt-2">
+                <div class="col-md-4">
+                    <label for="end_date" class="form-label">&#x7ED3;&#x675F;&#x65E5;&#x671F;</label>
+                    <input type="date" class="form-control ui-input" id="end_date" name="end_date" value="{{ end_date }}">
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <button type="submit" class="ui-btn ui-btn-primary">&#x67E5;&#x8BE2;</button>
+                <a href="{% url 'finance:finance_history' %}" class="ui-btn ui-btn-outline">&#x91CD;&#x7F6E;</a>
+            </div>
         </form>
     </div>
-    
-    {% if records %}
-    <div class="table-responsive table-card">
 
-            <table class="table table-striped table-hover">
+    {% if records %}
+    <div class="ui-card ui-section finance-table-card">
+        <div class="table-responsive">
+            <table class="ui-table">
                 <thead>
                     <tr>
-                        <th>缴费时间</th>
-                        <th>合同</th>
-                        <th>费用类型</th>
-                        <th>金额</th>
-                        <th>缴费方式</th>
-                        <th>交易单号</th>
-                        <th>操作</th>
+                        <th>&#x7F34;&#x8D39;&#x65F6;&#x95F4;</th>
+                        <th>&#x5408;&#x540C;</th>
+                        <th>&#x8D39;&#x7528;&#x7C7B;&#x578B;</th>
+                        <th>&#x91D1;&#x989D;</th>
+                        <th>&#x7F34;&#x8D39;&#x65B9;&#x5F0F;</th>
+                        <th>&#x4EA4;&#x6613;&#x5355;&#x53F7;</th>
+                        <th>&#x64CD;&#x4F5C;</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -50,76 +87,72 @@
                         <td>{{ record.paid_at }}</td>
                         <td>{{ record.contract.shop.name }}</td>
                         <td>
-                            {% if record.fee_type == 'RENT' %}租金
-                            {% elif record.fee_type == 'PROPERTY_FEE' %}物业费
-                            {% elif record.fee_type == 'UTILITY_FEE' %}水电费
-                            {% elif record.fee_type == 'OTHER' %}其他费用
+                            {% if record.fee_type == 'RENT' %}&#x79DF;&#x91D1;
+                            {% elif record.fee_type == 'PROPERTY_FEE' %}&#x7269;&#x4E1A;&#x8D39;
+                            {% elif record.fee_type == 'UTILITY_FEE' %}&#x6C34;&#x7535;&#x8D39;
+                            {% elif record.fee_type == 'OTHER' %}&#x5176;&#x4ED6;&#x8D39;&#x7528;
                             {% endif %}
                         </td>
-                        <td>¥{{ record.amount }}</td>
+                        <td>&#xA5;{{ record.amount }}</td>
                         <td>
-                            {% if record.payment_method == 'WECHAT' %}微信支付
-                            {% elif record.payment_method == 'ALIPAY' %}支付宝
-                            {% elif record.payment_method == 'BANK_TRANSFER' %}银行转账
-                            {% elif record.payment_method == 'CASH' %}现金
+                            {% if record.payment_method == 'WECHAT' %}&#x5FAE;&#x4FE1;&#x652F;&#x4ED8;
+                            {% elif record.payment_method == 'ALIPAY' %}&#x652F;&#x4ED8;&#x5B9D;
+                            {% elif record.payment_method == 'BANK_TRANSFER' %}&#x94F6;&#x884C;&#x8F6C;&#x8D26;
+                            {% elif record.payment_method == 'CASH' %}&#x73B0;&#x91D1;
                             {% endif %}
                         </td>
                         <td>{{ record.transaction_id }}</td>
                         <td>
-                            <a href="{% url 'finance:finance_detail' record.id %}" class="btn btn-sm btn-info">查看详情</a>
+                            <a href="{% url 'finance:finance_detail' record.id %}" class="ui-btn ui-btn-info ui-btn-sm">&#x67E5;&#x770B;&#x8BE6;&#x60C5;</a>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    
-    <!-- 分页 -->
+    </div>
+
     {% if is_paginated %}
-    <nav aria-label="Page navigation">
-        <ul class="pagination">
+    <nav aria-label="Page navigation" class="mt-3">
+        <ul class="pagination ui-pagination">
             {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&contract_id={{ contract_id }}&payment_method={{ payment_method }}&start_date={{ start_date }}&end_date={{ end_date }}">上一页</a>
-                </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&contract_id={{ contract_id }}&payment_method={{ payment_method }}&start_date={{ start_date }}&end_date={{ end_date }}">&#x4E0A;&#x4E00;&#x9875;</a>
+            </li>
             {% else %}
-                <li class="page-item disabled">
-                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">上一页</a>
-                </li>
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&#x4E0A;&#x4E00;&#x9875;</a>
+            </li>
             {% endif %}
 
             {% for num in page_obj.paginator.page_range %}
                 {% if page_obj.number == num %}
-                    <li class="page-item active" aria-current="page">
-                        <a class="page-link" href="?page={{ num }}&contract_id={{ contract_id }}&payment_method={{ payment_method }}&start_date={{ start_date }}&end_date={{ end_date }}">{{ num }}</a>
-                    </li>
+                <li class="page-item active" aria-current="page">
+                    <a class="page-link" href="?page={{ num }}&contract_id={{ contract_id }}&payment_method={{ payment_method }}&start_date={{ start_date }}&end_date={{ end_date }}">{{ num }}</a>
+                </li>
                 {% else %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}&contract_id={{ contract_id }}&payment_method={{ payment_method }}&start_date={{ start_date }}&end_date={{ end_date }}">{{ num }}</a>
-                    </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}&contract_id={{ contract_id }}&payment_method={{ payment_method }}&start_date={{ start_date }}&end_date={{ end_date }}">{{ num }}</a>
+                </li>
                 {% endif %}
             {% endfor %}
 
             {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&contract_id={{ contract_id }}&payment_method={{ payment_method }}&start_date={{ start_date }}&end_date={{ end_date }}">下一页</a>
-                </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}&contract_id={{ contract_id }}&payment_method={{ payment_method }}&start_date={{ start_date }}&end_date={{ end_date }}">&#x4E0B;&#x4E00;&#x9875;</a>
+            </li>
             {% else %}
-                <li class="page-item disabled">
-                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">下一页</a>
-                </li>
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&#x4E0B;&#x4E00;&#x9875;</a>
+            </li>
             {% endif %}
         </ul>
     </nav>
     {% endif %}
     {% else %}
-    <div class="alert alert-info" role="alert">
-        暂无缴费记录
+    <div class="ui-alert" role="alert">
+        &#x6682;&#x65E0;&#x7F34;&#x8D39;&#x8BB0;&#x5F55;
     </div>
     {% endif %}
-    
-    <div class="mb-4">
-        <a href="{% url 'finance:finance_list' %}" class="btn btn-secondary">返回列表</a>
-    </div>
 </div>
 {% endblock %}

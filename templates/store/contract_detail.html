@@ -4,17 +4,90 @@
 
 {% block extra_css %}
 {% include 'partials/modern_theme.html' %}
+<style>
+    .contract-detail-page {
+        color: #e5e7eb;
+    }
+
+    .contract-detail-page .page-header {
+        padding-bottom: 12px;
+        border-bottom: 1px solid #1f2937;
+    }
+
+    .contract-detail-page .page-title {
+        font-size: 32px;
+        font-weight: 800;
+        color: #f8fafc;
+        letter-spacing: 0.01em;
+    }
+
+    .contract-detail-page .page-subtitle {
+        color: #cbd5e1;
+        font-size: 15px;
+    }
+
+    .contract-detail-page .table-card {
+        background: #0b1220;
+        border-color: #1f2937;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.35);
+    }
+
+    .contract-detail-page .table {
+        --bs-table-bg: transparent;
+        --bs-table-striped-bg: transparent;
+        color: #e5e7eb;
+    }
+
+    .contract-detail-page .table tbody tr {
+        border-bottom: 1px solid #1f2a3d;
+    }
+
+    .contract-detail-page .table tbody tr:nth-of-type(odd) {
+        background: #0f172a;
+    }
+
+    .contract-detail-page .table tbody tr:nth-of-type(even) {
+        background: #0b1324;
+    }
+
+    .contract-detail-page .table th {
+        width: 220px;
+        color: #e2e8f0;
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 0.02em;
+        padding: 14px 18px;
+    }
+
+    .contract-detail-page .table td {
+        color: #f1f5f9;
+        padding: 14px 18px;
+        font-size: 15px;
+    }
+
+    .btn-back-night {
+        background: #1e293b;
+        border-color: #334155;
+        color: #f8fafc;
+    }
+
+    .btn-back-night:hover {
+        background: #0f172a;
+        border-color: #475569;
+        color: #ffffff;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="container page-shell">
+<div class="container page-shell contract-detail-page">
     <div class="page-header">
         <div>
             <h1 class="page-title">Contract Detail</h1>
             <div class="page-subtitle">Contract #{{ contract.id }}</div>
         </div>
         <div class="action-row">
-            <a href="{% url 'store:contract_list' %}" class="btn btn-outline-secondary">Back</a>
+            <a href="{% url 'store:contract_list' %}" class="btn btn-back-night">Back</a>
         </div>
     </div>
 

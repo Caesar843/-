@@ -1,88 +1,64 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
+<link rel="stylesheet" href="{% static 'css/query-dashboard.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">🔍 多维度查询系统</h1>
-    
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">查询功能导航</h5>
-                    <p class="card-text">选择以下查询功能，获取您需要的数据洞察：</p>
-                    <div class="row">
-                        <div class="col-md-3 mb-2">
-                            <a href="{% url 'query:shop_query' %}" class="btn btn-primary btn-block">
-                                🏬 店铺查询
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <a href="{% url 'query:operation_query' %}" class="btn btn-success btn-block">
-                                📊 运营查询
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <a href="{% url 'query:finance_query' %}" class="btn btn-warning btn-block">
-                                💰 财务查询
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <a href="{% url 'query:admin_query' %}" class="btn btn-info btn-block">
-                                📈 管理层查询
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="query-dashboard">
+    <div class="query-header">
+        <span class="query-header-bar"></span>
+        <div>
+            <div class="query-title">&#x591A;&#x7EF4;&#x67E5;&#x8BE2;&#x5BFC;&#x822A;</div>
+            <div class="query-subtitle">&#x9009;&#x62E9;&#x67E5;&#x8BE2;&#x7C7B;&#x578B;&#xFF0C;&#x83B7;&#x53D6;&#x6D1E;&#x5BDF;&#x4E0E;&#x62A5;&#x8868;&#x4FE1;&#x606F;</div>
         </div>
     </div>
-    
+
+    <div class="ui-card ui-section query-card">
+        <div class="query-section-header">
+            <div class="ui-title">&#x67E5;&#x8BE2;&#x529F;&#x80FD;&#x5BFC;&#x822A;</div>
+            <span class="ui-text-muted">&#x9009;&#x62E9;&#x7ECF;&#x5E38;&#x4F7F;&#x7528;&#x7684;&#x6A21;&#x5757;</span>
+        </div>
+        <div class="query-actions">
+            <a href="{% url 'query:shop_query' %}" class="ui-btn ui-btn-primary w-100">&#x5E97;&#x94FA;&#x67E5;&#x8BE2;</a>
+            <a href="{% url 'query:operation_query' %}" class="ui-btn ui-btn-success w-100">&#x8FD0;&#x8425;&#x67E5;&#x8BE2;</a>
+            <a href="{% url 'query:finance_query' %}" class="ui-btn ui-btn-warning w-100">&#x8D22;&#x52A1;&#x67E5;&#x8BE2;</a>
+            <a href="{% url 'query:admin_query' %}" class="ui-btn ui-btn-info w-100">&#x7BA1;&#x7406;&#x5C42;&#x67E5;&#x8BE2;</a>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title">功能说明</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item">
-                            <strong>店铺查询</strong>：查看店铺合约详情、缴费记录、运营数据和事务申请进度
-                        </li>
-                        <li class="list-group-item">
-                            <strong>运营查询</strong>：分析分管区域店铺信息、运营数据汇总和事务处理情况
-                        </li>
-                        <li class="list-group-item">
-                            <strong>财务查询</strong>：查看费用收缴明细和未缴费用统计
-                        </li>
-                        <li class="list-group-item">
-                            <strong>管理层查询</strong>：获取商场整体运营数据概览
-                        </li>
-                    </ul>
-                </div>
+            <div class="ui-card ui-section query-card">
+                <div class="ui-title mb-3">&#x529F;&#x80FD;&#x8BF4;&#x660E;</div>
+                <ul class="query-list">
+                    <li class="query-list-item">
+                        <strong>&#x5E97;&#x94FA;&#x67E5;&#x8BE2;</strong>&#xFF1A;&#x67E5;&#x770B;&#x5E97;&#x94FA;&#x5408;&#x540C;&#x8BE6;&#x60C5;&#x3001;&#x7F34;&#x8D39;&#x8BB0;&#x5F55;&#x3001;&#x8FD0;&#x8425;&#x6570;&#x636E;&#x4E0E;&#x4E8B;&#x52A1;&#x7533;&#x8BF7;&#x8FDB;&#x5EA6;
+                    </li>
+                    <li class="query-list-item">
+                        <strong>&#x8FD0;&#x8425;&#x67E5;&#x8BE2;</strong>&#xFF1A;&#x5206;&#x6790;&#x5206;&#x7BA1;&#x533A;&#x57DF;&#x5E97;&#x94FA;&#x4FE1;&#x606F;&#x3001;&#x8FD0;&#x8425;&#x6570;&#x636E;&#x6C47;&#x603B;&#x4E0E;&#x4E8B;&#x52A1;&#x5904;&#x7406;&#x60C5;&#x51B5;
+                    </li>
+                    <li class="query-list-item">
+                        <strong>&#x8D22;&#x52A1;&#x67E5;&#x8BE2;</strong>&#xFF1A;&#x67E5;&#x770B;&#x8D39;&#x7528;&#x6536;&#x7F34;&#x660E;&#x7EC6;&#x4E0E;&#x672A;&#x7F34;&#x8D39;&#x7528;&#x7EDF;&#x8BA1;
+                    </li>
+                    <li class="query-list-item">
+                        <strong>&#x7BA1;&#x7406;&#x5C42;&#x67E5;&#x8BE2;</strong>&#xFF1A;&#x83B7;&#x53D6;&#x5546;&#x573A;&#x6574;&#x4F53;&#x8FD0;&#x8425;&#x6570;&#x636E;&#x6982;&#x89C8;
+                    </li>
+                </ul>
             </div>
         </div>
-        
         <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title">使用提示</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item">
-                            选择查询维度后，系统会自动加载相关数据
-                        </li>
-                        <li class="list-group-item">
-                            可以使用日期范围筛选特定时间段的数据
-                        </li>
-                        <li class="list-group-item">
-                            查询结果支持导出和进一步分析
-                        </li>
-                        <li class="list-group-item">
-                            如有查询问题，请联系系统管理员
-                        </li>
-                    </ul>
-                </div>
+            <div class="ui-card ui-section query-card">
+                <div class="ui-title mb-3">&#x4F7F;&#x7528;&#x63D0;&#x793A;</div>
+                <ul class="query-list">
+                    <li class="query-list-item">&#x9009;&#x62E9;&#x67E5;&#x8BE2;&#x7EF4;&#x5EA6;&#x540E;&#xFF0C;&#x7CFB;&#x7EDF;&#x4F1A;&#x81EA;&#x52A8;&#x52A0;&#x8F7D;&#x76F8;&#x5173;&#x6570;&#x636E;</li>
+                    <li class="query-list-item">&#x53EF;&#x4EE5;&#x4F7F;&#x7528;&#x65E5;&#x671F;&#x8303;&#x56F4;&#x7B5B;&#x9009;&#x7279;&#x5B9A;&#x65F6;&#x95F4;&#x6BB5;&#x7684;&#x6570;&#x636E;</li>
+                    <li class="query-list-item">&#x67E5;&#x8BE2;&#x7ED3;&#x679C;&#x652F;&#x6301;&#x5BFC;&#x51FA;&#x4E0E;&#x8FDB;&#x4E00;&#x6B65;&#x5206;&#x6790;</li>
+                    <li class="query-list-item">&#x5982;&#x6709;&#x67E5;&#x8BE2;&#x95EE;&#x9898;&#xFF0C;&#x8BF7;&#x8054;&#x7CFB;&#x7CFB;&#x7EDF;&#x7BA1;&#x7406;&#x5458;</li>
+                </ul>
             </div>
         </div>
     </div>

@@ -1,80 +1,97 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}数据分析 - 商场店铺智能运营管理系统{% endblock %}
+{% block title %}&#x8FD0;&#x8425;&#x6570;&#x636E;&#x5206;&#x6790; - &#x5546;&#x573A;&#x5E97;&#x94FA;&#x667A;&#x80FD;&#x8FD0;&#x8425;&#x7BA1;&#x7406;&#x7CFB;&#x7EDF;{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
+<link rel="stylesheet" href="{% static 'css/operations-analysis.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1 class="mt-4 mb-4">📈 数据分析</h1>
+<div class="ops-analysis">
+    <div class="ops-analysis-header">
+        <span class="ops-analysis-bar"></span>
+        <div>
+            <div class="ops-analysis-title">&#x8FD0;&#x8425;&#x6570;&#x636E;&#x5206;&#x6790;</div>
+            <div class="ops-analysis-subtitle">&#x5404;&#x5E97;&#x94FA;&#x8FD0;&#x8425;&#x6307;&#x6807;&#x7684;&#x5468;&#x671F;&#x6C47;&#x603B;&#x4E0E;&#x8D8B;&#x52BF;&#x6355;&#x6349;</div>
+        </div>
+    </div>
 
-        <!-- 分析结果列表 -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title">分析结果</h5>
+    <div class="ops-analysis-section">
+        <div class="ui-card ui-section">
+            <div class="ops-section-header">
+                <div class="ui-title">&#x5206;&#x6790;&#x7ED3;&#x679C;</div>
+                <span class="ui-text-muted">&#x66F4;&#x65B0;&#x81F3;&#x6700;&#x65B0;&#x5206;&#x6790;&#x65F6;&#x95F4;</span>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead>
-                            <tr>
-                                <th>店铺</th>
-                                <th>分析周期</th>
-                                <th>分析时间</th>
-                                <th>客流量</th>
-                                <th>销售额</th>
-                                <th>客单价</th>
-                                <th>转化率</th>
-                                <th>销售增长率</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for analysis in analyses %}
-                            <tr>
-                                <td>{{ analysis.shop.name }}</td>
-                                <td>{{ analysis.get_analysis_period_display }}</td>
-                                <td>{{ analysis.analyzed_at|date:'Y-m-d H:i' }}</td>
-                                <td>{{ analysis.total_foot_traffic }}</td>
-                                <td>¥{{ analysis.total_sales|floatformat:2 }}</td>
-                                <td>¥{{ analysis.average_transaction_value|floatformat:2 }}</td>
-                                <td>{{ analysis.conversion_rate|floatformat:2 }}%</td>
-                                <td>{{ analysis.sales_growth_rate|floatformat:2 }}%</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="table-responsive ops-analysis-table">
+                <table class="ui-table">
+                    <thead>
+                        <tr>
+                            <th>&#x5E97;&#x94FA;</th>
+                            <th>&#x5206;&#x6790;&#x5468;&#x671F;</th>
+                            <th>&#x5206;&#x6790;&#x65F6;&#x95F4;</th>
+                            <th>&#x5BA2;&#x6D41;&#x91CF;</th>
+                            <th>&#x9500;&#x552E;&#x989D;</th>
+                            <th>&#x5BA2;&#x5355;&#x4EF7;</th>
+                            <th>&#x8F6C;&#x5316;&#x7387;</th>
+                            <th>&#x9500;&#x552E;&#x589E;&#x957F;&#x7387;</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for analysis in analyses %}
+                        <tr>
+                            <td>{{ analysis.shop.name }}</td>
+                            <td>{{ analysis.get_analysis_period_display }}</td>
+                            <td>{{ analysis.analyzed_at|date:'Y-m-d H:i' }}</td>
+                            <td>{{ analysis.total_foot_traffic }}</td>
+                            <td>&#xA5;{{ analysis.total_sales|floatformat:2 }}</td>
+                            <td>&#xA5;{{ analysis.average_transaction_value|floatformat:2 }}</td>
+                            <td>{{ analysis.conversion_rate|floatformat:2 }}%</td>
+                            <td>{{ analysis.sales_growth_rate|floatformat:2 }}%</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="ui-text-muted text-center">&#x6682;&#x65E0;&#x5206;&#x6790;&#x6570;&#x636E;</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
+    </div>
 
-        <!-- 店铺分析选择 -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title">店铺分析</h5>
+    <div class="ops-analysis-section">
+        <div class="ui-card ui-section">
+            <div class="ops-section-header">
+                <div class="ui-title">&#x5E97;&#x94FA;&#x5206;&#x6790;</div>
+                <span class="ui-text-muted">&#x9009;&#x62E9;&#x76EE;&#x6807;&#x5E97;&#x94FA;&#x4E0E;&#x5206;&#x6790;&#x5468;&#x671F;</span>
             </div>
-            <div class="card-body">
-                <form method="get" action="{% url 'operations:analysis' %}">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="shop" class="form-label">店铺</label>
-                            <select class="form-select" id="shop" name="shop">
-                                <option value="">全部店铺</option>
-                                {% for shop in shops %}
-                                <option value="{{ shop.id }}">{{ shop.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="period" class="form-label">分析周期</label>
-                            <select class="form-select" id="period" name="period">
-                                <option value="daily">日</option>
-                                <option value="weekly">周</option>
-                                <option value="monthly">月</option>
-                            </select>
-                        </div>
+            <form method="get" action="{% url 'operations:analysis' %}">
+                <div class="ops-analysis-form">
+                    <div>
+                        <label for="shop" class="form-label">&#x5E97;&#x94FA;</label>
+                        <select class="form-select ui-input" id="shop" name="shop">
+                            <option value="">&#x5168;&#x90E8;&#x5E97;&#x94FA;</option>
+                            {% for shop in shops %}
+                            <option value="{{ shop.id }}">{{ shop.name }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <button type="submit" class="btn btn-primary">查看分析</button>
-                </form>
-            </div>
+                    <div>
+                        <label for="period" class="form-label">&#x5206;&#x6790;&#x5468;&#x671F;</label>
+                        <select class="form-select ui-input" id="period" name="period">
+                            <option value="daily">&#x65E5;</option>
+                            <option value="weekly">&#x5468;</option>
+                            <option value="monthly">&#x6708;</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="ops-analysis-actions">
+                    <button type="submit" class="ui-btn ui-btn-primary">&#x67E5;&#x770B;&#x5206;&#x6790;</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

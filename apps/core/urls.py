@@ -7,6 +7,10 @@ urlpatterns = [
     path('login/', views.LoginView.as_view(), name='login'),
     path('register/', views.RegisterView.as_view(), name='register'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
+    path('shop-binding/', views.ShopBindingRequestView.as_view(), name='shop_binding_request'),
+    path('password-reset/', views.PasswordResetRequestView.as_view(), name='password_reset'),
+    path('password-reset/verify/', views.PasswordResetVerifyView.as_view(), name='password_reset_verify'),
+    path('password-reset/set/', views.PasswordResetSetPasswordView.as_view(), name='password_reset_set'),
     path('health/', views.HealthCheckView.as_view(), name='health'),
     
     # 缓存监控 API 路由

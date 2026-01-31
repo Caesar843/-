@@ -1,0 +1,24 @@
+.store-actions,
+.finance-actions,
+.comm-actions,
+.reports-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.reports-actions {
+    margin-top: var(--ops-gap-md);
+}
+
+.finance-section-header,
+.reports-section-header,
+.ops-section-header,
+.query-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}

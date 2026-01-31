@@ -236,6 +236,15 @@ class StoreService:
         from io import StringIO
         from decimal import Decimal
         from datetime import datetime
+
+        def _sanitize_csv_cell(value: str) -> str:
+            if not value:
+                return value
+            trimmed = value.strip()
+            if trimmed and trimmed[0] in ('=', '+', '-', '@'):
+                return "'" + trimmed
+            return value
+
         
         # 初始化导入结果
         result = {
@@ -261,6 +270,7 @@ class StoreService:
         
         # 处理每一行数据
         for row_num, row in enumerate(reader, start=2):  # 行号从2开始（跳过表头）
+            row = {k: _sanitize_csv_cell(v) if isinstance(v, str) else v for k, v in row.items()}
             try:
                 # 提取数据
                 name = row.get('店铺名称', '').strip()

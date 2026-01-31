@@ -1,0 +1,117 @@
+.store-page {
+    font-family: "Fira Sans", "Microsoft YaHei", sans-serif;
+    color: var(--ops-text);
+}
+
+.store-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: var(--ops-gap-lg);
+}
+
+.store-title {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.store-subtitle {
+    color: var(--ops-muted);
+    font-size: 14px;
+}
+
+.store-title-bar {
+    width: 10px;
+    height: 36px;
+    background: var(--ops-primary);
+    border-radius: 4px;
+}
+
+.store-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.store-table-card {
+    border-radius: var(--ops-radius-lg);
+    overflow: hidden;
+    border: 1px solid #eef2ff;
+}
+
+.store-form-card {
+    max-width: 880px;
+}
+
+.store-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ops-gap-md);
+}
+
+.store-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--ops-gap-md);
+}
+
+.store-form-full {
+    grid-column: 1 / -1;
+}
+
+.store-form .form-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ops-muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.store-form input[type="text"],
+.store-form input[type="number"],
+.store-form input[type="tel"],
+.store-form input[type="date"],
+.store-form select,
+.store-form textarea {
+    width: 100%;
+    border-radius: var(--ops-radius-md);
+    border: 1px solid var(--ops-border);
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--input-text);
+    background: var(--input-bg);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.store-form input[type="date"] {
+    padding-left: 12px;
+}
+
+.store-form input:focus,
+.store-form select:focus,
+.store-form textarea:focus {
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 0.2rem var(--focus-ring);
+    outline: none;
+}
+
+.store-form input::placeholder,
+.store-form textarea::placeholder {
+    color: var(--input-placeholder);
+}
+
+.store-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .store-title {
+        font-size: 22px;
+    }
+}

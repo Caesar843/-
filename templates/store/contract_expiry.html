@@ -4,6 +4,9 @@
 
 
 {% block extra_css %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
 {% include 'partials/modern_theme.html' %}
 {% endblock %}
 
@@ -18,14 +21,14 @@
         </div>
     </div>
 
-    <div class="card mb-4 section-card">
-        <div class="card-header bg-info text-white">
-            <h2 class="h5 mb-0">即将到期的合同（30天内）</h2>
+    <div class="ui-card ui-section mb-4">
+        <div class="section-header">
+            <h2 class="section-title">即将到期的合同（30天内）</h2>
         </div>
-        <div class="card-body">
+        <div>
             {% if expiring_contracts %}
             <div class="table-card">
-                <table class="table table-striped">
+                <table class="ui-table">
                 <thead>
                     <tr>
                         <th>合同ID</th>
@@ -55,20 +58,21 @@
                 </table>
             </div>
             {% else %}
-            <div class="alert alert-success">
+            <div class="ui-empty">
                 没有发现即将到期的合同
             </div>
             {% endif %}
         </div>
     </div>
 
-    <div class="card mb-4">
-        <div class="card-header bg-danger text-white">
-            <h2 class="h5 mb-0">已过期的合同</h2>
+    <div class="ui-card ui-section mb-4">
+        <div class="section-header">
+            <h2 class="section-title">已过期的合同</h2>
         </div>
-        <div class="card-body">
+        <div>
             {% if expired_contracts %}
-            <table class="table table-striped">
+            <div class="table-card">
+                <table class="ui-table">
                 <thead>
                     <tr>
                         <th>合同ID</th>
@@ -95,9 +99,10 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-            </table>
+                </table>
+            </div>
             {% else %}
-            <div class="alert alert-success">
+            <div class="ui-empty">
                 没有发现已过期的合同
             </div>
             {% endif %}

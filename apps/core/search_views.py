@@ -9,12 +9,11 @@ from typing import Dict, Any, Optional
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 
 from apps.core.search_manager import get_search_manager
@@ -30,7 +29,7 @@ logger = logging.getLogger(__name__)
 class SearchViewSet(viewsets.ViewSet):
     """搜索 ViewSet"""
     
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def list(self, request):
         """
@@ -372,7 +371,6 @@ class SearchIndexViewSet(viewsets.ViewSet):
 # 简单视图函数
 # ============================================================================
 
-@csrf_exempt
 @require_http_methods(["GET"])
 def search_view(request):
     """简单搜索视图 - 快速访问"""

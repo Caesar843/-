@@ -1,14 +1,14 @@
-from django.shortcuts import redirect, render
+from django.shortcuts import render
 from django.contrib import messages
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.utils import timezone
 import hashlib
 
 from apps.user_management.models import Role, ObjectPermissionGrant, ApprovalRecord
+from apps.store.models import Shop
 
 
 def _get_user_role(user):
@@ -18,13 +18,45 @@ def _get_user_role(user):
         return None
 
 
+def is_admin_user(user):
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    role = _get_user_role(user)
+    return bool(role and role.role_type == "ADMIN")
+
+
+def is_shop_member(user, shop):
+    if not user or not user.is_authenticated or not shop:
+        return False
+    if getattr(shop, "owner_id", None) == user.id:
+        return True
+    user_shops = getattr(user, "shops", None)
+    if user_shops is not None:
+        try:
+            if shop in user_shops.all():
+                return True
+        except Exception:
+            pass
+    profile_shop_id = getattr(getattr(user, "profile", None), "shop_id", None)
+    if profile_shop_id and getattr(shop, "id", None) == profile_shop_id:
+        return True
+    return False
+
+
+def forbidden_response(request, message="Access denied"):
+    messages.error(request, message)
+    return render(request, "errors/403.html", status=403)
+
+
 def has_object_permission(user, action, obj, *, allowed_roles=None, allow_shop_owner=False):
     """
     Unified object-level permission check with RBAC fallback.
     """
     if not user or not user.is_authenticated:
         return False
-    if user.is_superuser:
+    if is_admin_user(user):
         return True
 
     role = _get_user_role(user)
@@ -40,9 +72,8 @@ def has_object_permission(user, action, obj, *, allowed_roles=None, allow_shop_o
         return True
 
     if allow_shop_owner and role_type == Role.RoleType.SHOP:
-        user_shop_id = getattr(getattr(user, "profile", None), "shop_id", None)
-        obj_shop_id = getattr(getattr(obj, "shop", None), "id", None)
-        if user_shop_id and obj_shop_id and user_shop_id == obj_shop_id:
+        obj_shop = getattr(obj, "shop", None)
+        if is_shop_member(user, obj_shop):
             return True
 
     if not obj:
@@ -75,8 +106,7 @@ def require_object_permission(request, action, obj, *, allowed_roles=None, allow
         allow_shop_owner=allow_shop_owner,
     ):
         return None
-    messages.error(request, "鎮ㄦ病鏈夋潈闄愭搷浣滆璧勬簮")
-    return HttpResponseForbidden("鎮ㄦ病鏈夋潈闄愭搷浣滆璧勬簮")
+    return forbidden_response(request, "Access denied")
 
 
 def record_approval(*, action, obj, approved_by, comment=None, request_snapshot=None):
@@ -102,134 +132,74 @@ def record_approval(*, action, obj, approved_by, comment=None, request_snapshot=
 
 def role_required(*allowed_roles):
     """
-    角色访问控制装饰器
-    ----------------
-    用于函数视图，检查用户是否拥有指定角色
-    
-    Args:
-        *allowed_roles: 允许访问的角色类型列表
+    Function-based role access decorator.
     """
     def decorator(view_func):
         @login_required
         def wrapper(request, *args, **kwargs):
-            # 获取用户角色
             try:
                 user_role = request.user.profile.role.role_type
             except AttributeError:
-                messages.error(request, '您的账号未配置角色，请联系管理员')
-                return HttpResponseForbidden('您的账号未配置角色，请联系管理员')
-            
-            # 检查角色是否在允许列表中
-            if user_role in allowed_roles:
-                return view_func(request, *args, **kwargs)
-            else:
-                messages.error(request, '您没有权限访问该页面')
-                return HttpResponseForbidden('您没有权限访问该页面')
-        return wrapper
-    return decorator
+                return forbidden_response(request, 'Role not configured')
 
-
-def shop_data_access_required():
-    """
-    店铺数据访问控制装饰器
-    ----------------------
-    确保店铺用户只能访问自己店铺的数据
-    """
-    def decorator(view_func):
-        @login_required
-        def wrapper(request, *args, **kwargs):
-            # 获取用户角色
-            try:
-                user_role = request.user.profile.role.role_type
-                user_shop = request.user.profile.shop
-            except AttributeError:
-                messages.error(request, '您的账号未配置完整，请联系管理员')
-                return HttpResponseForbidden('您的账号未配置完整，请联系管理员')
-            
-            # 非店铺角色可以直接访问
-            if user_role != Role.RoleType.SHOP:
+            if is_admin_user(request.user) or user_role in allowed_roles:
                 return view_func(request, *args, **kwargs)
-            
-            # 店铺角色需要检查数据访问权限
-            # 这里可以根据具体业务逻辑扩展，例如检查kwargs中的shop_id
-            # 示例：如果视图使用shop_id参数，则检查是否匹配用户的shop_id
-            if 'shop_id' in kwargs:
-                if str(kwargs['shop_id']) != str(user_shop.id):
-                    messages.error(request, '您没有权限访问其他店铺的数据')
-                    return redirect('dashboard:index')
-            
-            return view_func(request, *args, **kwargs)
+            return forbidden_response(request, 'Access denied')
         return wrapper
     return decorator
 
 
 class RoleRequiredMixin:
     """
-    角色访问控制混入类
-    ----------------
-    用于类视图，检查用户是否拥有指定角色
+    Role access control mixin.
     """
     allowed_roles = []
-    
+
     @method_decorator(login_required)
     def dispatch(self, request, *args, **kwargs):
-        # 获取用户角色
         try:
             user_role = request.user.profile.role.role_type
         except AttributeError:
-            messages.error(request, '您的账号未配置角色，请联系管理员')
-            # 对于已登录但角色配置不完整的用户，不应重定向到登录页
-            # 而应显示错误消息并停留在当前页或返回403
-            return HttpResponseForbidden('您的账号未配置角色，请联系管理员')
-        
-        # 检查角色是否在允许列表中
+            return forbidden_response(request, 'Role not configured')
+
+        if is_admin_user(request.user):
+            return super().dispatch(request, *args, **kwargs)
         if user_role in self.allowed_roles:
             return super().dispatch(request, *args, **kwargs)
-        else:
-            messages.error(request, '您没有权限访问该页面')
-            return HttpResponseForbidden('您没有权限访问该页面')
+        return forbidden_response(request, 'Access denied')
 
 
 class ShopDataAccessMixin:
+
     """
-    店铺数据访问控制混入类
-    ----------------------
-    确保店铺用户只能访问自己店铺的数据
+    Shop data access control mixin.
     """
-    
+
     @method_decorator(login_required)
     def dispatch(self, request, *args, **kwargs):
-        # 获取用户角色
         try:
             user_role = request.user.profile.role.role_type
             user_shop = request.user.profile.shop
         except AttributeError:
-            messages.error(request, '您的账号未配置完整，请联系管理员')
-            # 对于已登录但配置不完整的用户，不应重定向到登录页
-            return HttpResponseForbidden('您的账号未配置完整，请联系管理员')
-        
-        # 非店铺角色可以直接访问
+            return forbidden_response(request, 'Account configuration incomplete')
+
         if user_role != Role.RoleType.SHOP:
             return super().dispatch(request, *args, **kwargs)
-        
-        # 店铺角色需要检查数据访问权限
-        # 如果是店铺角色但未关联店铺，拒绝访问
+
         if not user_shop:
-            messages.error(request, '您的账号未关联店铺，请联系管理员')
-            return HttpResponseForbidden('您的账号未关联店铺，请联系管理员')
-        
-        # 这里可以根据具体业务逻辑扩展
+            return forbidden_response(request, 'No shop bound')
+
         if 'shop_id' in kwargs:
-            if str(kwargs['shop_id']) != str(user_shop.id):
-                messages.error(request, '您没有权限访问其他店铺的数据')
-                return redirect('dashboard:index')
-        
+            shop = Shop.objects.filter(id=kwargs['shop_id']).first()
+            if not is_shop_member(request.user, shop):
+                return forbidden_response(request, 'Access denied')
+
         return super().dispatch(request, *args, **kwargs)
 
 
 class PermissionDeniedView:
     """
-    权限拒绝视图
+    Permission denied view.
     """
     def get(self, request):
-        return HttpResponseForbidden("您没有权限访问该资源")
+        return forbidden_response(request, 'Access denied')

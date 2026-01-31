@@ -1,225 +1,208 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
+<link rel="stylesheet" href="{% static 'css/query-detail.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">💰 财务查询</h1>
-    
-    <div class="card mb-4">
-        <div class="card-body">
-            <h5 class="card-title">查询条件</h5>
-            <form method="get" action="{% url 'query:finance_query' %}">
-                <div class="form-row">
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="fee_type">费用类型</label>
-                            <select class="form-control" id="fee_type" name="fee_type">
-                                <option value="">-- 全部费用类型 --</option>
-                                <option value="RENT" {% if is_rent %}selected{% endif %}>租金</option>
-                                <option value="PROPERTY_FEE" {% if is_property_fee %}selected{% endif %}>物业费</option>
-                                <option value="UTILITY_FEE" {% if is_utility_fee %}selected{% endif %}>水电费</option>
-                                <option value="OTHER" {% if is_other_fee %}selected{% endif %}>其他费用</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="status">状态</label>
-                            <select class="form-control" id="status" name="status">
-                                <option value="">-- 全部状态 --</option>
-                                <option value="UNPAID" {% if is_unpaid %}selected{% endif %}>未支付</option>
-                                <option value="PAID" {% if is_paid %}selected{% endif %}>已支付</option>
-                                <option value="VOID" {% if is_void %}selected{% endif %}>已作废</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="period">时间范围</label>
-                            <select class="form-control" id="period" name="period">
-                                <option value="week" {% if is_week %}selected{% endif %}>最近7天</option>
-                                <option value="month" {% if is_month %}selected{% endif %}>最近30天</option>
-                                <option value="quarter" {% if is_quarter %}selected{% endif %}>最近90天</option>
-                                <option value="year" {% if is_year %}selected{% endif %}>最近1年</option>
-                                <option value="custom" {% if is_custom %}selected{% endif %}>自定义范围</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 自定义日期范围，仅在选择"自定义范围"时显示 -->
-                <div id="custom_date_range" {% if not is_custom %}style="display: none;"{% endif %}>
-                    <div class="form-row mt-2">
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label for="start_date">开始日期</label>
-                                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label for="end_date">结束日期</label>
-                                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="form-row mt-3">
-                    <div class="col-md-12 text-right">
-                        <button type="submit" class="btn btn-primary">查询</button>
-                    </div>
-                </div>
-            </form>
+<div class="query-detail">
+    <div class="query-detail-header">
+        <span class="query-detail-bar"></span>
+        <div>
+            <div class="query-detail-title">&#x8D22;&#x52A1;&#x67E5;&#x8BE2;</div>
+            <div class="query-detail-subtitle">&#x8D22;&#x52A1;&#x6536;&#x7F34;&#x8BE6;&#x60C5;&#x4E0E;&#x672A;&#x7F34;&#x8D39;&#x7EDF;&#x8BA1;</div>
         </div>
     </div>
-    
-    <!-- 费用收缴明细 -->
-    <div class="card mb-4">
-        <div class="card-header bg-warning text-white">
-            <h5 class="card-title">费用收缴明细</h5>
+
+    <div class="ui-card ui-section query-detail-section">
+        <div class="query-detail-header-row">
+            <div class="ui-title">&#x67E5;&#x8BE2;&#x6761;&#x4EF6;</div>
+            <span class="ui-text-muted">&#x652F;&#x6301;&#x8D39;&#x7528;&#x7C7B;&#x578B;&#x3001;&#x72B6;&#x6001;&#x4E0E;&#x65F6;&#x95F4;&#x8303;&#x56F4;</span>
         </div>
-        <div class="card-body">
-            {% if finance_records %}
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>记录ID</th>
-                            <th>店铺名称</th>
-                            <th>费用类型</th>
-                            <th>金额</th>
-                            <th>账单周期</th>
-                            <th>状态</th>
-                            <th>缴费方式</th>
-                            <th>缴费时间</th>
-                            <th>创建时间</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for record in finance_records %}
-                        <tr>
-                            <td>{{ record.id }}</td>
-                            <td>{{ record.contract.shop.name }}</td>
-                            <td>{{ record.get_fee_type_display }}</td>
-                            <td>¥{{ record.amount }}</td>
-                            <td>{{ record.billing_period_start|date:"Y-m-d" }} 至 {{ record.billing_period_end|date:"Y-m-d" }}</td>
-                            <td>
-                                <span class="badge {% if record.status == 'PAID' %}badge-success{% elif record.status == 'UNPAID' %}badge-danger{% else %}badge-secondary{% endif %}">
-                                    {{ record.get_status_display }}
-                                </span>
-                            </td>
-                            <td>{{ record.get_payment_method_display|default:"未支付" }}</td>
-                            <td>{{ record.paid_at|date:"Y-m-d H:i"|default:"未支付" }}</td>
-                            <td>{{ record.created_at|date:"Y-m-d H:i" }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <form method="get" action="{% url 'query:finance_query' %}">
+            <div class="query-detail-grid">
+                <div>
+                    <label for="fee_type" class="form-label">&#x8D39;&#x7528;&#x7C7B;&#x578B;</label>
+                    <select class="form-control ui-input" id="fee_type" name="fee_type">
+                        <option value="">-- &#x5168;&#x90E8;&#x8D39;&#x7528;&#x7C7B;&#x578B; --</option>
+                        <option value="RENT" {% if is_rent %}selected{% endif %}>&#x79DF;&#x91D1;</option>
+                        <option value="PROPERTY_FEE" {% if is_property_fee %}selected{% endif %}>&#x7269;&#x4E1A;&#x8D39;</option>
+                        <option value="UTILITY_FEE" {% if is_utility_fee %}selected{% endif %}>&#x6C34;&#x7535;&#x8D39;</option>
+                        <option value="OTHER" {% if is_other_fee %}selected{% endif %}>&#x5176;&#x4ED6;&#x8D39;&#x7528;</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="status" class="form-label">&#x72B6;&#x6001;</label>
+                    <select class="form-control ui-input" id="status" name="status">
+                        <option value="">-- &#x5168;&#x90E8;&#x72B6;&#x6001; --</option>
+                        <option value="UNPAID" {% if is_unpaid %}selected{% endif %}>&#x672A;&#x652F;&#x4ED8;</option>
+                        <option value="PAID" {% if is_paid %}selected{% endif %}>&#x5DF2;&#x652F;&#x4ED8;</option>
+                        <option value="VOID" {% if is_void %}selected{% endif %}>&#x5DF2;&#x4F5C;&#x5E9F;</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="period" class="form-label">&#x65F6;&#x95F4;&#x8303;&#x56F4;</label>
+                    <select class="form-control ui-input" id="period" name="period">
+                        <option value="week" {% if is_week %}selected{% endif %}>&#x6700;&#x8FD1;7&#x5929;</option>
+                        <option value="month" {% if is_month %}selected{% endif %}>&#x6700;&#x8FD1;30&#x5929;</option>
+                        <option value="quarter" {% if is_quarter %}selected{% endif %}>&#x6700;&#x8FD1;90&#x5929;</option>
+                        <option value="year" {% if is_year %}selected{% endif %}>&#x6700;&#x8FD1;1&#x5E74;</option>
+                        <option value="custom" {% if is_custom %}selected{% endif %}>&#x81EA;&#x5B9A;&#x4E49;&#x8303;&#x56F4;</option>
+                    </select>
+                </div>
+                <div class="query-detail-actions">
+                    <button type="submit" class="ui-btn ui-btn-primary">&#x67E5;&#x8BE2;</button>
+                </div>
             </div>
-            {% else %}
-            <p class="text-center text-muted">暂无费用收缴明细</p>
-            {% endif %}
-        </div>
+
+            <div id="custom_date_range" {% if not is_custom %}style="display: none;"{% endif %}>
+                <div class="query-detail-grid mt-3">
+                    <div>
+                        <label for="start_date" class="form-label">&#x5F00;&#x59CB;&#x65E5;&#x671F;</label>
+                        <input type="date" class="form-control ui-input" id="start_date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+                    </div>
+                    <div>
+                        <label for="end_date" class="form-label">&#x7ED3;&#x675F;&#x65E5;&#x671F;</label>
+                        <input type="date" class="form-control ui-input" id="end_date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+                    </div>
+                </div>
+            </div>
+        </form>
     </div>
-    
-    <!-- 未缴费用统计 -->
-    <div class="card mb-4">
-        <div class="card-header bg-danger text-white">
-            <h5 class="card-title">未缴费用统计</h5>
+
+    <div class="ui-card ui-section query-detail-section">
+        <div class="query-detail-header-row">
+            <div class="ui-title">&#x8D39;&#x7528;&#x6536;&#x7F34;&#x660E;&#x7EC6;</div>
+            <span class="ui-text-muted">&#x8FD1;&#x671F;&#x8D39;&#x7528;&#x6536;&#x7F34;&#x4FE1;&#x606F;</span>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="card bg-light mb-3">
-                        <div class="card-body">
-                            <h6 class="card-title">未缴费用总计</h6>
-                            <p class="card-text display-4">¥{{ unpaid_amount }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card bg-light mb-3">
-                        <div class="card-body">
-                            <h6 class="card-title">未缴费用笔数</h6>
-                            <p class="card-text display-4">{{ shop_unpaid_stats|length }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card bg-light mb-3">
-                        <div class="card-body">
-                            <h6 class="card-title">欠费店铺数</h6>
-                            <p class="card-text display-4">{{ shop_unpaid_stats|length }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            {% if shop_unpaid_stats %}
-            <h6 class="card-subtitle mb-2 text-muted">店铺未缴费用明细</h6>
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>店铺名称</th>
-                            <th>未缴金额</th>
-                            <th>未缴笔数</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for stat in shop_unpaid_stats %}
-                        <tr>
-                            <td>{{ stat.contract__shop__name }}</td>
-                            <td>¥{{ stat.total_amount }}</td>
-                            <td>{{ stat.count }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p class="text-center text-muted">暂无未缴费用</p>
-            {% endif %}
+        {% if finance_records %}
+        <div class="table-responsive query-detail-table">
+            <table class="ui-table">
+                <thead>
+                    <tr>
+                        <th>&#x8BB0;&#x5F55;ID</th>
+                        <th>&#x5E97;&#x94FA;&#x540D;&#x79F0;</th>
+                        <th>&#x8D39;&#x7528;&#x7C7B;&#x578B;</th>
+                        <th>&#x91D1;&#x989D;</th>
+                        <th>&#x8D26;&#x5355;&#x5468;&#x671F;</th>
+                        <th>&#x72B6;&#x6001;</th>
+                        <th>&#x7F34;&#x8D39;&#x65B9;&#x5F0F;</th>
+                        <th>&#x7F34;&#x8D39;&#x65F6;&#x95F4;</th>
+                        <th>&#x521B;&#x5EFA;&#x65F6;&#x95F4;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in finance_records %}
+                    <tr>
+                        <td>{{ record.id }}</td>
+                        <td>{{ record.contract.shop.name }}</td>
+                        <td>{{ record.get_fee_type_display }}</td>
+                        <td>&#xA5;{{ record.amount }}</td>
+                        <td>{{ record.billing_period_start|date:"Y-m-d" }} &#x81F3; {{ record.billing_period_end|date:"Y-m-d" }}</td>
+                        <td>
+                            <span class="status-badge {% if record.status == 'PAID' %}success{% elif record.status == 'UNPAID' %}danger{% else %}neutral{% endif %}">
+                                {{ record.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ record.get_payment_method_display|default:"&#x672A;&#x652F;&#x4ED8;" }}</td>
+                        <td>{{ record.paid_at|date:"Y-m-d H:i"|default:"&#x672A;&#x652F;&#x4ED8;" }}</td>
+                        <td>{{ record.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+        <p class="text-center ui-text-muted">&#x6682;&#x65E0;&#x8D39;&#x7528;&#x6536;&#x7F34;&#x660E;&#x7EC6;</p>
+        {% endif %}
     </div>
-    
-    <!-- 费用类型统计 -->
-    <div class="card mb-4">
-        <div class="card-header bg-info text-white">
-            <h5 class="card-title">费用类型统计</h5>
+
+    <div class="ui-card ui-section query-detail-section">
+        <div class="query-detail-header-row">
+            <div class="ui-title">&#x672A;&#x7F34;&#x8D39;&#x7528;&#x7EDF;&#x8BA1;</div>
+            <span class="ui-text-muted">&#x5F53;&#x524D;&#x672A;&#x7F34;&#x6570;&#x636E;&#x6982;&#x89C8;</span>
         </div>
-        <div class="card-body">
-            {% if fee_type_stats %}
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>费用类型</th>
-                            <th>总金额</th>
-                            <th>笔数</th>
-                            <th>平均金额</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for stat in fee_type_stats %}
-                        <tr>
-                            <td>
-                                {% if stat.fee_type == 'RENT' %}租金
-                                {% elif stat.fee_type == 'PROPERTY_FEE' %}物业费
-                                {% elif stat.fee_type == 'UTILITY_FEE' %}水电费
-                                {% else %}其他费用{% endif %}
-                            </td>
-                            <td>¥{{ stat.total_amount }}</td>
-                            <td>{{ stat.count }}</td>
-                            <td>¥{{ stat.total_amount|floatformat:2 }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <div class="query-detail-grid">
+            <div class="query-detail-stat">
+                <h6>&#x672A;&#x7F34;&#x8D39;&#x7528;&#x603B;&#x8BA1;</h6>
+                <div class="value">&#xA5;{{ unpaid_amount }}</div>
             </div>
-            {% else %}
-            <p class="text-center text-muted">暂无费用类型统计数据</p>
-            {% endif %}
+            <div class="query-detail-stat">
+                <h6>&#x672A;&#x7F34;&#x8D39;&#x7528;&#x7B14;&#x6570;</h6>
+                <div class="value">{{ shop_unpaid_stats|length }}</div>
+            </div>
+            <div class="query-detail-stat">
+                <h6>&#x6B20;&#x8D39;&#x5E97;&#x94FA;&#x6570;</h6>
+                <div class="value">{{ shop_unpaid_stats|length }}</div>
+            </div>
         </div>
+
+        {% if shop_unpaid_stats %}
+        <h6 class="ui-text-muted mt-3">&#x5E97;&#x94FA;&#x672A;&#x7F34;&#x8D39;&#x7528;&#x660E;&#x7EC6;</h6>
+        <div class="table-responsive query-detail-table">
+            <table class="ui-table">
+                <thead>
+                    <tr>
+                        <th>&#x5E97;&#x94FA;&#x540D;&#x79F0;</th>
+                        <th>&#x672A;&#x7F34;&#x91D1;&#x989D;</th>
+                        <th>&#x672A;&#x7F34;&#x7B14;&#x6570;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in shop_unpaid_stats %}
+                    <tr>
+                        <td>{{ stat.contract__shop__name }}</td>
+                        <td>&#xA5;{{ stat.total_amount }}</td>
+                        <td>{{ stat.count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-center ui-text-muted">&#x6682;&#x65E0;&#x672A;&#x7F34;&#x8D39;&#x7528;</p>
+        {% endif %}
+    </div>
+
+    <div class="ui-card ui-section query-detail-section">
+        <div class="query-detail-header-row">
+            <div class="ui-title">&#x8D39;&#x7528;&#x7C7B;&#x578B;&#x7EDF;&#x8BA1;</div>
+            <span class="ui-text-muted">&#x5404;&#x7C7B;&#x8D39;&#x7528;&#x7EDF;&#x8BA1;&#x6982;&#x89C8;</span>
+        </div>
+        {% if fee_type_stats %}
+        <div class="table-responsive query-detail-table">
+            <table class="ui-table">
+                <thead>
+                    <tr>
+                        <th>&#x8D39;&#x7528;&#x7C7B;&#x578B;</th>
+                        <th>&#x603B;&#x91D1;&#x989D;</th>
+                        <th>&#x7B14;&#x6570;</th>
+                        <th>&#x5E73;&#x5747;&#x91D1;&#x989D;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in fee_type_stats %}
+                    <tr>
+                        <td>
+                            {% if stat.fee_type == 'RENT' %}&#x79DF;&#x91D1;
+                            {% elif stat.fee_type == 'PROPERTY_FEE' %}&#x7269;&#x4E1A;&#x8D39;
+                            {% elif stat.fee_type == 'UTILITY_FEE' %}&#x6C34;&#x7535;&#x8D39;
+                            {% else %}&#x5176;&#x4ED6;&#x8D39;&#x7528;{% endif %}
+                        </td>
+                        <td>&#xA5;{{ stat.total_amount }}</td>
+                        <td>{{ stat.count }}</td>
+                        <td>&#xA5;{{ stat.total_amount|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-center ui-text-muted">&#x6682;&#x65E0;&#x8D39;&#x7528;&#x7C7B;&#x578B;&#x7EDF;&#x8BA1;&#x6570;&#x636E;</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

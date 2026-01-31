@@ -1,4 +1,5 @@
 import logging
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -26,9 +27,9 @@ class NotificationService:
 
     # SMS 服务配置（可根据实际情况配置）
     SMS_CONFIG = {
-        'enabled': True,  # 是否启用短信功能
-        'provider': 'CUSTOM',  # 可选: ALIYUN, TENCENT, CUSTOM
-        'timeout': 10  # 请求超时时间（秒）
+        'enabled': getattr(settings, 'SMS_ENABLED', True),
+        'provider': getattr(settings, 'SMS_PROVIDER', 'CUSTOM'),
+        'timeout': getattr(settings, 'SMS_TIMEOUT', 10),
     }
 
     @staticmethod
@@ -220,6 +221,10 @@ class NotificationService:
                     # 这里可以集成自定义短信服务或日志记录
                     success = NotificationService._send_via_custom(phone_number, content)
 
+                if not success and getattr(settings, 'DEBUG', False) and provider != 'CUSTOM':
+                    logger.warning("SMS provider failed in DEBUG; falling back to CUSTOM stub")
+                    success = NotificationService._send_via_custom(phone_number, content)
+
                 if success:
                     sms_record.status = SMSRecord.Status.SENT
                     sms_record.sent_at = timezone.now()
@@ -243,10 +248,9 @@ class NotificationService:
         使用自定义短信服务发送（默认实现）
         可根据实际需求集成第三方短信平台
         """
-        # TODO: 集成实际的短信服务
-        # 这里仅做示范，实际应集成阿里云、腾讯云等短信服务
+        # TODO: integrate a real provider. In DEBUG, treat as a dev stub.
         logger.info(f"[SMS CUSTOM] Sending to {phone_number}: {content[:50]}...")
-        return True
+        return bool(getattr(settings, 'DEBUG', False))
 
     @staticmethod
     def _send_via_aliyun(phone_number: str, content: str) -> bool:

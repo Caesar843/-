@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
@@ -40,6 +42,7 @@ urlpatterns = [
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('api/requests/', include('apps.communication.api_urls')),
     
     # -------------------------------------------------------------------------
     # API Endpoints
@@ -50,6 +53,9 @@ urlpatterns = [
 
     # Task Management API (Level 4 Task 2)
     path('api/core/', include('apps.core.celery_urls')),
+
+    # Verification API
+    path('api/core/', include('apps.core.verification_urls')),
     
     # Search API (Level 4 Task 3)
     path('api/search/', include('apps.core.search_urls')),
@@ -96,6 +102,9 @@ urlpatterns = [
     # path('workflow/', include('apps.workflow.urls')),
     # path('api/v1/', include('config.api_urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # ============================================
 # Django 错误处理程序（自定义错误页面）

@@ -54,6 +54,9 @@ class RateLimitConfig:
         '/api/auth/login/': {'rate': 5, 'period': 60},          # 登录: 5/分钟
         '/api/auth/register/': {'rate': 3, 'period': 3600},     # 注册: 3/小时
         '/api/auth/password-reset/': {'rate': 3, 'period': 3600}, # 重置: 3/小时
+        '/core/login/': {'rate': 5, 'period': 60},              # 登录: 5/分钟
+        '/core/register/': {'rate': 3, 'period': 3600},         # 注册: 3/小时
+        '/core/password-reset/': {'rate': 3, 'period': 3600},   # 重置: 3/小时
         '/api/search/': {'rate': 30, 'period': 60},             # 搜索: 30/分钟
         '/api/report/export/': {'rate': 10, 'period': 60},      # 导出: 10/分钟
         '/api/users/': {'rate': 100, 'period': 60},             # 用户: 100/分钟

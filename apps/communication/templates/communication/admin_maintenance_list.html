@@ -1,26 +1,85 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
+<link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
+<link rel="stylesheet" href="{% static 'css/communication-management.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="container page-shell">
-    <div class="page-header">
-    <div>
-        <h1 class="page-title">运营专员 - 维修请求管理</h1>
+<div class="container comm-page">
+    <div class="comm-header">
+        <div class="comm-title-wrap">
+            <span class="comm-title-bar"></span>
+            <div>
+                <div class="comm-title">&#x8D85;&#x7EA7;&#x7BA1;&#x7406;&#x5458; - &#x7EF4;&#x4FEE;&#x8BF7;&#x6C42;&#x7BA1;&#x7406;</div>
+                <div class="comm-subtitle">&#x8DDF;&#x8E2A;&#x5904;&#x7406;&#x8FDB;&#x5EA6;&#x4E0E;&#x5904;&#x7406;&#x4EBA;&#x6307;&#x6D3E;</div>
+            </div>
+        </div>
     </div>
-</div>
 
-<div class="table-responsive table-card">
-        <div class="card-body">
-            <table class="table table-striped table-hover align-middle">
+    <div class="ui-card ui-section comm-table-card mb-3">
+        <form method="get">
+            <div class="comm-filter-grid">
+                <div>
+                    <label class="form-label">&#x72B6;&#x6001;</label>
+                    <select class="form-select ui-input" name="status">
+                        <option value="">&#x5168;&#x90E8;</option>
+                        <option value="PENDING" {% if status_filter == "PENDING" %}selected{% endif %}>&#x5F85;&#x5904;&#x7406;</option>
+                        <option value="ASSIGNED" {% if status_filter == "ASSIGNED" %}selected{% endif %}>&#x5DF2;&#x6307;&#x6D3E;</option>
+                        <option value="IN_PROGRESS" {% if status_filter == "IN_PROGRESS" %}selected{% endif %}>&#x5904;&#x7406;&#x4E2D;</option>
+                        <option value="COMPLETED" {% if status_filter == "COMPLETED" %}selected{% endif %}>&#x5DF2;&#x5B8C;&#x6210;</option>
+                        <option value="CANCELLED" {% if status_filter == "CANCELLED" %}selected{% endif %}>&#x5DF2;&#x53D6;&#x6D88;</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">&#x7C7B;&#x578B;</label>
+                    <select class="form-select ui-input" name="request_type">
+                        <option value="">&#x5168;&#x90E8;</option>
+                        <option value="WATER" {% if type_filter == "WATER" %}selected{% endif %}>&#x6C34;&#x7535;&#x6545;&#x969C;</option>
+                        <option value="EQUIPMENT" {% if type_filter == "EQUIPMENT" %}selected{% endif %}>&#x8BBE;&#x5907;&#x7EF4;&#x4FEE;</option>
+                        <option value="FACILITY" {% if type_filter == "FACILITY" %}selected{% endif %}>&#x8BBE;&#x65BD;&#x7EF4;&#x62A4;</option>
+                        <option value="OTHER" {% if type_filter == "OTHER" %}selected{% endif %}>&#x5176;&#x4ED6;</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">&#x5E97;&#x94FA;</label>
+                    <select class="form-select ui-input" name="shop_id">
+                        <option value="">&#x5168;&#x90E8;&#x5E97;&#x94FA;</option>
+                        {% for shop in shops %}
+                        <option value="{{ shop.id }}" {% if shop_filter == shop.id|stringformat:"s" %}selected{% endif %}>{{ shop.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">&#x8D77;&#x59CB;&#x65E5;&#x671F;</label>
+                    <input type="date" class="form-control ui-input" name="start_date" value="{{ start_date }}">
+                </div>
+                <div>
+                    <label class="form-label">&#x7ED3;&#x675F;&#x65E5;&#x671F;</label>
+                    <input type="date" class="form-control ui-input" name="end_date" value="{{ end_date }}">
+                </div>
+            </div>
+            <div class="comm-filter-actions">
+                <button type="submit" class="ui-btn ui-btn-primary">&#x7B5B;&#x9009;</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="ui-card ui-section comm-table-card">
+        <div class="table-responsive">
+            <table class="ui-table">
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>店铺</th>
-                        <th>标题</th>
-                        <th>类型</th>
-                        <th>优先级</th>
-                        <th>状态</th>
-                        <th>创建时间</th>
-                        <th>操作</th>
+                        <th>&#x5E97;&#x94FA;</th>
+                        <th>&#x6807;&#x9898;</th>
+                        <th>&#x7C7B;&#x578B;</th>
+                        <th>&#x4F18;&#x5148;&#x7EA7;</th>
+                        <th>&#x72B6;&#x6001;</th>
+                        <th>&#x521B;&#x5EFA;&#x65F6;&#x95F4;</th>
+                        <th>&#x64CD;&#x4F5C;</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -38,15 +97,15 @@
                         </td>
                         <td>{{ request.created_at|date:"Y-m-d H:i" }}</td>
                         <td>
-                            <a href="{% url 'communication:maintenance_detail' request.id %}" class="btn btn-sm btn-info">查看</a>
+                            <a href="{% url 'communication:maintenance_detail' request.id %}" class="ui-btn ui-btn-info ui-btn-sm">&#x67E5;&#x770B;</a>
                             {% if request.status != 'COMPLETED' and request.status != 'CANCELLED' %}
-                            <a href="{% url 'communication:maintenance_update' request.id %}" class="btn btn-sm btn-primary">处理</a>
+                            <a href="{% url 'communication:maintenance_update' request.id %}" class="ui-btn ui-btn-primary ui-btn-sm">&#x5904;&#x7406;</a>
                             {% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center">暂无维修请求</td>
+                        <td colspan="8" class="ui-text-muted text-center">&#x6682;&#x65E0;&#x7EF4;&#x4FEE;&#x8BF7;&#x6C42;</td>
                     </tr>
                     {% endfor %}
                 </tbody>

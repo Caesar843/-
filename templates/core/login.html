@@ -1,53 +1,293 @@
 {% extends 'base.html' %}
 
-{% block title %}登录 - 商场店铺智能运营管理系统{% endblock %}
+{% block title %}&#x767B;&#x5F55; - &#x5546;&#x573A;&#x5E97;&#x94FA;&#x667A;&#x80FD;&#x8FD0;&#x8425;&#x7BA1;&#x7406;&#x7CFB;&#x7EDF;{% endblock %}
+
+{% block extra_css %}
+<style>
+    .app-sidebar,
+    .app-header {
+        display: none;
+    }
+
+    .app-content {
+        padding: 0;
+    }
+
+    .app-content > .row {
+        display: none;
+    }
+
+    .login-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+        background:
+            radial-gradient(circle at top, rgba(59, 130, 246, 0.12), transparent 60%),
+            radial-gradient(circle at bottom, rgba(15, 23, 42, 0.08), transparent 55%),
+            var(--bg);
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 32px;
+        box-shadow: var(--shadow-1);
+    }
+
+    .login-brand {
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: 16px;
+    }
+
+    .login-title {
+        font-size: 22px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .login-subtitle {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+
+    .login-card .form-label {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 6px;
+    }
+
+    .login-card .form-control {
+        border-radius: 12px;
+        padding: 12px 14px;
+        border-color: var(--border);
+    }
+
+    .input-with-icon {
+        position: relative;
+    }
+
+    .input-with-icon.has-left-icon .form-control {
+        padding-left: 40px;
+    }
+
+    .input-with-icon.has-toggle .form-control {
+        padding-right: 46px;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        pointer-events: none;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .toggle-password {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        padding: 4px;
+        color: var(--text-muted);
+        cursor: pointer;
+    }
+
+    .toggle-password .icon-eye-off {
+        display: none;
+    }
+
+    .toggle-password.is-visible .icon-eye {
+        display: none;
+    }
+
+    .toggle-password.is-visible .icon-eye-off {
+        display: inline;
+    }
+
+    .input-with-icon:focus-within .input-icon,
+    .input-with-icon:focus-within .toggle-password {
+        color: #1d4ed8;
+    }
+
+    .toggle-password:focus-visible {
+        outline: 2px solid rgba(59, 130, 246, 0.6);
+        outline-offset: 2px;
+        border-radius: 6px;
+    }
+
+    .login-card .form-control:focus {
+        border-color: var(--input-focus);
+        box-shadow: 0 0 0 0.2rem var(--focus-ring);
+    }
+
+    .login-alert .alert {
+        border-radius: 12px;
+        font-size: 14px;
+    }
+
+    .btn-login {
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+
+    .login-footer {
+        margin-top: 20px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+
+    .login-footer a {
+        color: var(--text);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+    }
+
+    .login-footer a:hover {
+        border-bottom-color: var(--text);
+    }
+
+    .login-copyright {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    @media (max-width: 575px) {
+        .login-card {
+            padding: 24px;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow-sm mt-5">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">系统登录</h4>
+<div class="login-page">
+    <div class="login-card">
+        <div class="login-brand">&#x5546;&#x573A;&#x5E97;&#x94FA;&#x667A;&#x80FD;&#x8FD0;&#x8425;&#x7BA1;&#x7406;&#x7CFB;&#x7EDF;</div>
+        <div class="login-title">&#x7CFB;&#x7EDF;&#x767B;&#x5F55;</div>
+        <div class="login-subtitle">&#x8BF7;&#x4F7F;&#x7528;&#x7BA1;&#x7406;&#x5458;&#x6216;&#x5E97;&#x94FA;&#x8D26;&#x53F7;&#x767B;&#x5F55;</div>
+        <form method="post" id="loginForm" novalidate>
+            {% csrf_token %}
+            {% if next %}
+            <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+
+            {% if messages %}
+            <div class="login-alert">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        {% if messages %}
-                        {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                        {% endfor %}
-                        {% endif %}
-                        
-                        <div class="mb-3">
-                            <label for="username" class="form-label">用户名</label>
-                            <input type="text" class="form-control" id="username" name="username" placeholder="请输入用户名" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="password" class="form-label">密码</label>
-                            <input type="password" class="form-control" id="password" name="password" placeholder="请输入密码" required>
-                        </div>
-                        
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">登录</button>
-                        </div>
-                    </form>
-                </div>
-                <div class="card-footer text-center text-muted">
-    <small>
-        没有账号，赶紧去
-        <a href="{% url 'core:register' %}">注册</a>
-        吧
-    </small>
-                 <div class="small">© 2026 商场店铺智能运营管理系统</div>
-</div>
+                {% endfor %}
             </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label for="username" class="form-label">&#x7528;&#x6237;&#x540D;</label>
+                <div class="input-with-icon has-left-icon">
+                    <span class="input-icon" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="1.6"/>
+                            <path d="M4 20a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                    </span>
+                    <input type="text" class="form-control" id="username" name="username" placeholder="&#x8BF7;&#x8F93;&#x5165;&#x7528;&#x6237;&#x540D;" autocomplete="username" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">&#x5BC6;&#x7801;</label>
+                <div class="input-with-icon has-toggle">
+                    <input type="password" class="form-control" id="password" name="password" placeholder="&#x8BF7;&#x8F93;&#x5165;&#x5BC6;&#x7801;" autocomplete="current-password" required>
+                    <button type="button" class="toggle-password" aria-label="&#x663E;&#x793A;&#x5BC6;&#x7801;">
+                        <svg class="icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z" stroke="currentColor" stroke-width="1.6"/>
+                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/>
+                        </svg>
+                        <svg class="icon-eye-off" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M3 4.5 21 19.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                            <path d="M4.5 6.5C2.6 8.4 2 12 2 12s4 7 10 7c2.1 0 3.9-.5 5.4-1.3" stroke="currentColor" stroke-width="1.6"/>
+                            <path d="M9.8 9.8A3 3 0 0 0 12 15a3 3 0 0 0 2.2-1" stroke="currentColor" stroke-width="1.6"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-3 d-flex align-items-center justify-content-between">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="remember_me" name="remember_me" checked>
+                    <label class="form-check-label" for="remember_me">&#x8BB0;&#x4F4F;&#x6211;</label>
+                </div>
+                <a href="{% url 'core:password_reset' %}" class="small" style="color: var(--text-muted); text-decoration: none;">忘记密码？</a>
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-login" data-default-text="&#x767B;&#x5F55;" data-loading-text="&#x767B;&#x5F55;&#x4E2D;&#x2026;">&#x767B;&#x5F55;</button>
+            </div>
+        </form>
+
+        <div class="login-footer">
+            &#x6CA1;&#x6709;&#x8D26;&#x53F7;&#xFF0C;&#x8D76;&#x7D27;&#x53BB;
+            <a href="{% url 'core:register' %}">&#x6CE8;&#x518C;</a>
+            &#x5427;&#xFF1F;
+            <div class="login-copyright">&#x00A9; 2026 &#x5546;&#x573A;&#x5E97;&#x94FA;&#x667A;&#x80FD;&#x8FD0;&#x8425;&#x7BA1;&#x7406;&#x7CFB;&#x7EDF;</div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function () {
+        const form = document.getElementById('loginForm');
+        if (!form) return;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                const firstInvalid = form.querySelector(':invalid');
+                if (firstInvalid) firstInvalid.focus();
+                return;
+            }
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = submitBtn.getAttribute('data-loading-text') || submitBtn.textContent;
+                submitBtn.setAttribute('aria-busy', 'true');
+            }
+        });
+    })();
+
+    document.querySelectorAll('.toggle-password').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const wrapper = button.closest('.input-with-icon');
+            if (!wrapper) return;
+            const input = wrapper.querySelector('input');
+            if (!input) return;
+            const isVisible = input.type === 'text';
+            input.type = isVisible ? 'password' : 'text';
+            button.classList.toggle('is-visible', !isVisible);
+            button.setAttribute('aria-label', isVisible ? '显示密码' : '隐藏密码');
+        });
+    });
+</script>
 {% endblock %}
