@@ -23,9 +23,11 @@
             <a href="{% url 'finance:finance_create' %}" class="ui-btn ui-btn-primary">
                 <i class="fas fa-plus"></i> &#x521B;&#x5EFA;&#x8D22;&#x52A1;&#x8BB0;&#x5F55;
             </a>
+            {% if can_view_reminders %}
             <a href="{% url 'finance:finance_reminders' %}" class="ui-btn ui-btn-outline">
                 <i class="fas fa-bell"></i> &#x7F34;&#x8D39;&#x63D0;&#x9192;
             </a>
+            {% endif %}
             <a href="{% url 'finance:finance_history' %}" class="ui-btn ui-btn-outline">
                 <i class="fas fa-history"></i> &#x7F34;&#x8D39;&#x5386;&#x53F2;
             </a>
@@ -85,7 +87,7 @@
                                     <i class="fas fa-file-invoice"></i>
                                     <span>&#x8D26;&#x5355;</span>
                                 </a>
-                                {% elif record.status == 'UNPAID' %}
+                                {% elif record.status == 'UNPAID' and can_pay_finance %}
                                 <button type="button"
                                         class="finance-action-btn finance-action-accent"
                                         data-bs-toggle="modal"
@@ -110,7 +112,7 @@
 </div>
 
 {% for record in finance_records %}
-{% if record.status == 'UNPAID' %}
+{% if record.status == 'UNPAID' and can_pay_finance %}
 <div class="modal fade" id="payModal{{ record.id }}" tabindex="-1" aria-labelledby="payModalLabel{{ record.id }}"
     aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -190,7 +192,7 @@
 
 <script>
     {% for record in finance_records %}
-    {% if record.status == 'UNPAID' %}
+    {% if record.status == 'UNPAID' and can_pay_finance %}
     document.getElementById('showQrBtn{{ record.id }}').addEventListener('click', function () {
         const paymentMethod = document.getElementById('payment_method{{ record.id }}').value;
         const qrDiv = document.getElementById('paymentQr{{ record.id }}');
@@ -216,3 +218,5 @@
     {% endfor %}
 </script>
 {% endblock %}
+
+

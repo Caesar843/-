@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from apps.store.models import Shop
+from apps.store.models import Shop, ContractAttachment, ContractSignature
 import datetime
 
 
@@ -123,3 +123,87 @@ class ContractForm(DTOForm):
                 raise ValidationError(_("合同结束日期必须晚于开始日期"))
 
         return cleaned_data
+
+
+class ContractAttachmentUploadForm(DTOForm):
+    attachment_type = forms.ChoiceField(
+        label=_("附件类型"),
+        choices=ContractAttachment.AttachmentType.choices,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    file = forms.FileField(
+        label=_("附件文件"),
+        widget=forms.ClearableFileInput(attrs={"class": "form-control"}),
+    )
+    remark = forms.CharField(
+        label=_("备注"),
+        required=False,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "可选备注"}),
+    )
+
+    def clean_file(self):
+        uploaded_file = self.cleaned_data["file"]
+        max_size = 20 * 1024 * 1024
+        if uploaded_file.size > max_size:
+            raise ValidationError(_("文件大小不能超过 20MB"))
+        return uploaded_file
+
+
+class ContractSignatureForm(DTOForm):
+    party_type = forms.ChoiceField(
+        label=_("签署方"),
+        choices=ContractSignature.PartyType.choices,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    signer_name = forms.CharField(
+        label=_("签署人"),
+        max_length=100,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "请输入签署人姓名"}),
+    )
+    signer_title = forms.CharField(
+        label=_("职务"),
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "可选"}),
+    )
+    sign_method = forms.ChoiceField(
+        label=_("签署方式"),
+        choices=ContractSignature.SignMethod.choices,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    signed_at = forms.DateTimeField(
+        label=_("签署时间"),
+        input_formats=["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"],
+        widget=forms.DateTimeInput(attrs={"class": "form-control", "type": "datetime-local"}),
+    )
+    attachment = forms.ModelChoiceField(
+        label=_("关联附件"),
+        queryset=ContractAttachment.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+        empty_label=_("不关联"),
+    )
+    evidence_hash = forms.CharField(
+        label=_("证据哈希"),
+        max_length=64,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "可选，64位哈希"}),
+    )
+    comment = forms.CharField(
+        label=_("备注"),
+        required=False,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "可选备注"}),
+    )
+
+    def __init__(self, *args, contract=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        queryset = ContractAttachment.objects.none()
+        if contract is not None:
+            queryset = ContractAttachment.objects.filter(contract=contract).order_by("-created_at")
+        self.fields["attachment"].queryset = queryset
+
+    def clean_evidence_hash(self):
+        evidence_hash = (self.cleaned_data.get("evidence_hash") or "").strip()
+        if evidence_hash and len(evidence_hash) != 64:
+            raise ValidationError(_("证据哈希长度必须为 64 位"))
+        return evidence_hash

@@ -1,0 +1,141 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商场店铺智能运营管理系统</title>
+  <!-- 可选：Bootstrap 5，保留语义化基础 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #F4C34A;        /* 金黄主色 */
+      --primary-dark: #B88A1D;   /* 阴影色 */
+      --accent: #00F3FF;         /* 青蓝霓虹 */
+      --bg-body: #050608;
+      --text-main: #FFFFFF;
+      --text-dim: rgba(255, 255, 255, 0.6);
+      --glow-gold: 0 0 30px rgba(244, 195, 74, 0.2);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC","Microsoft YaHei", sans-serif; }
+    body { background-color: var(--bg-body); color: var(--text-main); line-height: 1.6; }
+
+    /* 顶部导航 */
+    nav.main-nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 25px 8%; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    nav .brand { font-size: 24px; font-weight: bold; color: var(--primary); }
+    nav .links { display: flex; gap: 30px; color: var(--text-dim); }
+    nav .links a { color: var(--text-dim); text-decoration: none; }
+    nav .links a:hover { color: var(--primary); }
+
+    /* Hero */
+    .hero { display: flex; align-items: center; justify-content: space-between; padding: 40px 8% 0; min-height: 100vh; gap: 40px; flex-wrap: wrap; }
+    .hero-text { flex: 1 1 340px; }
+    .hero-text h1 {
+      font-size: clamp(36px, 4vw, 52px); margin-bottom: 20px;
+      background: linear-gradient(to bottom, #fff, var(--primary));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-text p { font-size: 18px; color: var(--text-dim); margin-bottom: 32px; max-width: 540px; }
+    .cta-group { display: flex; gap: 20px; flex-wrap: wrap; }
+    .btn-main {
+      background: var(--primary); color: #000; padding: 14px 35px; border: none; border-radius: 30px;
+      font-weight: bold; cursor: pointer; box-shadow: var(--glow-gold); transition: 0.3s;
+    }
+    .btn-main:hover { transform: translateY(-3px); filter: brightness(1.1); }
+    .btn-secondary {
+      background: transparent; color: #fff; border: 1px solid #444; padding: 14px 35px; border-radius: 30px; cursor: pointer;
+    }
+
+    /* 3D 科技感小房子 */
+    .hero-visual { flex: 1 1 340px; display: flex; justify-content: center; align-items: center; position: relative; perspective: 1000px; }
+    .house-container { position: relative; width: 300px; height: 300px; transform: rotateX(20deg) rotateY(-25deg); transform-style: preserve-3d; animation: floatHouse 4s infinite ease-in-out; }
+    @keyframes floatHouse { 0%,100% { transform: rotateX(20deg) rotateY(-25deg) translateY(0); } 50% { transform: rotateX(20deg) rotateY(-25deg) translateY(-20px); } }
+    .house-front { position: absolute; width: 200px; height: 160px; background: linear-gradient(135deg, #1e2026, #111216); border: 2px solid rgba(255,255,255,0.1); transform: translateZ(100px); }
+    .house-side { position: absolute; width: 200px; height: 160px; background: #0a0b0e; border: 1px solid rgba(255,255,255,0.05); transform: rotateY(90deg) translateZ(100px); }
+    .house-sign { position: absolute; top: 20px; left: 20px; right: 20px; height: 40px; background: rgba(255,255,255,0.03); border: 1px dashed var(--primary); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 12px; font-weight: bold; letter-spacing: 2px; }
+    .house-door { position: absolute; bottom: 0; left: 75px; width: 50px; height: 70px; background: linear-gradient(to top, var(--primary), transparent); box-shadow: 0 0 20px rgba(244, 195, 74, 0.4); border-radius: 4px 4px 0 0; }
+    .house-roof { position: absolute; width: 200px; height: 200px; background: #1a1c22; transform: rotateX(90deg) translateZ(100px); border: 1px solid rgba(255,255,255,0.1); }
+
+    /* 悬浮小卡片 */
+    .floating-tag {
+      position: absolute; padding: 10px 18px; background: rgba(0, 243, 255, 0.1);
+      border: 1px solid var(--accent); border-radius: 8px; color: var(--accent); font-size: 14px;
+      backdrop-filter: blur(10px); animation: tagFloat 3s infinite ease-in-out;
+    }
+    @keyframes tagFloat { 0%,100% { transform: translateZ(150px) translateY(0); } 50% { transform: translateZ(150px) translateY(-15px); } }
+
+    /* 功能卡片区 */
+    .features {
+      padding: 80px 8%; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 30px;
+    }
+    .card-glass {
+      background: rgba(255,255,255,0.03); padding: 30px; border-radius: 15px;
+      border: 1px solid rgba(255,243,74,0.1); box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    }
+    .card-glass h3 { color: var(--primary); margin-bottom: 10px; font-size: 20px; }
+    .card-glass p { color: var(--text-dim); margin: 0; }
+
+    /* 响应式 */
+    @media (max-width: 992px) {
+      .hero { padding-top: 32px; min-height: auto; }
+    }
+    @media (max-width: 768px) {
+      nav.main-nav { padding: 18px 24px; }
+      .hero { padding: 24px; }
+      .hero-text p { font-size: 16px; }
+      .btn-main, .btn-secondary { width: 100%; text-align: center; }
+      .cta-group { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="main-nav">
+    <div class="brand">SmartOps</div>
+    <div class="links">
+      <a href="#hero">首页</a>
+      <a href="#features">功能</a>
+      <a href="#docs">方案</a>
+    </div>
+  </nav>
+
+  <section class="hero" id="hero">
+    <div class="hero-text">
+      <h1>智能运营，<br>一站式管理</h1>
+      <p>通过智能排班、活动日历与 AI 助手，为您的商铺提供 7×24 小时的高效运营保障。</p>
+      <div class="cta-group">
+        <a class="btn-main" href="{% url 'core:login' %}">立即体验</a>
+        <a class="btn-secondary" href="#features">查看文档</a>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="house-container">
+        <div class="house-roof"></div>
+        <div class="house-front">
+          <div class="house-sign">YOUR LOGO HERE</div>
+          <div class="house-door"></div>
+        </div>
+        <div class="house-side"></div>
+      </div>
+      <div class="floating-tag" style="top: 0; left: 0;">活动日历</div>
+      <div class="floating-tag" style="bottom: 50px; right: 0; border-color: var(--primary); color: var(--primary);">AI 助手</div>
+    </div>
+  </section>
+
+  <section class="features" id="features">
+    <div class="card-glass"><h3>活动日历</h3><p>集中排期，提醒重要节点，确保计划落地。</p></div>
+    <div class="card-glass"><h3>智能排班</h3><p>基于客流波峰自动优化班表，平衡效率与成本。</p></div>
+    <div class="card-glass"><h3>库存预警</h3><p>实时监控库存，触达阈值自动发送补货建议。</p></div>
+  </section>
+
+  <!-- 预留方案/文档锚点 -->
+  <section id="docs" style="padding:40px 8%; color: var(--text-dim);">
+    <p>更多方案/文档请联系客服或查看系统内置帮助中心。</p>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

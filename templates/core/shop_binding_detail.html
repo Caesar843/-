@@ -1,0 +1,173 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}申请详情 - 商场店铺智能运营管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-card { border: 1px solid var(--border); background: var(--card-bg); color: var(--card-text); }
+    .detail-badge { padding: 6px 12px; border-radius: 999px; background: var(--surface-2); color: var(--text); font-size: 12px; font-weight: 600; }
+    .detail-row { display: flex; flex-direction: column; gap: 4px; padding: 10px 0; border-bottom: 1px solid var(--divider); }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { font-size: 12px; color: var(--text-muted); }
+    .detail-value { font-size: 14px; color: var(--text); }
+    .detail-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .detail-steps { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; padding: 0; margin: 0 0 14px 0; }
+    .detail-step { text-align: center; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; color: var(--text-muted); background: var(--surface-2); font-size: 12px; }
+    .detail-step.is-active { border-color: var(--primary); color: var(--text); background: color-mix(in srgb, var(--primary) 16%, var(--surface-2)); }
+    @media (max-width: 768px) {
+        .detail-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 760px;">
+    <div class="card shadow-sm mt-4 detail-card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">申请详情</h4>
+            <span class="detail-badge">{{ request_obj.get_status_display }}</span>
+        </div>
+        <div class="card-body">
+            <ul class="detail-steps" aria-label="申请进度">
+                <li class="detail-step {% if request_obj.status == 'DRAFT' %}is-active{% endif %}">草稿</li>
+                <li class="detail-step {% if request_obj.status == 'PENDING' %}is-active{% endif %}">待审核</li>
+                <li class="detail-step {% if request_obj.status == 'APPROVED' %}is-active{% endif %}">已通过</li>
+                <li class="detail-step {% if request_obj.status == 'REJECTED' %}is-active{% endif %}">已拒绝</li>
+                <li class="detail-step {% if request_obj.status == 'WITHDRAWN' %}is-active{% endif %}">已撤回</li>
+                <li class="detail-step {% if request_obj.approved_shop %}is-active{% endif %}">已绑定</li>
+            </ul>
+
+            {% if request_obj.status == 'REJECTED' and request_obj.review_reason %}
+            <div class="alert alert-warning" role="alert">
+                拒绝原因：{{ request_obj.review_reason }}
+            </div>
+            {% endif %}
+            {% if request_obj.status == 'WITHDRAWN' and request_obj.review_reason %}
+            <div class="alert alert-info" role="alert">
+                处理结果：{{ request_obj.review_reason }}
+            </div>
+            {% endif %}
+
+            <div class="detail-row">
+                <div class="detail-label">申请编号</div>
+                <div class="detail-value">#{{ request_obj.id }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">提交时间</div>
+                <div class="detail-value">{{ request_obj.created_at }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">预计处理时长</div>
+                <div class="detail-value">24 小时内</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">审核渠道</div>
+                <div class="detail-value">系统管理员</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">审核人</div>
+                <div class="detail-value">{{ request_obj.reviewed_by|default:"-" }}</div>
+            </div>
+            {% if request_obj.approved_shop %}
+            <div class="detail-row">
+                <div class="detail-label">绑定店铺</div>
+                <div class="detail-value">
+                    {{ request_obj.approved_shop.name }}{% if request_obj.approved_shop.code %}（编号：{{ request_obj.approved_shop.code }}）{% endif %}
+                </div>
+            </div>
+            {% endif %}
+            <div class="detail-row">
+                <div class="detail-label">申请店铺名称</div>
+                <div class="detail-value">{{ request_obj.requested_shop_name }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">绑定身份</div>
+                <div class="detail-value">{{ request_obj.identity_type_label }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">店铺编号/ID</div>
+                <div class="detail-value">{{ request_obj.requested_shop_id|default:"-" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">所在商场/园区/区域</div>
+                <div class="detail-value">{{ request_obj.mall_name|default:"-" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">行业类目</div>
+                <div class="detail-value">{{ request_obj.industry_category_label }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">店铺地址</div>
+                <div class="detail-value">{{ request_obj.address|default:"-" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">联系人姓名</div>
+                <div class="detail-value">{{ request_obj.contact_name|default:"-" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">联系电话</div>
+                <div class="detail-value">
+                    {% with phone=request_obj.contact_phone %}
+                        {% if phone and phone|length >= 7 %}
+                            {{ phone|slice:":3" }}****{{ phone|slice:"-2:" }}
+                        {% else %}
+                            {{ phone|default:"-" }}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">联系邮箱</div>
+                <div class="detail-value">{{ request_obj.contact_email|default:"-" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">期望角色</div>
+                <div class="detail-value">{{ request_obj.role_requested_label }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">授权说明</div>
+                <div class="detail-value">{{ request_obj.authorization_note|default:"-" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">申请说明</div>
+                <div class="detail-value">{{ request_obj.note|default:"-" }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">附件列表</div>
+                <div class="detail-value">
+                    <ul class="mb-0">
+                        {% for item in request_obj.attachments.all %}
+                        <li><a href="{{ item.file.url }}" target="_blank" rel="noopener">{{ item.original_name }}</a></li>
+                        {% empty %}
+                        <li>无</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">审核时间</div>
+                <div class="detail-value">{{ request_obj.reviewed_at|default:"-" }}</div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="detail-actions">
+                {% if request_obj.status == 'PENDING' %}
+                <form method="post" action="{% url 'core:shop_binding_withdraw' request_obj.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger">撤回申请</button>
+                </form>
+                {% endif %}
+                <a href="{% url 'core:shop_binding_request' %}" class="btn btn-outline-secondary">返回申请页</a>
+                <a href="{% url 'dashboard:index' %}" class="btn btn-outline-primary">返回首页</a>
+                {% if request_obj.approved_shop %}
+                <a href="{% url 'store:shop_update' request_obj.approved_shop.id %}" class="btn btn-primary">进入店铺</a>
+                {% endif %}
+                {% if request_obj.status == 'REJECTED' or request_obj.status == 'WITHDRAWN' or request_obj.status == 'DRAFT' %}
+                <a href="{% url 'core:shop_binding_request' %}" class="btn btn-primary">重新提交</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

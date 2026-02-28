@@ -1,8 +1,10 @@
 ﻿from django.contrib.auth import authenticate, login, get_user_model
 from django.contrib import messages
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
+from django.views.generic import TemplateView
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils import timezone
 from django.core.cache import cache
 from django.conf import settings
 from django.views.decorators.http import require_POST
@@ -30,8 +32,39 @@ from apps.core.forms import (
     PasswordResetCodeForm,
 )
 from apps.core.forms import ShopUserRegistrationForm, ShopBindingRequestForm
-from apps.user_management.models import Role, UserProfile, ShopBindingRequest
+from apps.user_management.models import Role, UserProfile, ShopBindingRequest, ShopBindingAttachment
 from apps.user_management.models import Role
+
+
+class LandingView(TemplateView):
+    """营销着陆页：展示功能并引导到登录/注册"""
+    template_name = 'core/home.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['hero_cards'] = [
+            {'title': '活动日历', 'desc': '活动日历展示活动日程，提醒线下履约，洞察能量指标与库存动态'},
+            {'title': '优惠券派发', 'desc': '优惠券投放自动化，适应场景、客群、店型和库存，效果可视'},
+            {'title': '智能排班', 'desc': '智能排班结合客流预测与人员技能，生成最优排班'},
+            {'title': '库存预警', 'desc': '库存异常提醒，联动补货建议，降低断货风险'},
+            {'title': '营销自动化', 'desc': '营销自动触发与分群投放，闭环跟踪转化与留存'},
+            {'title': 'AI 店铺助手', 'desc': 'AI 店铺助手回答运营问题，提供策略建议'},
+        ]
+        context['feature_items'] = [
+            {'order': 1, 'title': '活动日历', 'desc': '活动日历展示活动日程，提醒线下履约，避免重要节点遗漏'},
+            {'order': 2, 'title': '优惠券派发', 'desc': '分级投放策略，按客群投放，数据回流随时调整'},
+            {'order': 3, 'title': '智能排班', 'desc': '智能排班结合客流预测与人员技能，班表自动生成'},
+            {'order': 4, 'title': '库存预警', 'desc': '库存异常预警，推荐补货优先级，降低缺货风险'},
+            {'order': 5, 'title': '营销自动化', 'desc': '营销自动触发与分群投放，实时监测转化闭环'},
+            {'order': 6, 'title': 'AI 店铺助手', 'desc': 'AI 运营助手，智能问答、策略建议，提升店员效率'},
+        ]
+        context['benefit_items'] = ['运营效率提升', '客单价增长', '库存周转加快', '人工成本降低']
+        context['flow_steps'] = ['创建活动', '发券', '数据回流', '调整策略']
+        return context
+
+ATTACHMENT_MAX_FILES = 5
+ATTACHMENT_MAX_SIZE = 5 * 1024 * 1024
+ATTACHMENT_ALLOWED_MIMES = {'image/jpeg', 'image/png', 'application/pdf'}
 
 logger = logging.getLogger(__name__)
 
@@ -311,13 +344,33 @@ class ShopBindingRequestView(View):
         if profile.shop:
             return redirect('store:shop_update', profile.shop.id)
 
-        existing = ShopBindingRequest.objects.filter(user=request.user).first()
+        existing = (
+            ShopBindingRequest.objects.filter(user=request.user)
+            .order_by("-created_at")
+            .first()
+        )
+        disable_form = bool(
+            existing and existing.status in [ShopBindingRequest.Status.PENDING, ShopBindingRequest.Status.APPROVED]
+        )
         form = ShopBindingRequestForm(initial={
+            "identity_type": getattr(existing, "identity_type", "OWNER"),
             "requested_shop_name": getattr(existing, "requested_shop_name", ""),
+            "requested_shop_id": getattr(existing, "requested_shop_id", ""),
+            "mall_name": getattr(existing, "mall_name", ""),
+            "industry_category": getattr(existing, "industry_category", "FOOD"),
+            "address": getattr(existing, "address", ""),
+            "contact_name": getattr(existing, "contact_name", ""),
             "contact_phone": getattr(existing, "contact_phone", ""),
+            "contact_email": getattr(existing, "contact_email", ""),
+            "role_requested": getattr(existing, "role_requested", "OWNER"),
+            "authorization_note": getattr(existing, "authorization_note", ""),
             "note": getattr(existing, "note", ""),
         })
-        return render(request, self.template_name, {"form": form, "request_obj": existing})
+        return render(request, self.template_name, {
+            "form": form,
+            "request_obj": existing,
+            "disable_form": disable_form,
+        })
 
     def post(self, request):
         if not request.user.is_authenticated:
@@ -328,25 +381,164 @@ class ShopBindingRequestView(View):
             return redirect('dashboard:index')
         if profile.role.role_type != Role.RoleType.SHOP:
             return redirect('dashboard:index')
+        if profile.shop:
+            return redirect('store:shop_update', profile.shop.id)
+
+        client_ip = get_client_ip(request)
+        allowed, _ = check_rate_limit(client_ip=client_ip, endpoint=request.path)
+        if not allowed:
+            messages.error(request, "提交过于频繁，请稍后重试")
+            return render(request, self.template_name, {"form": ShopBindingRequestForm()}, status=429)
+
+        existing = (
+            ShopBindingRequest.objects.filter(user=request.user)
+            .order_by("-created_at")
+            .first()
+        )
+        if existing and existing.status == ShopBindingRequest.Status.PENDING:
+            messages.info(request, "你已有待审核申请，请先查看申请详情")
+            return redirect('core:shop_binding_detail', request_id=existing.id)
 
         form = ShopBindingRequestForm(request.POST)
         if not form.is_valid():
-            messages.error(request, "请检查表单填写")
-            return render(request, self.template_name, {"form": form})
+            messages.error(request, "请完善表单信息后再提交")
+            return render(request, self.template_name, {
+                "form": form,
+                "request_obj": existing,
+            })
 
         data = form.cleaned_data
-        obj, _ = ShopBindingRequest.objects.get_or_create(user=request.user)
+        intent = request.POST.get("intent", "submit")
+
+        # 复用草稿，否则生成新申请并关联上一条
+        if intent == "draft":
+            obj = existing if existing and existing.status == ShopBindingRequest.Status.DRAFT else ShopBindingRequest(
+                user=request.user,
+                previous_application=existing,
+            )
+            obj.status = ShopBindingRequest.Status.DRAFT
+        else:
+            obj = existing if existing and existing.status == ShopBindingRequest.Status.DRAFT else ShopBindingRequest(
+                user=request.user,
+                previous_application=existing,
+            )
+            obj.status = ShopBindingRequest.Status.PENDING
+
+        obj.identity_type = data.get("identity_type")
         obj.requested_shop_name = data["requested_shop_name"]
+        obj.requested_shop_id = data.get("requested_shop_id") or ""
+        obj.mall_name = data.get("mall_name") or ""
+        obj.industry_category = data.get("industry_category") or ""
+        obj.address = data.get("address") or ""
+        obj.contact_name = data.get("contact_name") or ""
         obj.contact_phone = data.get("contact_phone") or ""
+        obj.contact_email = data.get("contact_email") or ""
+        obj.role_requested = data.get("role_requested") or ""
+        obj.authorization_note = data.get("authorization_note") or ""
         obj.note = data.get("note") or ""
-        obj.status = ShopBindingRequest.Status.PENDING
         obj.approved_shop = None
         obj.reviewed_by = None
         obj.reviewed_at = None
+        obj.review_reason = None
+
+        attachments = request.FILES.getlist("attachments")
+        if attachments:
+            if len(attachments) > ATTACHMENT_MAX_FILES:
+                messages.error(request, f"最多上传 {ATTACHMENT_MAX_FILES} 个附件")
+                return render(request, self.template_name, {"form": form, "request_obj": existing})
+            for f in attachments:
+                if f.size > ATTACHMENT_MAX_SIZE:
+                    messages.error(request, "单个附件大小不能超过 5MB")
+                    return render(request, self.template_name, {"form": form, "request_obj": existing})
+                if f.content_type not in ATTACHMENT_ALLOWED_MIMES:
+                    messages.error(request, "附件格式仅支持 JPG / PNG / PDF")
+                    return render(request, self.template_name, {"form": form, "request_obj": existing})
+
+        if existing and obj == existing and existing.status != ShopBindingRequest.Status.PENDING:
+            existing.attachments.all().delete()
+
         obj.save()
 
+        for f in attachments:
+            ShopBindingAttachment.objects.create(
+                request=obj,
+                file=f,
+                original_name=f.name,
+                mime_type=f.content_type or "",
+                size=f.size,
+            )
+
+        if intent == "draft":
+            messages.success(request, "草稿已保存，可继续编辑后提交")
+            return redirect('core:shop_binding_detail', request_id=obj.id)
+
         messages.success(request, "申请已提交，等待管理员审核")
-        return redirect('core:shop_binding_request')
+        return redirect('core:shop_binding_detail', request_id=obj.id)
+
+
+class ShopBindingRequestDetailView(View):
+    template_name = "core/shop_binding_detail.html"
+
+    def get(self, request, request_id):
+        if not request.user.is_authenticated:
+            return redirect('core:login')
+        try:
+            profile = request.user.profile
+        except UserProfile.DoesNotExist:
+            return redirect('dashboard:index')
+        if profile.role.role_type != Role.RoleType.SHOP:
+            return redirect('dashboard:index')
+        if profile.shop:
+            return redirect('store:shop_update', profile.shop.id)
+
+        obj = get_object_or_404(ShopBindingRequest, id=request_id, user=request.user)
+        return render(request, self.template_name, {"request_obj": obj})
+
+
+
+class ShopBindingRequestWithdrawView(View):
+    def post(self, request, request_id):
+        if not request.user.is_authenticated:
+            return redirect('core:login')
+        try:
+            profile = request.user.profile
+        except UserProfile.DoesNotExist:
+            return redirect('dashboard:index')
+        if profile.role.role_type != Role.RoleType.SHOP:
+            return redirect('dashboard:index')
+        if profile.shop:
+            return redirect('store:shop_update', profile.shop.id)
+
+        obj = get_object_or_404(ShopBindingRequest, id=request_id, user=request.user)
+        if obj.status != ShopBindingRequest.Status.PENDING:
+            messages.error(request, "当前状态不支持撤回")
+            return redirect('core:shop_binding_detail', request_id=obj.id)
+        obj.status = ShopBindingRequest.Status.WITHDRAWN
+        obj.review_reason = "用户主动撤回申请"
+        obj.reviewed_at = timezone.now()
+        obj.save(update_fields=["status", "review_reason", "reviewed_at"])
+        messages.success(request, "已撤回申请")
+        return redirect('core:shop_binding_detail', request_id=obj.id)
+
+
+class ShopBindingApplicationMineAPIView(APIView):
+    def get(self, request):
+        if not request.user.is_authenticated:
+            return Response({"code": "AUTH_REQUIRED", "message": "请先登录", "data": None}, status=401)
+        obj = ShopBindingRequest.objects.filter(user=request.user).order_by("-created_at").first()
+        if not obj:
+            return Response({"code": "OK", "message": "暂无申请记录", "data": None}, status=200)
+        data = {
+            "id": obj.id,
+            "status": obj.status,
+            "status_display": obj.get_status_display(),
+            "review_reason": obj.review_reason,
+            "requested_shop_name": obj.requested_shop_name,
+            "submitted_at": obj.created_at,
+            "reviewed_at": obj.reviewed_at,
+            "detail_url": f"/core/shop-binding/{obj.id}/",
+        }
+        return Response({"code": "OK", "message": "success", "data": data}, status=200)
 
 
 class PasswordResetRequestView(View):

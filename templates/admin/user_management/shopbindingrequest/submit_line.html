@@ -1,0 +1,12 @@
+{% load i18n admin_urls %}
+<div class="submit-row">
+    {% if show_save %}<input type="submit" value="{% trans 'Save' %}" class="default" name="_save">{% endif %}
+    {% if original and original.status == 'PENDING' %}
+        <input type="submit" value="{% trans 'Approve' %}" class="default" name="_approve">
+        <input type="text" name="reject_reason" placeholder="{% trans 'Reject reason (required)' %}" style="min-width:240px; margin:0 8px;">
+        <input type="submit" value="{% trans 'Reject' %}" class="deletelink" name="_reject">
+    {% endif %}
+    {% if show_delete_link %}{% url opts|admin_urlname:'delete' original.pk|admin_urlquote as delete_url %}
+    <p class="deletelink-box"><a href="{% add_preserved_filters delete_url %}" class="deletelink">{% trans "Delete" %}</a></p>
+    {% endif %}
+</div>

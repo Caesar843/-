@@ -38,90 +38,175 @@
             display: flex;
             min-height: 100vh;
             overflow: hidden;
+            background: linear-gradient(180deg, #0a1018 0%, #0f1723 60%, #0a1018 100%);
         }
 
+        /* ===== 新侧边栏样式 ===== */
         .app-sidebar {
-            width: 260px;
-            background: var(--sidebar-bg);
-            color: var(--sidebar-text);
+            width: 300px;
+            background: radial-gradient(120% 120% at 30% 20%, rgba(20,33,51,0.6), #0b0f14 60%);
+            color: var(--text);
             display: flex;
             flex-direction: column;
-            padding: 16px 0;
+            padding: 18px;
             position: fixed;
             top: 0;
             left: 0;
             height: 100vh;
             overflow-y: auto;
             z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.45);
         }
 
         .sidebar-brand {
-            padding: 0 20px 16px;
+            padding: 6px 8px 18px;
             display: flex;
             align-items: center;
             gap: 10px;
             font-weight: 700;
             font-size: 18px;
-            border-bottom: 1px solid color-mix(in srgb, var(--sidebar-text) 12%, transparent);
+            color: #f6b81a;
         }
 
-        .sidebar-section {
-            margin-top: 16px;
+        .nav-group {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+            overflow: hidden;
         }
 
-        .sidebar-section-title {
-            padding: 8px 20px;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--sidebar-muted);
-        }
-
-        .sidebar-link {
-            padding: 10px 20px;
+        .nav-group-header {
+            width: 100%;
             display: flex;
             align-items: center;
             gap: 10px;
-            color: var(--sidebar-text);
-            text-decoration: none;
+            padding: 16px 14px;
+            background: transparent;
+            color: var(--text);
+            border: none;
+            outline: none;
+            cursor: pointer;
+            position: relative;
             transition: background 0.2s ease, color 0.2s ease;
         }
 
-        .sidebar-link:hover {
-            background: color-mix(in srgb, var(--sidebar-text) 12%, transparent);
-            color: var(--sidebar-text);
+        .nav-group-header .bar {
+            width: 4px;
+            height: 20px;
+            border-radius: 4px;
+            background: #f6b81a;
+            flex-shrink: 0;
         }
 
-        .sidebar-link.active {
-            background: var(--sidebar-active);
-            border-left: 4px solid var(--sidebar-accent);
-            padding-left: 16px;
+        .nav-group-header .title {
+            font-size: 16px;
+            font-weight: 600;
+            flex: 1;
+            text-align: left;
         }
 
-        .sidebar-link:focus-visible {
-            outline: 2px solid var(--sidebar-accent);
-            outline-offset: -2px;
+        .nav-group-header .chevron {
+            transition: transform 0.2s ease, color 0.2s ease;
+            color: var(--text-muted);
+        }
+
+        .nav-group.is-active .nav-group-header {
+            background: #f6b81a;
+            color: #111;
+        }
+        .nav-group.is-active .nav-group-header .chevron {
+            color: #111;
+        }
+
+        .nav-group.is-open .chevron {
+            transform: rotate(180deg);
+        }
+
+        .nav-group-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.25s ease, opacity 0.25s ease;
+            opacity: 0;
+        }
+        .nav-group.is-open .nav-group-body {
+            max-height: 800px;
+            opacity: 1;
+        }
+
+        .nav-items {
+            list-style: none;
+            margin: 0;
+            padding: 8px 0 12px 20px;
+            position: relative;
+        }
+        .nav-items::before {
+            content: "";
+            position: absolute;
+            top: 6px;
+            bottom: 10px;
+            left: 8px;
+            width: 1px;
+            background: rgba(255,255,255,0.12);
+        }
+
+        .nav-item { margin: 2px 0; }
+        .nav-link-line {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            color: var(--text);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+        .nav-link-line:hover {
+            background: rgba(255,255,255,0.06);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.5);
+            flex-shrink: 0;
+        }
+        .nav-link-line.is-active .dot {
+            background: #f6b81a;
+            box-shadow: 0 0 8px rgba(246,184,26,0.7);
+        }
+        .nav-link-line.is-active {
+            color: #f6b81a;
+            font-weight: 600;
+        }
+
+        .nav-link-line:focus-visible, .nav-group-header:focus-visible {
+            outline: 2px solid #f6b81a;
+            outline-offset: 2px;
         }
 
         .sidebar-footer {
             margin-top: auto;
-            padding: 16px 20px;
-            border-top: 1px solid color-mix(in srgb, var(--sidebar-text) 12%, transparent);
+            padding: 16px 12px 8px;
+            border-top: 1px solid rgba(255,255,255,0.08);
             display: flex;
             align-items: center;
             gap: 12px;
+            color: var(--text);
         }
 
         .sidebar-avatar {
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 999px;
-            background: color-mix(in srgb, var(--sidebar-text) 18%, transparent);
+            background: rgba(255,255,255,0.12);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            color: var(--sidebar-text);
+            color: var(--text);
         }
 
         .app-main {
@@ -129,7 +214,7 @@
             display: flex;
             flex-direction: column;
             min-width: 0;
-            margin-left: 260px;
+            margin-left: 300px;
             background: var(--content-bg);
         }
 
@@ -342,6 +427,7 @@
                 transform: translateX(-100%);
                 transition: transform 0.2s ease;
                 z-index: 1000;
+                width: 280px;
             }
 
             .app-shell.sidebar-open .app-sidebar {
@@ -367,57 +453,85 @@
             <div class="sidebar-brand">
                 <span>&#x95E8;&#x5E97;&#x7BA1;&#x7406;&#x7CFB;&#x7EDF;</span>
             </div>
-            <nav class="sidebar-nav">
+            <nav id="sidebarNav">
                 {% if user.is_authenticated %}
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title">&#x4E3B;&#x8981;&#x529F;&#x80FD;</div>
-                    {% if user.is_superuser or user.profile.role.role_type == 'ADMIN' or user.profile.role.role_type == 'FINANCE' %}
-                    <a class="sidebar-link" href="{% url 'dashboard:index' %}">&#x4EEA;&#x8868;&#x76D8;</a>
-                    {% endif %}
-                    {% if user.is_superuser or user.profile.role.role_type == 'ADMIN' %}
-                    <a class="sidebar-link" href="{% url 'store:shop_list' %}">&#x5E97;&#x94FA;&#x7BA1;&#x7406;</a>
-                    <a class="sidebar-link" href="{% url 'store:contract_list' %}">&#x5408;&#x540C;&#x7BA1;&#x7406;</a>
-                    <a class="sidebar-link" href="{% url 'finance:finance_list' %}">&#x8D22;&#x52A1;&#x7BA1;&#x7406;</a>
-                    <a class="sidebar-link" href="{% url 'finance:finance_history' %}">&#x8D22;&#x52A1;&#x5386;&#x53F2;</a>
-                    <a class="sidebar-link" href="{% url 'operations:dashboard' %}">&#x8FD0;&#x8425;&#x4EEA;&#x8868;&#x76D8;</a>
-                    <a class="sidebar-link" href="{% url 'operations:analysis' %}">&#x8FD0;&#x8425;&#x5206;&#x6790;</a>
-                    <a class="sidebar-link" href="{% url 'communication:admin_request_list' %}">&#x7533;&#x8BF7;&#x7BA1;&#x7406;</a>
-                    <a class="sidebar-link" href="{% url 'query:dashboard' %}">&#x591A;&#x7EF4;&#x67E5;&#x8BE2;</a>
-                    <a class="sidebar-link" href="{% url 'reports:report_list' %}">&#x62A5;&#x8868;&#x4E2D;&#x5FC3;</a>
-                    {% elif user.profile.role.role_type == 'MANAGEMENT' %}
-                    <a class="sidebar-link" href="{% url 'store:shop_list' %}">&#x5E97;&#x94FA;&#x7BA1;&#x7406;</a>
-                    <a class="sidebar-link" href="{% url 'store:contract_list' %}">&#x5408;&#x540C;&#x7BA1;&#x7406;</a>
-                    <a class="sidebar-link" href="{% url 'finance:finance_list' %}">&#x8D22;&#x52A1;&#x7BA1;&#x7406;</a>
-                    <a class="sidebar-link" href="{% url 'reports:report_list' %}">&#x62A5;&#x8868;&#x4E2D;&#x5FC3;</a>
-                    {% elif user.profile.role.role_type == 'OPERATION' %}
-                    <a class="sidebar-link" href="{% url 'store:shop_list' %}">&#x5E97;&#x94FA;&#x7BA1;&#x7406;</a>
-                    <a class="sidebar-link" href="{% url 'store:contract_list' %}">&#x5408;&#x540C;&#x7BA1;&#x7406;</a>
-                    <a class="sidebar-link" href="{% url 'operations:dashboard' %}">&#x8FD0;&#x8425;&#x4EEA;&#x8868;&#x76D8;</a>
-                    {% elif user.profile.role.role_type == 'FINANCE' %}
-                    <a class="sidebar-link" href="{% url 'finance:finance_list' %}">&#x8D22;&#x52A1;&#x7BA1;&#x7406;</a>
-                    <a class="sidebar-link" href="{% url 'finance:finance_history' %}">&#x8D22;&#x52A1;&#x5386;&#x53F2;</a>
-                    {% elif user.profile.role.role_type == 'SHOP' %}
-                    {% if user.profile.shop %}
-                    <a class="sidebar-link" href="{% url 'store:shop_update' user.profile.shop.id %}">&#x6211;&#x7684;&#x5E97;&#x94FA;</a>
-                    {% else %}
-                    <a class="sidebar-link" href="{% url 'core:shop_binding_request' %}">&#x7533;&#x8BF7;&#x7ED1;&#x5B9A;&#x5E97;&#x94FA;</a>
-                    {% endif %}
-                    <a class="sidebar-link" href="{% url 'communication:request_list' %}">&#x6211;&#x7684;&#x7533;&#x8BF7;</a>
-                    <a class="sidebar-link" href="{% url 'finance:finance_list' %}">&#x8D22;&#x52A1;&#x7BA1;&#x7406;</a>
-                    {% endif %}
+
+                <div class="nav-group" data-group="main">
+                    <button class="nav-group-header" type="button" aria-expanded="false">
+                        <span class="bar"></span>
+                        <span class="title">&#x4E3B;&#x8981;&#x529F;&#x80FD;</span>
+                        <span class="chevron">&#x25BE;</span>
+                    </button>
+                    <div class="nav-group-body">
+                        <ul class="nav-items">
+                            {% if user.is_superuser or user.profile.role.role_type == 'ADMIN' or user.profile.role.role_type == 'FINANCE' %}
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'dashboard:index' %}"><span class="dot"></span><span>&#x4EEA;&#x8868;&#x76D8;</span></a></li>
+                            {% endif %}
+                            {% if user.is_superuser or user.profile.role.role_type == 'ADMIN' %}
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'store:shop_list' %}"><span class="dot"></span><span>&#x5E97;&#x94FA;&#x7BA1;&#x7406;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'store:contract_list' %}"><span class="dot"></span><span>&#x5408;&#x540C;&#x7BA1;&#x7406;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'finance:finance_list' %}"><span class="dot"></span><span>&#x8D22;&#x52A1;&#x7BA1;&#x7406;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'finance:finance_history' %}"><span class="dot"></span><span>&#x8D22;&#x52A1;&#x5386;&#x53F2;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'operations:dashboard' %}"><span class="dot"></span><span>&#x8FD0;&#x8425;&#x4EEA;&#x8868;&#x76D8;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'operations:analysis' %}"><span class="dot"></span><span>&#x8FD0;&#x8425;&#x5206;&#x6790;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'communication:admin_request_list' %}"><span class="dot"></span><span>&#x7533;&#x8BF7;&#x7BA1;&#x7406;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'query:dashboard' %}"><span class="dot"></span><span>&#x591A;&#x7EF4;&#x67E5;&#x8BE2;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'reports:report_list' %}"><span class="dot"></span><span>&#x62A5;&#x8868;&#x4E2D;&#x5FC3;</span></a></li>
+                            {% elif user.profile.role.role_type == 'MANAGEMENT' %}
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'store:shop_list' %}"><span class="dot"></span><span>&#x5E97;&#x94FA;&#x7BA1;&#x7406;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'store:contract_list' %}"><span class="dot"></span><span>&#x5408;&#x540C;&#x7BA1;&#x7406;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'finance:finance_list' %}"><span class="dot"></span><span>&#x8D22;&#x52A1;&#x7BA1;&#x7406;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'reports:report_list' %}"><span class="dot"></span><span>&#x62A5;&#x8868;&#x4E2D;&#x5FC3;</span></a></li>
+                            {% elif user.profile.role.role_type == 'OPERATION' %}
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'store:shop_list' %}"><span class="dot"></span><span>&#x5E97;&#x94FA;&#x7BA1;&#x7406;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'store:contract_list' %}"><span class="dot"></span><span>&#x5408;&#x540C;&#x7BA1;&#x7406;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'operations:dashboard' %}"><span class="dot"></span><span>&#x8FD0;&#x8425;&#x4EEA;&#x8868;&#x76D8;</span></a></li>
+                            {% elif user.profile.role.role_type == 'FINANCE' %}
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'finance:finance_list' %}"><span class="dot"></span><span>&#x8D22;&#x52A1;&#x7BA1;&#x7406;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'finance:finance_history' %}"><span class="dot"></span><span>&#x8D22;&#x52A1;&#x5386;&#x53F2;</span></a></li>
+                            {% elif user.profile.role.role_type == 'SHOP' %}
+                            {% if user.profile.shop %}
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'store:shop_update' user.profile.shop.id %}"><span class="dot"></span><span>&#x6211;&#x7684;&#x5E97;&#x94FA;</span></a></li>
+                            {% endif %}
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'core:shop_binding_request' %}"><span class="dot"></span><span>&#x5E97;&#x94FA;&#x7533;&#x8BF7;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'communication:maintenance_create' %}"><span class="dot"></span><span>&#x7EF4;&#x4FEE;&#x7533;&#x8BF7;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'communication:activity_create' %}"><span class="dot"></span><span>&#x6D3B;&#x52A8;&#x7533;&#x8BF7;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'communication:request_list' %}"><span class="dot"></span><span>&#x6211;&#x7684;&#x7533;&#x8BF7;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'finance:finance_list' %}"><span class="dot"></span><span>&#x8D22;&#x52A1;&#x7BA1;&#x7406;</span></a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
                 </div>
+
                 {% if user.is_superuser or user.profile.role.role_type == 'ADMIN' %}
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title">&#x6570;&#x636E;&#x4E0E;&#x5B89;&#x5168;</div>
-                    <a class="sidebar-link" href="{% url 'backup:backup_list' %}">&#x5907;&#x4EFD;&#x4E0E;&#x6062;&#x590D;</a>
-                    <a class="sidebar-link" href="{% url 'backup:backup_create' %}">&#x521B;&#x5EFA;&#x5907;&#x4EFD;</a>
-                    <a class="sidebar-link" href="{% url 'backup:backup_stats' %}">&#x5907;&#x4EFD;&#x7EDF;&#x8BA1;</a>
+                <div class="nav-group" data-group="security">
+                    <button class="nav-group-header" type="button" aria-expanded="false">
+                        <span class="bar"></span>
+                        <span class="title">&#x6570;&#x636E;&#x4E0E;&#x5B89;&#x5168;</span>
+                        <span class="chevron">&#x25BE;</span>
+                    </button>
+                    <div class="nav-group-body">
+                        <ul class="nav-items">
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'backup:backup_list' %}"><span class="dot"></span><span>&#x5907;&#x4EFD;&#x4E0E;&#x6062;&#x590D;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'backup:backup_create' %}"><span class="dot"></span><span>&#x521B;&#x5EFA;&#x5907;&#x4EFD;</span></a></li>
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'backup:backup_stats' %}"><span class="dot"></span><span>&#x5907;&#x4EFD;&#x7EDF;&#x8BA1;</span></a></li>
+                        </ul>
+                    </div>
                 </div>
                 {% endif %}
+
                 {% else %}
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title">&#x7528;&#x6237;</div>
-                    <a class="sidebar-link" href="{% url 'core:login' %}">&#x767B;&#x5F55;</a>
+                <div class="nav-group is-open" data-group="guest">
+                    <button class="nav-group-header" type="button" aria-expanded="true">
+                        <span class="bar"></span>
+                        <span class="title">&#x7528;&#x6237;</span>
+                        <span class="chevron">&#x25BE;</span>
+                    </button>
+                    <div class="nav-group-body" style="max-height: 200px; opacity: 1;">
+                        <ul class="nav-items">
+                            <li class="nav-item"><a class="nav-link-line" href="{% url 'core:login' %}"><span class="dot"></span><span>&#x767B;&#x5F55;</span></a></li>
+                        </ul>
+                    </div>
                 </div>
                 {% endif %}
             </nav>
@@ -539,6 +653,53 @@
                         node.textContent = ' ' + fallback + ' ';
                     }
                 });
+            });
+        })();
+    </script>
+    <script>
+        (function () {
+            const nav = document.getElementById('sidebarNav');
+            if (!nav) return;
+            const SINGLE_OPEN = true;
+            const groups = Array.from(nav.querySelectorAll('.nav-group'));
+
+            const closeOthers = (current) => {
+                if (!SINGLE_OPEN) return;
+                groups.forEach(g => {
+                    if (g !== current) g.classList.remove('is-open');
+                });
+            };
+
+            groups.forEach(group => {
+                const header = group.querySelector('.nav-group-header');
+                header.addEventListener('click', () => {
+                    const open = group.classList.toggle('is-open');
+                    header.setAttribute('aria-expanded', open);
+                    if (open) closeOthers(group);
+                });
+                header.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        header.click();
+                    }
+                });
+            });
+
+            // Active link & auto expand
+            const currentPath = window.location.pathname;
+            const links = nav.querySelectorAll('.nav-link-line');
+            links.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && currentPath.startsWith(href)) {
+                    link.classList.add('is-active');
+                    const group = link.closest('.nav-group');
+                    if (group) {
+                        group.classList.add('is-open', 'is-active');
+                        const header = group.querySelector('.nav-group-header');
+                        if (header) header.setAttribute('aria-expanded', 'true');
+                        closeOthers(group);
+                    }
+                }
             });
         })();
     </script>

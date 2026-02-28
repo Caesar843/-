@@ -1,42 +1,336 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
+{% load static %}
 
 {% block title %}申请绑定店铺 - 商场店铺智能运营管理系统{% endblock %}
 
+{% block extra_css %}
+<style>
+    .binding-card {
+        border: 1px solid var(--border);
+        background: var(--card-bg);
+        color: var(--card-text);
+    }
+
+    .binding-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .binding-badge {
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--surface-2);
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .binding-steps {
+        list-style: none;
+        padding: 0;
+        margin: 16px 0 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 8px;
+        font-size: 12px;
+    }
+
+    .binding-step {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 10px;
+        text-align: center;
+        color: var(--text-muted);
+    }
+
+    .binding-step.is-active {
+        border-color: var(--primary);
+        color: var(--text);
+        background: color-mix(in srgb, var(--primary) 15%, var(--surface-2));
+    }
+
+    .binding-note {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .form-hint {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 6px;
+    }
+
+    .error-summary {
+        border: 1px solid var(--input-invalid);
+        background: color-mix(in srgb, var(--input-invalid) 10%, transparent);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 16px;
+    }
+
+    .error-summary h6 {
+        margin: 0 0 8px;
+        font-size: 14px;
+        color: var(--text);
+    }
+
+    .error-summary ul {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--text);
+    }
+
+    .error-summary-toggle {
+        background: none;
+        border: 0;
+        color: var(--text);
+        font-weight: 600;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .error-summary-toggle::after {
+        content: "▾";
+        font-size: 12px;
+        transition: transform 0.2s ease;
+    }
+
+    .error-summary[aria-expanded="false"] .error-summary-toggle::after {
+        transform: rotate(-90deg);
+    }
+
+    .error-summary[aria-expanded="false"] ul {
+        display: none;
+    }
+
+    .field-error {
+        color: var(--input-invalid);
+        font-size: 12px;
+        margin-top: 6px;
+    }
+
+    .binding-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .binding-actions .btn {
+        min-height: 44px;
+    }
+
+    .btn-primary {
+        box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 30%, transparent);
+    }
+
+    .btn-primary:focus-visible,
+    .btn-outline-secondary:focus-visible {
+        outline: 2px solid var(--focus-ring);
+        outline-offset: 2px;
+    }
+
+    @media (max-width: 768px) {
+        .binding-steps {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container" style="max-width: 680px;">
-    <div class="card shadow-sm mt-4">
+<div class="container" style="max-width: 760px;">
+    <div class="card shadow-sm mt-4 binding-card">
         <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">申请绑定店铺</h4>
+            <div class="binding-header">
+                <h4 class="mb-0">申请绑定店铺</h4>
+                {% if request_obj %}
+                <span class="binding-badge">状态：{{ request_obj.get_status_display }}</span>
+                {% endif %}
+            </div>
         </div>
         <div class="card-body">
-            {% if request_obj %}
-            <div class="alert alert-info">
-                当前状态：<strong>{{ request_obj.get_status_display }}</strong>
+            <p class="binding-note">提交后管理员将在 24 小时内审核；通过后自动绑定店铺并分配角色权限。</p>
+
+            {% with status=request_obj.status|default:"UNSUBMITTED" %}
+            <ul class="binding-steps" aria-label="申请进度">
+                <li class="binding-step {% if status == 'UNSUBMITTED' or status == 'DRAFT' %}is-active{% endif %}">未提交/草稿</li>
+                <li class="binding-step {% if status == 'PENDING' %}is-active{% endif %}">待审核</li>
+                <li class="binding-step {% if status == 'APPROVED' %}is-active{% endif %}">已通过</li>
+                <li class="binding-step {% if status == 'REJECTED' %}is-active{% endif %}">已拒绝</li>
+                <li class="binding-step {% if status == 'WITHDRAWN' %}is-active{% endif %}">已撤回</li>
+            </ul>
+            {% endwith %}
+
+            {% if request_obj and request_obj.status == 'REJECTED' and request_obj.review_reason %}
+            <div class="alert alert-warning mt-3" role="alert">
+                拒绝原因：{{ request_obj.review_reason }}
             </div>
             {% endif %}
-            <form method="post">
+
+            {% if request_obj and request_obj.status == 'PENDING' %}
+            <div class="alert alert-info mt-3" role="alert">
+                当前已有待审核申请。请前往
+                <a href="{% url 'core:shop_binding_detail' request_obj.id %}">申请详情</a>
+                查看进度。
+            </div>
+            {% endif %}
+
+            {% if request_obj and request_obj.status == 'APPROVED' and request_obj.approved_shop %}
+            <div class="alert alert-success mt-3" role="alert">
+                已通过审核并绑定店铺：{{ request_obj.approved_shop.name }}。您可以在店铺管理页面继续操作。
+            </div>
+            {% endif %}
+
+            {% if form.errors %}
+            <div class="error-summary" role="alert" aria-live="polite" aria-expanded="true">
+                <button type="button" class="error-summary-toggle" data-error-summary-toggle>
+                    请修正以下问题后再提交
+                </button>
+                <ul>
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" data-shop-binding-form novalidate>
                 {% csrf_token %}
+                <input type="hidden" name="intent" value="submit">
+
                 <div class="mb-3">
-                    <label for="{{ form.requested_shop_name.id_for_label }}" class="form-label">申请店铺名称</label>
+                    <label class="form-label">绑定身份<span class="text-danger">*</span></label>
+                    <div class="d-flex flex-wrap gap-3" role="radiogroup" aria-label="绑定身份">
+                        {% for radio in form.identity_type %}
+                        <label class="form-check form-check-inline m-0">
+                            {{ radio.tag }}
+                            <span class="form-check-label">{{ radio.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.identity_type.errors %}
+                    <div class="field-error">{{ form.identity_type.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_requested_shop_name" class="form-label">申请店铺名称<span class="text-danger">*</span></label>
                     {{ form.requested_shop_name }}
+                    <input type="hidden" id="shopSearchUrl" value="{% url 'store:shop_search' %}">
+                    <div id="shopSearchResults" class="mt-2" aria-live="polite"></div>
+                    <div class="form-hint" id="hint_requested_shop_name">请填写真实店铺名称，避免空格或特殊字符。</div>
+                    {% if form.requested_shop_name.errors %}
+                    <div class="field-error" id="error_requested_shop_name">{{ form.requested_shop_name.errors.0 }}</div>
+                    {% endif %}
                 </div>
+
                 <div class="mb-3">
-                    <label for="{{ form.contact_phone.id_for_label }}" class="form-label">联系电话</label>
+                    <label for="id_requested_shop_id" class="form-label">店铺编号/ID</label>
+                    {{ form.requested_shop_id }}
+                    <div class="form-hint" id="hint_requested_shop_id">可选填写，便于审核匹配。</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_mall_name" class="form-label">所在商场/园区/区域<span class="text-danger">*</span></label>
+                    {{ form.mall_name }}
+                    {% if form.mall_name.errors %}
+                    <div class="field-error" id="error_mall_name">{{ form.mall_name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_industry_category" class="form-label">行业类目<span class="text-danger">*</span></label>
+                    {{ form.industry_category }}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_address" class="form-label">店铺地址</label>
+                    {{ form.address }}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_contact_name" class="form-label">联系人姓名<span class="text-danger">*</span></label>
+                    {{ form.contact_name }}
+                    {% if form.contact_name.errors %}
+                    <div class="field-error" id="error_contact_name">{{ form.contact_name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_contact_phone" class="form-label">联系电话<span class="text-danger">*</span></label>
                     {{ form.contact_phone }}
+                    <div class="form-hint" id="hint_contact_phone">示例：010-88886666 或 +86 13800000000</div>
+                    {% if form.contact_phone.errors %}
+                    <div class="field-error" id="error_contact_phone">{{ form.contact_phone.errors.0 }}</div>
+                    {% endif %}
                 </div>
+
                 <div class="mb-3">
-                    <label for="{{ form.note.id_for_label }}" class="form-label">备注</label>
-                    {{ form.note }}
+                    <label for="id_contact_email" class="form-label">联系邮箱</label>
+                    {{ form.contact_email }}
+                    {% if form.contact_email.errors %}
+                    <div class="field-error" id="error_contact_email">{{ form.contact_email.errors.0 }}</div>
+                    {% endif %}
                 </div>
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">提交申请</button>
-                    <a href="{% url 'dashboard:index' %}" class="btn btn-secondary">返回首页</a>
+
+                <div class="mb-3">
+                    <label for="id_role_requested" class="form-label">期望绑定角色<span class="text-danger">*</span></label>
+                    {{ form.role_requested }}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_authorization_note" class="form-label">授权说明</label>
+                    {{ form.authorization_note }}
+                    <div class="form-hint" id="hint_authorization_note">非店主身份需填写授权说明，上传授权书将在下一阶段支持。</div>
+                    {% if form.authorization_note.errors %}
+                    <div class="field-error" id="error_authorization_note">{{ form.authorization_note.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_note" class="form-label">申请说明</label>
+                    {{ form.note }}
+                    <div class="form-hint" id="hint_note">可选填写，便于管理员理解申请背景。</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_attachments" class="form-label">证明材料</label>
+                    <input type="file" id="id_attachments" name="attachments" class="form-control" multiple accept=".jpg,.jpeg,.png,.pdf">
+                    <div class="form-hint" id="hint_attachments">支持 JPG/PNG/PDF，最多 5 个文件，单个不超过 5MB。</div>
+                    <div id="attachmentPreview" class="mt-2" aria-live="polite"></div>
+                </div>
+
+<div class="binding-actions">
+                    <button type="submit" class="btn btn-primary" data-submit-btn data-loading-text="提交中...">提交申请</button>
+                    {% if not disable_form %}
+                    <button type="button" class="btn btn-outline-info" data-save-draft-btn>保存草稿</button>
+                    <button type="button" class="btn btn-outline-danger" data-reset-btn>重置表单</button>
+                    {% endif %}
+                    <a href="{% url 'dashboard:index' %}" class="btn btn-outline-secondary">返回首页</a>
+                    {% if request_obj %}
+                    <a href="{% url 'core:shop_binding_detail' request_obj.id %}" class="btn btn-outline-primary">查看申请详情</a>
+                    {% endif %}
                 </div>
             </form>
         </div>
         <div class="card-footer text-muted">
-            管理员审核后会将账号绑定到对应店铺。
+            提交申请后，管理员审核通过将自动完成账号与店铺绑定。
+            <a href="#" class="ms-2">了解绑定后权限说明</a>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/shop_binding_request.js' %}" defer></script>
+<script>
+    window.SHOP_BINDING_DISABLE_FORM = {{ disable_form|yesno:"true,false" }};
+</script>
 {% endblock %}

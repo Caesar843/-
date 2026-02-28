@@ -1,12 +1,13 @@
-from django.contrib import messages
+﻿from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView, FormView
 
 from apps.communication.forms import ActivityApplicationForm, MaintenanceRequestForm, UnifiedRequestForm
 from apps.communication.models import ActivityApplication, MaintenanceRequest, ProcessLog
 from apps.store.models import Shop
-from apps.user_management.models import Role
+from apps.user_management.models import Role, ShopBindingRequest
 from apps.user_management.permissions import (
     RoleRequiredMixin,
     ShopDataAccessMixin,
@@ -30,6 +31,20 @@ def _get_user_shops(user):
 
 
 def _build_request_row(obj, kind):
+    if kind == "binding":
+        return {
+            "id": obj.id,
+            "kind": kind,
+            "title": obj.requested_shop_name or "搴楅摵缁戝畾鐢宠",
+            "type_display": "搴楅摵鐢宠",
+            "status_display": obj.get_status_display(),
+            "status": obj.status,
+            "created_at": obj.created_at,
+            "shop_name": getattr(getattr(obj, "approved_shop", None), "name", "-"),
+            "applicant": getattr(getattr(obj, "user", None), "username", "-"),
+            "detail_url": reverse("core:shop_binding_detail", kwargs={"request_id": obj.id}),
+        }
+
     if kind == "maintenance":
         type_display = obj.get_request_type_display()
     else:
@@ -44,10 +59,11 @@ def _build_request_row(obj, kind):
         "created_at": obj.created_at,
         "shop_name": obj.shop.name if obj.shop else "-",
         "applicant": getattr(getattr(obj, "created_by", None), "username", "-"),
+        "detail_url": reverse("communication:request_detail", kwargs={"kind": kind, "pk": obj.id}),
     }
 
 
-class RequestListView(RoleRequiredMixin, ShopDataAccessMixin, TemplateView):
+class RequestListView(RoleRequiredMixin, TemplateView):
     template_name = "communication/request_list.html"
     allowed_roles = ["SHOP"]
 
@@ -58,14 +74,18 @@ class RequestListView(RoleRequiredMixin, ShopDataAccessMixin, TemplateView):
         kind = self.request.GET.get("kind") or ""
         status_filter = self.request.GET.get("status") or ""
 
-        maintenance_qs = MaintenanceRequest.objects.filter(shop__in=shops)
-        activity_qs = ActivityApplication.objects.filter(shop__in=shops)
+        binding_qs = ShopBindingRequest.objects.filter(user=user)
+        maintenance_qs = MaintenanceRequest.objects.filter(created_by=user)
+        activity_qs = ActivityApplication.objects.filter(created_by=user)
 
         if status_filter:
+            binding_qs = binding_qs.filter(status=status_filter)
             maintenance_qs = maintenance_qs.filter(status=status_filter)
             activity_qs = activity_qs.filter(status=status_filter)
 
         rows = []
+        if kind in ("", "binding"):
+            rows.extend([_build_request_row(obj, "binding") for obj in binding_qs])
         if kind in ("", "maintenance"):
             rows.extend([_build_request_row(obj, "maintenance") for obj in maintenance_qs])
         if kind in ("", "activity"):
@@ -75,21 +95,36 @@ class RequestListView(RoleRequiredMixin, ShopDataAccessMixin, TemplateView):
         context["requests"] = rows
         context["kind_filter"] = kind
         context["status_filter"] = status_filter
+        context["has_bound_shop"] = shops.exists()
         return context
 
 
-class RequestCreateView(RoleRequiredMixin, ShopDataAccessMixin, FormView):
+class RequestCreateView(RoleRequiredMixin, FormView):
     template_name = "communication/request_form.html"
     form_class = UnifiedRequestForm
     success_url = "/communication/requests/"
     allowed_roles = ["SHOP"]
 
+    def get_initial(self):
+        initial = super().get_initial()
+        kind = (self.request.GET.get("kind") or "").strip()
+        if kind in {"maintenance", "activity"}:
+            initial["kind"] = kind
+        return initial
+
+    def dispatch(self, request, *args, **kwargs):
+        # Request creation requires a bound shop; guide SHOP users to binding flow first.
+        if request.method.lower() == "get" and not _get_user_shops(request.user).exists():
+            messages.info(request, "请先完成店铺绑定后再提交维修/活动申请。")
+            return redirect("core:shop_binding_request")
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         user = self.request.user
         shops = _get_user_shops(user)
         if not shops.exists():
-            messages.error(self.request, "Please bind a shop before submitting.")
-            return forbidden_response(self.request, "No shop bound")
+            messages.info(self.request, "请先完成店铺绑定后再提交维修/活动申请。")
+            return redirect("core:shop_binding_request")
         shop = shops.first()
         if not is_shop_member(user, shop):
             messages.error(self.request, "Access denied.")
@@ -139,7 +174,7 @@ class RequestCreateView(RoleRequiredMixin, ShopDataAccessMixin, FormView):
         return redirect(self.success_url)
 
 
-class RequestDetailView(RoleRequiredMixin, ShopDataAccessMixin, TemplateView):
+class RequestDetailView(RoleRequiredMixin, TemplateView):
     template_name = "communication/request_detail.html"
     allowed_roles = ["SHOP"]
 
@@ -151,7 +186,8 @@ class RequestDetailView(RoleRequiredMixin, ShopDataAccessMixin, TemplateView):
         else:
             obj = get_object_or_404(ActivityApplication, pk=pk)
 
-        if not is_shop_member(request.user, obj.shop):
+        is_owner = getattr(obj, "created_by_id", None) == request.user.id
+        if not (is_owner or is_shop_member(request.user, obj.shop)):
             messages.error(request, "Access denied.")
             return forbidden_response(request, "Access denied")
 
@@ -296,7 +332,7 @@ class AdminRequestDetailView(RoleRequiredMixin, TemplateView):
                 operator=request.user.username,
             )
 
-        messages.success(request, "已更新申请状态")
+        messages.success(request, "申请状态已更新")
         return redirect("/communication/admin/requests/")
 
 
@@ -328,13 +364,20 @@ class MaintenanceRequestCreateView(RoleRequiredMixin, ShopDataAccessMixin, Creat
         kwargs["user"] = self.request.user
         return kwargs
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.method.lower() == "get":
+            if not _get_user_shops(request.user).exists():
+                messages.info(request, "请先完成店铺绑定后再提交维修申请。")
+                return redirect("core:shop_binding_request")
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         try:
             instance = form.save(commit=False)
             shop = getattr(getattr(self.request.user, "profile", None), "shop", None)
             if not shop:
-                messages.error(self.request, "Please bind a shop before submitting.")
-                return forbidden_response(self.request, "No shop bound")
+                messages.info(self.request, "请先完成店铺绑定后再提交维修申请。")
+                return redirect("core:shop_binding_request")
             if not is_shop_member(self.request.user, shop):
                 messages.error(self.request, "Access denied.")
                 return forbidden_response(self.request, "Access denied")
@@ -476,13 +519,20 @@ class ActivityApplicationCreateView(RoleRequiredMixin, ShopDataAccessMixin, Crea
         kwargs["user"] = self.request.user
         return kwargs
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.method.lower() == "get":
+            if not _get_user_shops(request.user).exists():
+                messages.info(request, "请先完成店铺绑定后再提交活动申请。")
+                return redirect("core:shop_binding_request")
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         try:
             instance = form.save(commit=False)
             shop = getattr(getattr(self.request.user, "profile", None), "shop", None)
             if not shop:
-                messages.error(self.request, "Please bind a shop before submitting.")
-                return forbidden_response(self.request, "No shop bound")
+                messages.info(self.request, "请先完成店铺绑定后再提交活动申请。")
+                return redirect("core:shop_binding_request")
             if not is_shop_member(self.request.user, shop):
                 messages.error(self.request, "Access denied.")
                 return forbidden_response(self.request, "Access denied")
@@ -639,3 +689,4 @@ class AdminActivityApplicationListView(RoleRequiredMixin, ListView):
         context["end_date"] = self.request.GET.get("end_date", "")
         context["shops"] = Shop.objects.filter(is_deleted=False)
         return context
+

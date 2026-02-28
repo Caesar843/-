@@ -14,13 +14,16 @@
             <span class="comm-title-bar"></span>
             <div>
                 <div class="comm-title">我的申请</div>
-                <div class="comm-subtitle">查看维修与活动申请状态与处理意见</div>
+                <div class="comm-subtitle">查看店铺申请、维修申请、活动申请的审核状态与处理意见</div>
             </div>
         </div>
         <div class="comm-actions">
-            <a href="{% url 'communication:request_create' %}" class="ui-btn ui-btn-primary">
-                <i class="fas fa-plus"></i> 提交申请
-            </a>
+            {% if has_bound_shop %}
+            <a href="{% url 'communication:maintenance_create' %}" class="ui-btn ui-btn-primary">维修申请</a>
+            <a href="{% url 'communication:activity_create' %}" class="ui-btn ui-btn-outline">活动申请</a>
+            {% else %}
+            <a href="{% url 'core:shop_binding_request' %}" class="ui-btn ui-btn-primary">店铺申请</a>
+            {% endif %}
         </div>
     </div>
 
@@ -31,6 +34,7 @@
                     <label class="form-label">类型</label>
                     <select class="form-select ui-input" name="kind">
                         <option value="" {% if not kind_filter %}selected{% endif %}>全部</option>
+                        <option value="binding" {% if kind_filter == "binding" %}selected{% endif %}>店铺申请</option>
                         <option value="maintenance" {% if kind_filter == "maintenance" %}selected{% endif %}>维修申请</option>
                         <option value="activity" {% if kind_filter == "activity" %}selected{% endif %}>活动申请</option>
                     </select>
@@ -39,6 +43,7 @@
                     <label class="form-label">状态</label>
                     <select class="form-select ui-input" name="status">
                         <option value="" {% if not status_filter %}selected{% endif %}>全部</option>
+                        <option value="DRAFT" {% if status_filter == "DRAFT" %}selected{% endif %}>草稿</option>
                         <option value="PENDING" {% if status_filter == "PENDING" %}selected{% endif %}>待处理/待审核</option>
                         <option value="ASSIGNED" {% if status_filter == "ASSIGNED" %}selected{% endif %}>已指派</option>
                         <option value="IN_PROGRESS" {% if status_filter == "IN_PROGRESS" %}selected{% endif %}>处理中</option>
@@ -46,6 +51,7 @@
                         <option value="REJECTED" {% if status_filter == "REJECTED" %}selected{% endif %}>已拒绝</option>
                         <option value="COMPLETED" {% if status_filter == "COMPLETED" %}selected{% endif %}>已完成</option>
                         <option value="CANCELLED" {% if status_filter == "CANCELLED" %}selected{% endif %}>已取消</option>
+                        <option value="WITHDRAWN" {% if status_filter == "WITHDRAWN" %}selected{% endif %}>已撤回</option>
                     </select>
                 </div>
             </div>
@@ -79,7 +85,7 @@
                         </td>
                         <td>{{ row.created_at|date:"Y-m-d H:i" }}</td>
                         <td>
-                            <a href="{% url 'communication:request_detail' row.kind row.id %}" class="ui-btn ui-btn-info ui-btn-sm">查看</a>
+                            <a href="{{ row.detail_url }}" class="ui-btn ui-btn-info ui-btn-sm">查看</a>
                         </td>
                     </tr>
                     {% empty %}

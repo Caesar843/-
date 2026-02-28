@@ -20,13 +20,32 @@
     <div class="ui-card ui-section query-card">
         <div class="query-section-header">
             <div class="ui-title">&#x67E5;&#x8BE2;&#x529F;&#x80FD;&#x5BFC;&#x822A;</div>
-            <span class="ui-text-muted">&#x9009;&#x62E9;&#x7ECF;&#x5E38;&#x4F7F;&#x7528;&#x7684;&#x6A21;&#x5757;</span>
+            <span class="ui-text-muted">&#x53EF;&#x7528;&#x6A21;&#x5757;&#xFF1A;{{ available_query_count }} / 4</span>
         </div>
         <div class="query-actions">
+            {% if can_view_shop_query %}
             <a href="{% url 'query:shop_query' %}" class="ui-btn ui-btn-primary w-100">&#x5E97;&#x94FA;&#x67E5;&#x8BE2;</a>
+            {% else %}
+            <button type="button" class="ui-btn ui-btn-primary w-100" disabled aria-disabled="true">&#x5E97;&#x94FA;&#x67E5;&#x8BE2;（&#x65E0;&#x6743;&#x9650;）</button>
+            {% endif %}
+
+            {% if can_view_operation_query %}
             <a href="{% url 'query:operation_query' %}" class="ui-btn ui-btn-success w-100">&#x8FD0;&#x8425;&#x67E5;&#x8BE2;</a>
+            {% else %}
+            <button type="button" class="ui-btn ui-btn-success w-100" disabled aria-disabled="true">&#x8FD0;&#x8425;&#x67E5;&#x8BE2;（&#x65E0;&#x6743;&#x9650;）</button>
+            {% endif %}
+
+            {% if can_view_finance_query %}
             <a href="{% url 'query:finance_query' %}" class="ui-btn ui-btn-warning w-100">&#x8D22;&#x52A1;&#x67E5;&#x8BE2;</a>
+            {% else %}
+            <button type="button" class="ui-btn ui-btn-warning w-100" disabled aria-disabled="true">&#x8D22;&#x52A1;&#x67E5;&#x8BE2;（&#x65E0;&#x6743;&#x9650;）</button>
+            {% endif %}
+
+            {% if can_view_admin_query %}
             <a href="{% url 'query:admin_query' %}" class="ui-btn ui-btn-info w-100">&#x7BA1;&#x7406;&#x5C42;&#x67E5;&#x8BE2;</a>
+            {% else %}
+            <button type="button" class="ui-btn ui-btn-info w-100" disabled aria-disabled="true">&#x7BA1;&#x7406;&#x5C42;&#x67E5;&#x8BE2;（&#x65E0;&#x6743;&#x9650;）</button>
+            {% endif %}
         </div>
     </div>
 

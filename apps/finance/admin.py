@@ -1,5 +1,5 @@
 from django.contrib import admin
-from apps.finance.models import FinanceRecord
+from apps.finance.models import FinanceRecord, BillingSchedule
 
 
 @admin.register(FinanceRecord)
@@ -32,3 +32,22 @@ class FinanceRecordAdmin(admin.ModelAdmin):
         'created_at',
         'updated_at'
     )
+
+
+@admin.register(BillingSchedule)
+class BillingScheduleAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "contract",
+        "contract_item",
+        "period_start",
+        "period_end",
+        "due_date",
+        "amount",
+        "status",
+        "source_version",
+    )
+    list_filter = ("status", "contract_item__item_type", "contract__shop")
+    search_fields = ("contract__contract_no", "contract__shop__name")
+    date_hierarchy = "due_date"
+    readonly_fields = ("created_at", "updated_at")

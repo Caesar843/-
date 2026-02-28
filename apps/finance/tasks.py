@@ -31,9 +31,11 @@ def generate_monthly_accounts_task(self, **kwargs):
         
         with transaction.atomic():
             # 查询所有活跃合同
-            active_contracts = Contract.objects.filter(
-                status=Contract.Status.ACTIVE
-            ).select_for_update()
+            tenant_id = kwargs.get("tenant_id")
+            active_contracts = Contract.objects.filter(status=Contract.Status.ACTIVE)
+            if tenant_id is not None:
+                active_contracts = active_contracts.filter(tenant_id=tenant_id)
+            active_contracts = active_contracts.select_for_update()
             
             result = {
                 'total_contracts': 0,
@@ -58,6 +60,7 @@ def generate_monthly_accounts_task(self, **kwargs):
                     
                     # 检查本月是否已有账单
                     existing = FinanceRecord.objects.filter(
+                        tenant_id=contract.tenant_id,
                         contract=contract,
                         fee_type=FinanceRecord.FeeType.RENT,
                         billing_period_start=month_start
@@ -110,7 +113,11 @@ def send_payment_reminder_task(self, days_ahead: int = 3, **kwargs):
         logger.info(f"Starting send_payment_reminder_task with days_ahead={days_ahead}")
         
         # 调用 FinanceService 发送提醒
-        result = FinanceService.send_payment_reminder_notifications(days_ahead=days_ahead)
+        tenant_id = kwargs.get("tenant_id")
+        result = FinanceService.send_payment_reminder_notifications(
+            days_ahead=days_ahead,
+            tenant_id=tenant_id,
+        )
         
         logger.info(f"send_payment_reminder_task completed: {result}")
         return result
@@ -139,7 +146,11 @@ def send_overdue_payment_alert_task(self, days_overdue: int = 0, **kwargs):
         logger.info(f"Starting send_overdue_payment_alert_task with days_overdue={days_overdue}")
         
         # 调用 FinanceService 发送告警
-        result = FinanceService.send_overdue_payment_alert(days_overdue=days_overdue)
+        tenant_id = kwargs.get("tenant_id")
+        result = FinanceService.send_overdue_payment_alert(
+            days_overdue=days_overdue,
+            tenant_id=tenant_id,
+        )
         
         logger.info(f"send_overdue_payment_alert_task completed: {result}")
         return result

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Contract Detail - {{ block.super }}{% endblock %}
+{% block title %}合同详情 - {{ block.super }}{% endblock %}
 
 {% block extra_css %}
 {% include 'partials/modern_theme.html' %}
@@ -12,24 +12,34 @@
     .contract-detail-page .page-header {
         padding-bottom: 12px;
         border-bottom: 1px solid #1f2937;
+        margin-bottom: 14px;
     }
 
     .contract-detail-page .page-title {
-        font-size: 32px;
+        font-size: 30px;
         font-weight: 800;
         color: #f8fafc;
-        letter-spacing: 0.01em;
     }
 
     .contract-detail-page .page-subtitle {
         color: #cbd5e1;
-        font-size: 15px;
+        font-size: 14px;
     }
 
     .contract-detail-page .table-card {
         background: #0b1220;
-        border-color: #1f2937;
+        border: 1px solid #1f2937;
+        border-radius: 12px;
         box-shadow: 0 10px 30px rgba(15, 23, 42, 0.35);
+        padding: 14px;
+        margin-bottom: 14px;
+    }
+
+    .contract-detail-page .section-title {
+        color: #f8fafc;
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 10px;
     }
 
     .contract-detail-page .table {
@@ -38,100 +48,253 @@
         color: #e5e7eb;
     }
 
-    .contract-detail-page .table tbody tr {
-        border-bottom: 1px solid #1f2a3d;
-    }
-
-    .contract-detail-page .table tbody tr:nth-of-type(odd) {
-        background: #0f172a;
-    }
-
-    .contract-detail-page .table tbody tr:nth-of-type(even) {
-        background: #0b1324;
-    }
-
-    .contract-detail-page .table th {
-        width: 220px;
-        color: #e2e8f0;
-        font-weight: 700;
-        font-size: 14px;
-        letter-spacing: 0.02em;
-        padding: 14px 18px;
-    }
-
+    .contract-detail-page .table th,
     .contract-detail-page .table td {
-        color: #f1f5f9;
-        padding: 14px 18px;
-        font-size: 15px;
+        border-color: #23324a;
+        vertical-align: middle;
     }
 
-    .btn-back-night {
+    .contract-detail-page .meta-key {
+        width: 220px;
+        color: #cbd5e1;
+        font-weight: 700;
+    }
+
+    .contract-detail-page .form-label {
+        color: #cbd5e1;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .contract-detail-page .form-control,
+    .contract-detail-page .form-select {
+        background: #0f172a;
+        border-color: #334155;
+        color: #e2e8f0;
+    }
+
+    .contract-detail-page .btn-back-night {
         background: #1e293b;
         border-color: #334155;
         color: #f8fafc;
     }
 
-    .btn-back-night:hover {
+    .contract-detail-page .btn-back-night:hover {
         background: #0f172a;
         border-color: #475569;
         color: #ffffff;
+    }
+
+    .contract-detail-page .muted {
+        color: #94a3b8;
+        font-size: 13px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container page-shell contract-detail-page">
-    <div class="page-header">
+    <div class="page-header d-flex justify-content-between align-items-center">
         <div>
-            <h1 class="page-title">Contract Detail</h1>
-            <div class="page-subtitle">Contract #{{ contract.id }}</div>
+            <h1 class="page-title">合同详情</h1>
+            <div class="page-subtitle">{{ contract.contract_no|default:"未编号" }} · {{ contract.shop.name }}</div>
         </div>
-        <div class="action-row">
-            <a href="{% url 'store:contract_list' %}" class="btn btn-back-night">Back</a>
-        </div>
+        <a href="{% url 'store:contract_list' %}" class="btn btn-back-night">返回列表</a>
     </div>
 
-    <div class="table-responsive table-card">
-        <table class="table table-striped align-middle">
+    <div class="table-card">
+        <div class="section-title">基础信息</div>
+        <table class="table table-striped align-middle mb-0">
             <tbody>
                 <tr>
-                    <th>Shop</th>
+                    <th class="meta-key">店铺</th>
                     <td>{{ contract.shop.name }}</td>
                 </tr>
                 <tr>
-                    <th>Start Date</th>
+                    <th class="meta-key">合同编号</th>
+                    <td>{{ contract.contract_no|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <th class="meta-key">开始日期</th>
                     <td>{{ contract.start_date }}</td>
                 </tr>
                 <tr>
-                    <th>End Date</th>
+                    <th class="meta-key">结束日期</th>
                     <td>{{ contract.end_date }}</td>
                 </tr>
                 <tr>
-                    <th>Monthly Rent</th>
+                    <th class="meta-key">月租金</th>
                     <td>{{ contract.monthly_rent }}</td>
                 </tr>
                 <tr>
-                    <th>Deposit</th>
+                    <th class="meta-key">押金</th>
                     <td>{{ contract.deposit }}</td>
                 </tr>
                 <tr>
-                    <th>Status</th>
+                    <th class="meta-key">状态</th>
                     <td>{{ contract.get_status_display }}</td>
                 </tr>
                 <tr>
-                    <th>Reviewed By</th>
-                    <td>{{ contract.reviewed_by }}</td>
+                    <th class="meta-key">审核人</th>
+                    <td>{{ contract.reviewed_by|default:"-" }}</td>
                 </tr>
                 <tr>
-                    <th>Reviewed At</th>
-                    <td>{{ contract.reviewed_at }}</td>
+                    <th class="meta-key">审核时间</th>
+                    <td>{{ contract.reviewed_at|default:"-" }}</td>
                 </tr>
                 <tr>
-                    <th>Review Comment</th>
-                    <td>{{ contract.review_comment }}</td>
+                    <th class="meta-key">审核意见</th>
+                    <td>{{ contract.review_comment|default:"-" }}</td>
                 </tr>
             </tbody>
         </table>
+    </div>
+
+    <div class="table-card">
+        <div class="section-title">附件版本</div>
+        {% if attachments %}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>类型</th>
+                        <th>版本</th>
+                        <th>文件</th>
+                        <th>哈希</th>
+                        <th>上传人</th>
+                        <th>上传时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attachment in attachments %}
+                    <tr>
+                        <td>{{ attachment.get_attachment_type_display }}</td>
+                        <td>v{{ attachment.version_no }}{% if attachment.is_current %}（当前）{% endif %}</td>
+                        <td>
+                            <a href="{{ attachment.file.url }}" target="_blank">{{ attachment.original_name }}</a>
+                            {% if attachment.remark %}
+                            <div class="muted">{{ attachment.remark }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="muted">{{ attachment.file_hash }}</td>
+                        <td>{{ attachment.uploaded_by|default:"-" }}</td>
+                        <td>{{ attachment.created_at }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="muted">暂无附件</div>
+        {% endif %}
+
+        {% if can_manage_contract_docs %}
+        <hr>
+        <form method="post" action="{% url 'store:contract_attachment_upload' contract.pk %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">{{ attachment_form.attachment_type.label }}</label>
+                    {{ attachment_form.attachment_type }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">{{ attachment_form.file.label }}</label>
+                    {{ attachment_form.file }}
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">{{ attachment_form.remark.label }}</label>
+                    {{ attachment_form.remark }}
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">上传附件</button>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="table-card">
+        <div class="section-title">签署记录</div>
+        {% if signatures %}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>签署方</th>
+                        <th>签署人</th>
+                        <th>方式</th>
+                        <th>签署时间</th>
+                        <th>证据哈希</th>
+                        <th>关联附件</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for signature in signatures %}
+                    <tr>
+                        <td>{{ signature.get_party_type_display }}</td>
+                        <td>{{ signature.signer_name }}{% if signature.signer_title %}（{{ signature.signer_title }}）{% endif %}</td>
+                        <td>{{ signature.get_sign_method_display }}</td>
+                        <td>{{ signature.signed_at }}</td>
+                        <td class="muted">{{ signature.evidence_hash|default:"-" }}</td>
+                        <td>
+                            {% if signature.attachment %}
+                            <a href="{{ signature.attachment.file.url }}" target="_blank">{{ signature.attachment.original_name }}</a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="muted">暂无签署记录</div>
+        {% endif %}
+
+        {% if can_manage_contract_docs %}
+        <hr>
+        <form method="post" action="{% url 'store:contract_signature_create' contract.pk %}">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">{{ signature_form.party_type.label }}</label>
+                    {{ signature_form.party_type }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">{{ signature_form.signer_name.label }}</label>
+                    {{ signature_form.signer_name }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">{{ signature_form.signer_title.label }}</label>
+                    {{ signature_form.signer_title }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">{{ signature_form.sign_method.label }}</label>
+                    {{ signature_form.sign_method }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">{{ signature_form.signed_at.label }}</label>
+                    {{ signature_form.signed_at }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">{{ signature_form.attachment.label }}</label>
+                    {{ signature_form.attachment }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">{{ signature_form.evidence_hash.label }}</label>
+                    {{ signature_form.evidence_hash }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">{{ signature_form.comment.label }}</label>
+                    {{ signature_form.comment }}
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">登记签署</button>
+            </div>
+        </form>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

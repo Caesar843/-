@@ -137,12 +137,14 @@ def role_required(*allowed_roles):
     def decorator(view_func):
         @login_required
         def wrapper(request, *args, **kwargs):
+            if is_admin_user(request.user):
+                return view_func(request, *args, **kwargs)
             try:
                 user_role = request.user.profile.role.role_type
             except AttributeError:
                 return forbidden_response(request, 'Role not configured')
 
-            if is_admin_user(request.user) or user_role in allowed_roles:
+            if user_role in allowed_roles:
                 return view_func(request, *args, **kwargs)
             return forbidden_response(request, 'Access denied')
         return wrapper
@@ -157,13 +159,14 @@ class RoleRequiredMixin:
 
     @method_decorator(login_required)
     def dispatch(self, request, *args, **kwargs):
+        if is_admin_user(request.user):
+            return super().dispatch(request, *args, **kwargs)
+
         try:
             user_role = request.user.profile.role.role_type
         except AttributeError:
             return forbidden_response(request, 'Role not configured')
 
-        if is_admin_user(request.user):
-            return super().dispatch(request, *args, **kwargs)
         if user_role in self.allowed_roles:
             return super().dispatch(request, *args, **kwargs)
         return forbidden_response(request, 'Access denied')

@@ -4,4 +4,4 @@ from django.apps import AppConfig
 class DataGovernanceConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.data_governance"
-    verbose_name = "Data Governance"
+    verbose_name = "数据治理"

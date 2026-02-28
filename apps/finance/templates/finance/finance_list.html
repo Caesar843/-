@@ -1,6 +1,6 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
-{% block title %}财务记录列表{% endblock %}
+{% block title %}璐㈠姟璁板綍鍒楄〃{% endblock %}
 {% block extra_css %}
 {% include 'partials/modern_theme.html' %}
 {% endblock %}
@@ -10,19 +10,21 @@
 <div class="container page-shell">
         <div class="page-header">
         <div>
-            <h1 class="page-title">财务记录管理</h1>
-            <div class="page-subtitle">财务记录列表</div>
+            <h1 class="page-title">璐㈠姟璁板綍绠＄悊</h1>
+            <div class="page-subtitle">璐㈠姟璁板綍鍒楄〃</div>
         </div>
         <div class="action-row">
 
                     <a href="{% url 'finance:finance_create' %}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> 创建财务记录
+                        <i class="fas fa-plus"></i> 鍒涘缓璐㈠姟璁板綍
                     </a>
+                    {% if can_view_reminders %}
                     <a href="{% url 'finance:finance_reminders' %}" class="btn btn-outline-secondary ms-2">
                         <i class="fas fa-bell"></i> 缴费提醒
                     </a>
+                    {% endif %}
                     <a href="{% url 'finance:finance_history' %}" class="btn btn-outline-secondary ms-2">
-                        <i class="fas fa-history"></i> 缴费历史
+                        <i class="fas fa-history"></i> 缂磋垂鍘嗗彶
                     </a>
                 
         </div>
@@ -34,15 +36,15 @@
             <table class="table table-striped table-hover align-middle">
                 <thead>
                     <tr>
-                        <th>记录ID</th>
-                        <th>合同</th>
-                        <th>费用类型</th>
-                        <th>金额</th>
-                        <th>账单周期</th>
-                        <th>状态</th>
-                        <th>缴费方式</th>
-                        <th>缴费时间</th>
-                        <th>操作</th>
+                        <th>璁板綍ID</th>
+                        <th>鍚堝悓</th>
+                        <th>璐圭敤绫诲瀷</th>
+                        <th>閲戦</th>
+                        <th>璐﹀崟鍛ㄦ湡</th>
+                        <th>鐘舵€?/th>
+                        <th>缂磋垂鏂瑰紡</th>
+                        <th>缂磋垂鏃堕棿</th>
+                        <th>鎿嶄綔</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -51,15 +53,15 @@
                         <td>{{ record.id }}</td>
                         <td>{{ record.contract }}</td>
                         <td>{{ record.get_fee_type_display }}</td>
-                        <td class="numeric">¥{{ record.amount }}</td>
-                        <td>{{ record.billing_period_start }} 至 {{ record.billing_period_end }}</td>
+                        <td class="numeric">楼{{ record.amount }}</td>
+                        <td>{{ record.billing_period_start }} 鑷?{{ record.billing_period_end }}</td>
                         <td>
                             {% if record.status == 'UNPAID' %}
-                            <span class="status-badge danger">未支付</span>
+                            <span class="status-badge danger">鏈敮浠?/span>
                             {% elif record.status == 'PAID' %}
-                            <span class="status-badge success">已支付</span>
+                            <span class="status-badge success">宸叉敮浠?/span>
                             {% else %}
-                            <span class="status-badge neutral">已作废</span>
+                            <span class="status-badge neutral">宸蹭綔搴?/span>
                             {% endif %}
                         </td>
                         <td>{{ record.get_payment_method_display|default:'-' }}</td>
@@ -71,7 +73,7 @@
                             {% if record.status == 'UNPAID' %}
                             <button type="button" class="btn btn-sm btn-success ms-1" data-bs-toggle="modal"
                                 data-bs-target="#payModal{{ record.id }}">
-                                <i class="fas fa-credit-card"></i> 缴费
+                                <i class="fas fa-credit-card"></i> 缂磋垂
                             </button>
                             {% endif %}
                         </td>
@@ -81,14 +83,14 @@
             </table>
             {% else %}
             <div class="alert alert-info">
-                没有财务记录
+                娌℃湁璐㈠姟璁板綍
             </div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<!-- 缴费模态框 -->
+<!-- 缂磋垂妯℃€佹 -->
 {% for record in finance_records %}
 {% if record.status == 'UNPAID' %}
 <div class="modal fade" id="payModal{{ record.id }}" tabindex="-1" aria-labelledby="payModalLabel{{ record.id }}"
@@ -96,78 +98,78 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="payModalLabel{{ record.id }}">缴费 - {{ record.contract }}</h5>
+                <h5 class="modal-title" id="payModalLabel{{ record.id }}">缂磋垂 - {{ record.contract }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" action="{% url 'finance:finance_pay' record.id %}">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <!-- 财务明细 -->
+                    <!-- 璐㈠姟鏄庣粏 -->
                     
                         <div class="card mb-4">
                         <div class="card-header bg-info text-white">
-                            <h6 class="mb-0">财务明细</h6>
+                            <h6 class="mb-0">璐㈠姟鏄庣粏</h6>
                         </div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <p><strong>店铺名称：</strong>{{ record.contract.shop.name }}</p>
-                                    <p><strong>费用类型：</strong>{{ record.get_fee_type_display }}</p>
-                                    <p><strong>本期应付金额：</strong>¥{{ record.amount }}</p>
+                                    <p><strong>搴楅摵鍚嶇О锛?/strong>{{ record.contract.shop.name }}</p>
+                                    <p><strong>璐圭敤绫诲瀷锛?/strong>{{ record.get_fee_type_display }}</p>
+                                    <p><strong>鏈湡搴斾粯閲戦锛?/strong>楼{{ record.amount }}</p>
                                 </div>
                                 <div class="col-md-6">
                                     <p>
-                                        <strong>账单周期：</strong>
+                                        <strong>璐﹀崟鍛ㄦ湡锛?/strong>
                                         {{ record.billing_period_start|date:"Y-m-d" }}
-                                        至
+                                        鑷?
                                         {{ record.billing_period_end|date:"Y-m-d" }}
                                     </p>
-                                    <p><strong>缴费周期：</strong>{{ record.contract.get_payment_cycle_display }}</p>
-                                    <p><strong>押金金额：</strong>¥{{ record.contract.deposit }}</p>
+                                    <p><strong>缂磋垂鍛ㄦ湡锛?/strong>{{ record.contract.get_payment_cycle_display }}</p>
+                                    <p><strong>鎶奸噾閲戦锛?/strong>楼{{ record.contract.deposit }}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 支付方式选择 -->
+                    <!-- 鏀粯鏂瑰紡閫夋嫨 -->
                     <div class="form-group mb-4">
-                        <label for="payment_method{{ record.id }}">选择支付方式</label>
+                        <label for="payment_method{{ record.id }}">閫夋嫨鏀粯鏂瑰紡</label>
                         <select class="form-control" id="payment_method{{ record.id }}" name="payment_method" required>
-                            <option value="">请选择支付方式</option>
-                            <option value="WECHAT">微信支付</option>
-                            <option value="ALIPAY">支付宝</option>
-                            <option value="BANK_TRANSFER">银行转账</option>
-                            <option value="CASH">现金</option>
+                            <option value="">璇烽€夋嫨鏀粯鏂瑰紡</option>
+                            <option value="WECHAT">寰俊鏀粯</option>
+                            <option value="ALIPAY">鏀粯瀹?/option>
+                            <option value="BANK_TRANSFER">閾惰杞处</option>
+                            <option value="CASH">鐜伴噾</option>
                         </select>
                     </div>
 
-                    <!-- 交易单号 -->
+                    <!-- 浜ゆ槗鍗曞彿 -->
                     <div class="form-group mb-4">
-                        <label for="transaction_id{{ record.id }}">交易单号（选填）</label>
+                        <label for="transaction_id{{ record.id }}">浜ゆ槗鍗曞彿锛堥€夊～锛?/label>
                         <input type="text" class="form-control" id="transaction_id{{ record.id }}" name="transaction_id"
-                            placeholder="请输入交易单号">
+                            placeholder="璇疯緭鍏ヤ氦鏄撳崟鍙?>
                     </div>
 
-                    <!-- 支付二维码（模拟） -->
+                    <!-- 鏀粯浜岀淮鐮侊紙妯℃嫙锛?-->
                     <div id="paymentQr{{ record.id }}" class="mb-4 hidden">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h6>请使用选择的支付方式扫码支付</h6>
+                                <h6>璇蜂娇鐢ㄩ€夋嫨鐨勬敮浠樻柟寮忔壂鐮佹敮浠?/h6>
                                 <div class="mt-2 mb-2">
                                     <div
                                         style="width: 200px; height: 200px; background-color: #f8f9fa; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 1px solid #dee2e6;">
-                                        <span id="paymentMethodText{{ record.id }}">微信支付二维码</span>
+                                        <span id="paymentMethodText{{ record.id }}">寰俊鏀粯浜岀淮鐮?/span>
                                     </div>
                                 </div>
-                                <p class="text-muted">金额：¥{{ record.amount }}</p>
+                                <p class="text-muted">閲戦锛毬{ record.amount }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" id="showQrBtn{{ record.id }}" class="btn btn-outline-secondary me-2">显示支付二维码</button>
-                    <button type="submit" class="btn btn-primary">确认支付</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">鍙栨秷</button>
+                    <button type="button" id="showQrBtn{{ record.id }}" class="btn btn-outline-secondary me-2">鏄剧ず鏀粯浜岀淮鐮?/button>
+                    <button type="submit" class="btn btn-primary">纭鏀粯</button>
                 </div>
             </form>
         </div>
@@ -177,7 +179,7 @@
 {% endfor %}
 
 <script>
-    // 显示支付二维码
+    // 鏄剧ず鏀粯浜岀淮鐮?
     {% for record in finance_records %}
     {% if record.status == 'UNPAID' %}
     document.getElementById('showQrBtn{{ record.id }}').addEventListener('click', function () {
@@ -186,19 +188,19 @@
         const paymentMethodText = document.getElementById('paymentMethodText{{ record.id }}');
 
         if (!paymentMethod) {
-            alert('请先选择支付方式');
+            alert('璇峰厛閫夋嫨鏀粯鏂瑰紡');
             return;
         }
 
-        // 根据选择的支付方式显示不同的二维码提示
+        // 鏍规嵁閫夋嫨鐨勬敮浠樻柟寮忔樉绀轰笉鍚岀殑浜岀淮鐮佹彁绀?
         const methodNames = {
-            'WECHAT': '微信支付二维码',
-            'ALIPAY': '支付宝二维码',
-            'BANK_TRANSFER': '银行转账信息',
-            'CASH': '现金支付提示'
+            'WECHAT': '寰俊鏀粯浜岀淮鐮?,
+            'ALIPAY': '鏀粯瀹濅簩缁寸爜',
+            'BANK_TRANSFER': '閾惰杞处淇℃伅',
+            'CASH': '鐜伴噾鏀粯鎻愮ず'
         };
 
-        paymentMethodText.textContent = methodNames[paymentMethod] || '支付二维码';
+        paymentMethodText.textContent = methodNames[paymentMethod] || '鏀粯浜岀淮鐮?;
         qrDiv.classList.remove('hidden');
         qrDiv.classList.add('show');
     });

@@ -1,4 +1,5 @@
 import hashlib
+from datetime import timedelta
 from typing import Optional
 
 from django.contrib.contenttypes.models import ContentType
@@ -84,51 +85,179 @@ def log_audit_action(
         )
 
 
-def verify_audit_chain(object_type, object_id):
+def verify_audit_chain(object_type, object_id, module: Optional[str] = None):
     content_type = _resolve_content_type(object_type)
-    logs = (
-        AuditLog.objects.filter(
-            module__in=CHAINED_MODULES,
-            content_type=content_type,
-            object_id=str(object_id),
+    modules = [module] if module else sorted(CHAINED_MODULES)
+    checked_total = 0
+    module_results = {}
+
+    for current_module in modules:
+        logs = (
+            AuditLog.objects.filter(
+                module=current_module,
+                content_type=content_type,
+                object_id=str(object_id),
+            )
+            .order_by("created_at", "id")
         )
-        .order_by("created_at", "id")
+
+        prev_hash = None
+        checked_count = 0
+        for log in logs:
+            checked_count += 1
+            if log.prev_hash != prev_hash:
+                return {
+                    "ok": False,
+                    "module": current_module,
+                    "error": "prev_hash_mismatch",
+                    "log_id": log.id,
+                    "expected_prev_hash": prev_hash,
+                    "actual_prev_hash": log.prev_hash,
+                }
+            if not log.current_hash:
+                return {
+                    "ok": False,
+                    "module": current_module,
+                    "error": "missing_current_hash",
+                    "log_id": log.id,
+                }
+            expected_hash = _compute_hash(
+                actor_id=log.actor_id,
+                action=log.action,
+                module=log.module,
+                content_type_id=log.content_type_id,
+                object_id=log.object_id,
+                before_data=log.before_data,
+                after_data=log.after_data,
+                created_at=log.created_at,
+                prev_hash=prev_hash,
+            )
+            if log.current_hash != expected_hash:
+                return {
+                    "ok": False,
+                    "module": current_module,
+                    "error": "hash_mismatch",
+                    "log_id": log.id,
+                    "expected_hash": expected_hash,
+                    "actual_hash": log.current_hash,
+                }
+            prev_hash = log.current_hash
+
+        checked_total += checked_count
+        module_results[current_module] = checked_count
+
+    return {"ok": True, "checked": checked_total, "modules": module_results}
+
+
+def verify_contract_audit_sequence(contract_id):
+    from apps.store.models import Contract
+
+    try:
+        contract = Contract.objects.get(id=contract_id)
+    except Contract.DoesNotExist:
+        return {
+            "ok": False,
+            "error": "contract_not_found",
+            "contract_id": contract_id,
+        }
+
+    content_type = ContentType.objects.get_for_model(Contract)
+    actions = list(
+        AuditLog.objects.filter(
+            module="contract",
+            content_type=content_type,
+            object_id=str(contract_id),
+        ).values_list("action", flat=True)
+    )
+    action_set = set(actions)
+
+    required_actions = []
+    if contract.status != Contract.Status.DRAFT:
+        required_actions.extend(["submit_contract_review", "start_approval_round"])
+    if contract.status in [Contract.Status.APPROVED, Contract.Status.ACTIVE, Contract.Status.EXPIRED, Contract.Status.TERMINATED]:
+        required_actions.append("approve_contract")
+    if contract.status == Contract.Status.REJECTED:
+        required_actions.append("reject_contract")
+    if contract.status in [Contract.Status.ACTIVE, Contract.Status.EXPIRED, Contract.Status.TERMINATED]:
+        required_actions.append("activate_contract")
+    if contract.status == Contract.Status.TERMINATED:
+        required_actions.append("terminate_contract")
+    if contract.status == Contract.Status.EXPIRED:
+        required_actions.append("expire_contract")
+    if contract.is_archived:
+        required_actions.append("archive_contract")
+
+    missing_actions = sorted({action for action in required_actions if action not in action_set})
+    return {
+        "ok": not missing_actions,
+        "contract_id": contract.id,
+        "status": contract.status,
+        "is_archived": contract.is_archived,
+        "missing_actions": missing_actions,
+        "action_count": len(actions),
+    }
+
+
+def verify_audit_chains_batch(
+    *,
+    modules=None,
+    hours: int = 24,
+    limit: int = 200,
+    object_type: Optional[str] = None,
+    include_sequence_check: bool = True,
+):
+    selected_modules = list(modules or sorted(CHAINED_MODULES))
+    if not selected_modules:
+        return {"ok": True, "checked_objects": 0, "failures": []}
+
+    since = timezone.now() - timedelta(hours=max(int(hours or 1), 1))
+    logs_qs = AuditLog.objects.filter(
+        module__in=selected_modules,
+        created_at__gte=since,
+        content_type__isnull=False,
+    ).exclude(object_id__isnull=True).exclude(object_id="")
+
+    if object_type:
+        logs_qs = logs_qs.filter(content_type=_resolve_content_type(object_type))
+
+    targets = list(
+        logs_qs.order_by("-created_at")
+        .values_list("content_type_id", "object_id")
+        .distinct()[: max(int(limit or 1), 1)]
     )
 
-    prev_hash = None
-    for log in logs:
-        if log.prev_hash != prev_hash:
-            return {
-                "ok": False,
-                "error": "prev_hash_mismatch",
-                "log_id": log.id,
-                "expected_prev_hash": prev_hash,
-                "actual_prev_hash": log.prev_hash,
-            }
-        if not log.current_hash:
-            return {"ok": False, "error": "missing_current_hash", "log_id": log.id}
-        expected_hash = _compute_hash(
-            actor_id=log.actor_id,
-            action=log.action,
-            module=log.module,
-            content_type_id=log.content_type_id,
-            object_id=log.object_id,
-            before_data=log.before_data,
-            after_data=log.after_data,
-            created_at=log.created_at,
-            prev_hash=prev_hash,
-        )
-        if log.current_hash != expected_hash:
-            return {
-                "ok": False,
-                "error": "hash_mismatch",
-                "log_id": log.id,
-                "expected_hash": expected_hash,
-                "actual_hash": log.current_hash,
-            }
-        prev_hash = log.current_hash
+    failures = []
+    sequence_failures = []
+    checked = 0
+    for content_type_id, object_id in targets:
+        content_type = ContentType.objects.get_for_id(content_type_id)
+        result = verify_audit_chain(content_type, object_id)
+        checked += 1
+        if not result.get("ok"):
+            failures.append(
+                {
+                    "content_type": f"{content_type.app_label}.{content_type.model}",
+                    "object_id": str(object_id),
+                    "detail": result,
+                }
+            )
+            continue
 
-    return {"ok": True, "checked": logs.count()}
+        if include_sequence_check and content_type.app_label == "store" and content_type.model == "contract":
+            sequence_result = verify_contract_audit_sequence(object_id)
+            if not sequence_result.get("ok"):
+                sequence_failures.append(sequence_result)
+
+    return {
+        "ok": not failures and not sequence_failures,
+        "checked_objects": checked,
+        "window_hours": int(hours),
+        "modules": selected_modules,
+        "failures": failures,
+        "sequence_failures": sequence_failures,
+        "failure_count": len(failures),
+        "sequence_failure_count": len(sequence_failures),
+    }
 
 
 def _resolve_content_type(object_type):

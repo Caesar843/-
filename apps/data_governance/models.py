@@ -5,19 +5,19 @@ from apps.store.models import Shop
 
 class DataQualityIssue(models.Model):
     class Domain(models.TextChoices):
-        FINANCE = "finance", _("Finance")
-        CONTRACT = "contract", _("Contract")
-        OPS = "ops", _("Ops")
+        FINANCE = "finance", _("财务")
+        CONTRACT = "contract", _("合同")
+        OPS = "ops", _("运营")
 
     class Severity(models.TextChoices):
-        LOW = "low", _("Low")
-        MEDIUM = "medium", _("Medium")
-        HIGH = "high", _("High")
+        LOW = "low", _("低")
+        MEDIUM = "medium", _("中")
+        HIGH = "high", _("高")
 
     class Status(models.TextChoices):
-        OPEN = "open", _("Open")
-        IGNORED = "ignored", _("Ignored")
-        RESOLVED = "resolved", _("Resolved")
+        OPEN = "open", _("待处理")
+        IGNORED = "ignored", _("已忽略")
+        RESOLVED = "resolved", _("已解决")
 
     domain = models.CharField(max_length=20, choices=Domain.choices, db_index=True)
     rule_code = models.CharField(max_length=100)
@@ -34,7 +34,7 @@ class DataQualityIssue(models.Model):
     )
 
     class Meta:
-        verbose_name = _("Data Quality Issue")
+        verbose_name = _("数据质量问题")
         verbose_name_plural = verbose_name
         constraints = [
             models.UniqueConstraint(
@@ -61,7 +61,7 @@ class IdempotencyKey(models.Model):
     last_seen_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = _("Idempotency Key")
+        verbose_name = _("幂等键")
         verbose_name_plural = verbose_name
 
     def __str__(self):
@@ -76,7 +76,7 @@ class JobLock(models.Model):
     payload_hash = models.CharField(max_length=64, blank=True, null=True)
 
     class Meta:
-        verbose_name = _("Job Lock")
+        verbose_name = _("任务锁")
         verbose_name_plural = verbose_name
 
     def __str__(self):
@@ -93,8 +93,8 @@ class DailyFinanceAgg(models.Model):
         on_delete=models.PROTECT,
         related_name="daily_finance_aggs",
     )
-    agg_date = models.DateField(db_index=True)
-    month_bucket = models.CharField(max_length=7, db_index=True)
+    agg_date = models.DateField(db_index=True, verbose_name=_("统计日期"))
+    month_bucket = models.CharField(max_length=7, db_index=True, verbose_name=_("统计月份"))
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     rent_paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -103,7 +103,7 @@ class DailyFinanceAgg(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = _("Daily Finance Aggregate")
+        verbose_name = _("每日财务汇总")
         verbose_name_plural = verbose_name
         constraints = [
             models.UniqueConstraint(

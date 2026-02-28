@@ -34,6 +34,9 @@
                         </option>
                         {% endfor %}
                     </select>
+                    {% if shop_selection_error %}
+                    <div class="mt-2 text-danger" role="alert">{{ shop_selection_error }}</div>
+                    {% endif %}
                 </div>
                 <div class="query-detail-actions">
                     <button type="submit" class="ui-btn ui-btn-primary">&#x67E5;&#x8BE2;</button>

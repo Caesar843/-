@@ -17,9 +17,9 @@ from apps.core.exceptions import BusinessValidationError, StateConflictException
 Finance App Views
 -----------------
 [架构职责]
-1. 处理 HTTP 请求与响应。
-2. 组装 DTO 并调用 Service 层。
-3. 映射异常与返回视图/重定向。
+1. 处理 HTTP 请求与响应
+2. 组装 DTO 并调Service 层
+3. 映射异常与返回视重定向
 """
 
 class FinanceListView(RoleRequiredMixin, ShopDataAccessMixin, ListView):
@@ -43,43 +43,72 @@ class FinanceListView(RoleRequiredMixin, ShopDataAccessMixin, ListView):
                 queryset = queryset.none()
         return queryset
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        role_type = getattr(getattr(getattr(self.request.user, "profile", None), "role", None), "role_type", None)
+        context["can_view_reminders"] = bool(self.request.user.is_superuser or role_type != "SHOP")
+        context["can_pay_finance"] = bool(role_type in ["FINANCE", "SHOP"])
+        return context
+
 class FinancePayView(RoleRequiredMixin, View):
     """财务记录支付视图"""
-    allowed_roles = ['ADMIN', 'FINANCE']
-    
+    allowed_roles = ['FINANCE', 'SHOP']
+
     def post(self, request, pk):
+        role_type = getattr(getattr(getattr(request.user, "profile", None), "role", None), "role_type", None)
+        if role_type not in ["FINANCE", "SHOP"]:
+            messages.error(request, 'No permission to pay this record')
+            return HttpResponseRedirect(reverse('finance:finance_list'))
+
+        try:
+            record = FinanceRecord.objects.for_tenant(request.tenant).select_related('contract__shop').get(id=pk)
+        except FinanceRecord.DoesNotExist:
+            messages.error(request, 'Finance record not found')
+            return HttpResponseRedirect(reverse('finance:finance_list'))
+
+        if role_type == 'SHOP':
+            profile_shop_id = getattr(getattr(request.user, 'profile', None), 'shop_id', None)
+            if not profile_shop_id or record.contract.shop_id != profile_shop_id:
+                messages.error(request, 'No permission to pay this record')
+                return HttpResponseRedirect(reverse('finance:finance_list'))
+
         try:
             # 获取缴费方式
             payment_method = request.POST.get('payment_method', 'WECHAT')
             transaction_id = request.POST.get('transaction_id', '')
-            
+
             # 验证支付方式
             if not payment_method:
                 messages.error(request, '请选择支付方式')
                 return HttpResponseRedirect(reverse('finance:finance_list'))
-            
-            # 组装 DTO，确保record_id是整数
+
+            # 组装 DTO，确保record_id是整
             dto = FinancePayDTO(record_id=int(pk), payment_method=payment_method, transaction_id=transaction_id)
-            
+
             # 调用 Service 处理支付
             idempotency_key = (
                 request.headers.get('Idempotency-Key')
                 or request.POST.get('idempotency_key')
             )
-            FinanceService.mark_as_paid(dto, request.user.id, idempotency_key)
-            
+            FinanceService.mark_as_paid(
+                dto,
+                request.user.id,
+                idempotency_key,
+                tenant_id=getattr(request.tenant, "id", None),
+            )
+
             # 添加成功消息
             messages.success(request, '支付成功！缴费状态已更新为已支付')
-            
-            # 重定向回列表页
+
+            # 重定向回列表
             return HttpResponseRedirect(reverse('finance:finance_list'))
         except (BusinessValidationError, StateConflictException, ResourceNotFoundException) as e:
             # 添加错误消息
             messages.error(request, f'支付失败: {e.message}')
-            # 重定向回列表页
+            # 重定向回列表
             return HttpResponseRedirect(reverse('finance:finance_list'))
         except ValueError as e:
-            # 处理类型转换错误（如pk不是有效整数）
+            # 处理类型转换错误（如pk不是有效整数
             messages.error(request, '无效的记录ID')
             return HttpResponseRedirect(reverse('finance:finance_list'))
         except Exception as e:
@@ -102,7 +131,7 @@ class FinanceCreateView(RoleRequiredMixin, CreateView):
         return context
     
     def form_valid(self, form):
-        """处理表单验证成功的情况"""
+        """Handle valid form submission."""
         try:
             cleaned_data = form.cleaned_data
             
@@ -116,7 +145,11 @@ class FinanceCreateView(RoleRequiredMixin, CreateView):
             )
             
             # 调用 Service
-            FinanceService.generate_fee_record(dto, self.request.user.id)
+            FinanceService.generate_fee_record(
+                dto,
+                self.request.user.id,
+                tenant_id=getattr(self.request.tenant, "id", None),
+            )
             
             messages.success(self.request, '财务记录创建成功')
             return HttpResponseRedirect(self.success_url)
@@ -133,14 +166,18 @@ class FinanceDetailView(RoleRequiredMixin, ShopDataAccessMixin, View):
             # 查找财务记录
             record = FinanceRecord.objects.for_tenant(request.tenant).get(id=pk)
             
-            # 检查店铺用户是否有权限查看该记录
+            # 检查店铺用户是否有权限查看该记
             if hasattr(request.user, 'profile') and request.user.profile.role.role_type == 'SHOP':
                 if not request.user.profile.shop or record.contract.shop != request.user.profile.shop:
                     messages.error(request, '您没有权限访问该财务记录')
                     return HttpResponseRedirect(reverse('finance:finance_list'))
             
             # 渲染详情页面
-            context = {'record': record}
+            role_type = getattr(getattr(getattr(request.user, "profile", None), "role", None), "role_type", None)
+            context = {
+                'record': record,
+                'can_pay_finance': bool(role_type in ["FINANCE", "SHOP"]),
+            }
             html_content = render_to_string('finance/finance_detail.html', context, request=request)
             return HttpResponse(html_content)
         except Exception as e:
@@ -148,7 +185,7 @@ class FinanceDetailView(RoleRequiredMixin, ShopDataAccessMixin, View):
             return HttpResponseRedirect(reverse('finance:finance_list'))
 
 class FinanceStatementView(RoleRequiredMixin, ShopDataAccessMixin, View):
-    """费用明细单生成视图"""
+    """Finance statement view."""
     allowed_roles = ['ADMIN', 'MANAGEMENT', 'OPERATION', 'FINANCE', 'SHOP']
     
     def get(self, request, contract_id):
@@ -156,24 +193,24 @@ class FinanceStatementView(RoleRequiredMixin, ShopDataAccessMixin, View):
             # 查找合同
             contract = Contract.objects.for_tenant(request.tenant).get(id=contract_id)
             
-            # 检查店铺用户是否有权限查看该合同的明细单
+            # 检查店铺用户是否有权限查看该合同的明细
             if hasattr(request.user, 'profile') and request.user.profile.role.role_type == 'SHOP':
                 if not request.user.profile.shop or contract.shop != request.user.profile.shop:
                     messages.error(request, '您没有权限访问该合同的费用明细单')
                     return HttpResponseRedirect(reverse('finance:finance_list'))
             
-            # 获取合同的所有财务记录
+            # 获取合同的所有财务记
             records = FinanceRecord.objects.for_tenant(request.tenant).filter(contract_id=contract_id)
             
-            # 计算汇总信息
+            # 计算汇总信
             total_amount = sum(record.amount for record in records)
             paid_amount = sum(record.amount for record in records if record.status == FinanceRecord.Status.PAID)
             unpaid_amount = sum(record.amount for record in records if record.status == FinanceRecord.Status.UNPAID)
             
-            # 计算支付率
+            # 计算支付
             payment_rate = (paid_amount / total_amount * 100) if total_amount > 0 else 0
             
-            # 渲染明细单
+            # 渲染明细
             context = {
                 'contract': contract,
                 'records': records,
@@ -207,13 +244,19 @@ class FinanceReminderView(RoleRequiredMixin, View):
         try:
             # 生成缴费提醒
             days_ahead = int(request.GET.get('days_ahead', 7))
-            reminders = FinanceService.generate_payment_reminders(days_ahead)
+            reminders = FinanceService.generate_payment_reminders(
+                days_ahead,
+                tenant_id=getattr(request.tenant, "id", None),
+            )
             
+            role_type = getattr(getattr(getattr(request.user, "profile", None), "role", None), "role_type", None)
+
             # 渲染提醒页面
             context = {
                 'reminders': reminders,
                 'days_ahead': days_ahead,
-                'current_date': timezone.now().date()
+                'current_date': timezone.now().date(),
+                'can_pay_finance': bool(role_type in ["FINANCE", "SHOP"]),
             }
             
             html_content = render_to_string('finance/finance_reminders.html', context, request=request)
@@ -233,17 +276,17 @@ class FinanceHistoryView(RoleRequiredMixin, ShopDataAccessMixin, ListView):
         """获取已支付的财务记录，店铺用户只能看到自己店铺的缴费历史"""
         queryset = FinanceRecord.objects.filter(status=FinanceRecord.Status.PAID)
         
-        # 支持按合同过滤
+        # 支持按合同过
         contract_id = self.request.GET.get('contract_id')
         if contract_id:
             queryset = queryset.filter(contract_id=contract_id)
         
-        # 支持按缴费方式过滤
+        # 支持按缴费方式过
         payment_method = self.request.GET.get('payment_method')
         if payment_method:
             queryset = queryset.filter(payment_method=payment_method)
         
-        # 支持按日期范围过滤
+        # 支持按日期范围过
         start_date = self.request.GET.get('start_date')
         end_date = self.request.GET.get('end_date')
         if start_date:
@@ -269,3 +312,5 @@ class FinanceHistoryView(RoleRequiredMixin, ShopDataAccessMixin, ListView):
         context['start_date'] = self.request.GET.get('start_date', '')
         context['end_date'] = self.request.GET.get('end_date', '')
         return context
+
+

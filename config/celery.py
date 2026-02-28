@@ -108,6 +108,16 @@ if CELERY_AVAILABLE:
             'schedule': crontab(minute='*/5'),
             'kwargs': {'description': '检查设备在线状态并标记离线设备'}
         },
+        'verify-audit-chains': {
+            'task': 'apps.audit.tasks.verify_audit_chains_task',
+            'schedule': crontab(hour=2, minute=30),
+            'kwargs': {
+                'hours': 24,
+                'limit': 500,
+                'include_sequence_check': True,
+                'description': '校验合同与财务审计链完整性'
+            }
+        },
     }
 
     try:

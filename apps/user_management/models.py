@@ -137,10 +137,10 @@ class ObjectPermissionGrant(models.Model):
     """
 
     class ActionChoices(models.TextChoices):
-        VIEW = "view", _("View")
-        EDIT = "edit", _("Edit")
-        APPROVE = "approve", _("Approve")
-        DELETE = "delete", _("Delete")
+        VIEW = "view", _("查看")
+        EDIT = "edit", _("编辑")
+        APPROVE = "approve", _("审批")
+        DELETE = "delete", _("删除")
 
     grantee_user = models.ForeignKey(
         User,
@@ -209,12 +209,12 @@ class ObjectPermissionGrant(models.Model):
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
-        verbose_name=_("Created At"),
+        verbose_name=_("创建时间"),
     )
 
     class Meta:
-        verbose_name = _("Object Permission Grant")
-        verbose_name_plural = _("Object Permission Grants")
+        verbose_name = _("对象权限授权")
+        verbose_name_plural = _("对象权限授权")
         indexes = [
             models.Index(fields=["content_type", "object_id", "action"]),
             models.Index(fields=["grantee_user", "action"]),
@@ -242,10 +242,12 @@ class ApprovalRecord(models.Model):
     """
 
     class ActionChoices(models.TextChoices):
-        APPROVE_CONTRACT = "approve_contract", _("Approve Contract")
-        TERMINATE_CONTRACT = "terminate_contract", _("Terminate Contract")
-        FINANCE_CONFIRM = "finance_confirm", _("Finance Confirm")
-        SHOP_STATUS_CHANGE = "shop_status_change", _("Shop Status Change")
+        APPROVE_CONTRACT = "approve_contract", _("合同审批通过")
+        TERMINATE_CONTRACT = "terminate_contract", _("合同终止")
+        FINANCE_CONFIRM = "finance_confirm", _("财务确认")
+        SHOP_STATUS_CHANGE = "shop_status_change", _("店铺状态变更")
+        SHOP_BINDING_APPROVE = "shop_binding_approve", _("店铺绑定通过")
+        SHOP_BINDING_REJECT = "shop_binding_reject", _("店铺绑定驳回")
 
     content_type = models.ForeignKey(
         ContentType,
@@ -289,12 +291,12 @@ class ApprovalRecord(models.Model):
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
-        verbose_name=_("Created At"),
+        verbose_name=_("创建时间"),
     )
 
     class Meta:
-        verbose_name = _("Approval Record")
-        verbose_name_plural = _("Approval Records")
+        verbose_name = _("审批记录")
+        verbose_name_plural = _("审批记录")
         indexes = [
             models.Index(fields=["content_type", "object_id", "action"]),
             models.Index(fields=["approved_by", "approved_at"]),
@@ -307,23 +309,98 @@ class ApprovalRecord(models.Model):
 class ShopBindingRequest(models.Model):
     """
     店铺绑定申请
-    SHOP 用户提交申请，管理员审核后绑定到具体店铺。
+    记录店铺负责人提交的绑定申请，供管理员审核。
     """
 
     class Status(models.TextChoices):
+        DRAFT = "DRAFT", _("草稿")
         PENDING = "PENDING", _("待审核")
-        APPROVED = "APPROVED", _("已批准")
+        APPROVED = "APPROVED", _("已通过")
         REJECTED = "REJECTED", _("已拒绝")
+        WITHDRAWN = "WITHDRAWN", _("已撤回")
 
-    user = models.OneToOneField(
+    IDENTITY_LABELS = {
+        "OWNER": "我是店主",
+        "MANAGER": "我是店长",
+        "OPERATOR": "我是授权运营",
+        "OTHER": "其他",
+    }
+    CATEGORY_LABELS = {
+        "FOOD": "餐饮",
+        "RETAIL": "零售",
+        "SERVICE": "服务",
+        "ENT": "娱乐",
+        "OTHER": "其他",
+    }
+    ROLE_LABELS = {
+        "OWNER": "店铺负责人",
+        "FINANCE": "财务",
+        "OPERATION": "运营",
+        "READONLY": "只读",
+    }
+
+    user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="shop_binding_request",
-        verbose_name=_("用户"),
+        related_name="shop_binding_requests",
+        verbose_name=_("申请人"),
     )
     requested_shop_name = models.CharField(
         max_length=120,
         verbose_name=_("申请店铺名称"),
+    )
+    requested_shop_id = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name=_("店铺编号/ID"),
+    )
+    identity_type = models.CharField(
+        max_length=30,
+        blank=True,
+        null=True,
+        verbose_name=_("申请人身份"),
+    )
+    mall_name = models.CharField(
+        max_length=120,
+        blank=True,
+        null=True,
+        verbose_name=_("商场/园区/区域"),
+    )
+    industry_category = models.CharField(
+        max_length=80,
+        blank=True,
+        null=True,
+        verbose_name=_("行业类目"),
+    )
+    address = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name=_("店铺地址"),
+    )
+    contact_name = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name=_("联系人姓名"),
+    )
+    contact_email = models.EmailField(
+        blank=True,
+        null=True,
+        verbose_name=_("联系邮箱"),
+    )
+    role_requested = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name=_("期望角色"),
+    )
+    authorization_note = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name=_("授权说明"),
     )
     contact_phone = models.CharField(
         max_length=20,
@@ -334,7 +411,7 @@ class ShopBindingRequest(models.Model):
     note = models.TextField(
         blank=True,
         null=True,
-        verbose_name=_("备注"),
+        verbose_name=_("申请说明"),
     )
     status = models.CharField(
         max_length=20,
@@ -348,7 +425,7 @@ class ShopBindingRequest(models.Model):
         blank=True,
         null=True,
         related_name="binding_requests",
-        verbose_name=_("审核通过店铺"),
+        verbose_name=_("审核通过的店铺"),
     )
     reviewed_by = models.ForeignKey(
         User,
@@ -362,6 +439,19 @@ class ShopBindingRequest(models.Model):
         blank=True,
         null=True,
         verbose_name=_("审核时间"),
+    )
+    review_reason = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name=_("审核意见/拒绝原因"),
+    )
+    previous_application = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="resubmissions",
+        verbose_name=_("上一轮申请"),
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
@@ -383,3 +473,52 @@ class ShopBindingRequest(models.Model):
     def clean(self):
         if self.status == self.Status.APPROVED and not self.approved_shop:
             raise ValidationError(_("批准时必须选择店铺"))
+
+
+    @property
+    def identity_type_label(self):
+        return self.IDENTITY_LABELS.get(self.identity_type or "", self.identity_type or "-")
+
+    @property
+    def industry_category_label(self):
+        return self.CATEGORY_LABELS.get(self.industry_category or "", self.industry_category or "-")
+
+    @property
+    def role_requested_label(self):
+        return self.ROLE_LABELS.get(self.role_requested or "", self.role_requested or "-")
+
+
+class ShopBindingAttachment(models.Model):
+    request = models.ForeignKey(
+        "ShopBindingRequest",
+        on_delete=models.CASCADE,
+        related_name="attachments",
+        verbose_name=_("所属申请"),
+    )
+    file = models.FileField(
+        upload_to="binding_attachments/%Y/%m/",
+        verbose_name=_("文件"),
+    )
+    original_name = models.CharField(
+        max_length=255,
+        verbose_name=_("原始文件名"),
+    )
+    mime_type = models.CharField(
+        max_length=100,
+        verbose_name=_("文件类型"),
+    )
+    size = models.PositiveIntegerField(
+        verbose_name=_("文件大小"),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("上传时间"),
+    )
+
+    class Meta:
+        verbose_name = _("绑定申请附件")
+        verbose_name_plural = _("绑定申请附件")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.original_name}"

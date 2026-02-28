@@ -1,12 +1,67 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}&#x5408;&#x540C;&#x5217;&#x8868; - {{ block.super }}{% endblock %}
+{% block title %}合同列表 - {{ block.super }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/ui-tokens.css' %}">
 <link rel="stylesheet" href="{% static 'css/ui-components.css' %}">
 <link rel="stylesheet" href="{% static 'css/store-management.css' %}">
+<style>
+    .action-stack {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .approval-inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .approval-input {
+        min-width: 170px;
+        max-width: 240px;
+        height: 32px;
+        padding: 0 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background-color: #ffffff;
+        color: #0f172a;
+    }
+
+    .approval-input:focus-visible {
+        outline: 2px solid #2563eb;
+        outline-offset: 1px;
+    }
+
+    .approval-progress {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 56px;
+        height: 26px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .pending-hint {
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .js-once-submit button[disabled] {
+        opacity: 0.75;
+        cursor: not-allowed;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -15,14 +70,14 @@
         <div class="store-title-wrap">
             <span class="store-title-bar"></span>
             <div>
-                <div class="store-title">&#x5408;&#x540C;&#x7BA1;&#x7406;</div>
-                <div class="store-subtitle">&#x5408;&#x540C;&#x72B6;&#x6001;&#x4E0E;&#x7EED;&#x7B7E;&#x60C5;&#x51B5;&#x4E00;&#x89C8;</div>
+                <div class="store-title">合同管理</div>
+                <div class="store-subtitle">合同状态与审批流转一览</div>
             </div>
         </div>
         {% if user.is_authenticated %}
         <div class="store-actions">
-            <a href="{% url 'store:contract_expiry' %}" class="ui-btn ui-btn-outline">&#x5408;&#x540C;&#x5230;&#x671F;&#x63D0;&#x9192;</a>
-            <a href="{% url 'store:contract_create' %}" class="ui-btn ui-btn-primary">&#x65B0;&#x5EFA;&#x5408;&#x540C;</a>
+            <a href="{% url 'store:contract_expiry' %}" class="ui-btn ui-btn-outline">合同到期提醒</a>
+            <a href="{% url 'store:contract_create' %}" class="ui-btn ui-btn-primary">新建合同</a>
         </div>
         {% endif %}
     </div>
@@ -33,12 +88,14 @@
             <table class="ui-table">
                 <thead>
                     <tr>
-                        <th>&#x5E97;&#x94FA;&#x540D;&#x79F0;</th>
-                        <th>&#x5F00;&#x59CB;&#x65E5;&#x671F;</th>
-                        <th>&#x7ED3;&#x675F;&#x65E5;&#x671F;</th>
-                        <th>&#x6708;&#x79DF;&#x91D1; (&#x5143;)</th>
-                        <th>&#x72B6;&#x6001;</th>
-                        <th>&#x64CD;&#x4F5C;</th>
+                        <th>店铺名称</th>
+                        <th>开始日期</th>
+                        <th>结束日期</th>
+                        <th>月租金(元)</th>
+                        <th>状态</th>
+                        <th>审批进度</th>
+                        <th>当前节点</th>
+                        <th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -60,26 +117,71 @@
                             {% endif %}
                         </td>
                         <td>
+                            <span class="approval-progress">{{ contract.approval_progress_text }}</span>
+                        </td>
+                        <td>
+                            <div>{{ contract.approval_current_node }}</div>
+                            {% if contract.approval_pending_actor %}
+                            <div class="pending-hint">待 {{ contract.approval_pending_actor }} 处理</div>
+                            {% endif %}
+                        </td>
+                        <td>
                             {% if user.is_authenticated %}
-                            <a href="{% url 'store:contract_detail' contract.pk %}" class="ui-btn ui-btn-outline ui-btn-sm">详情</a>
-                            {% if contract.status == 'DRAFT' %}
-                            <form method="post" action="{% url 'store:contract_activate' contract.pk %}" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="ui-btn ui-btn-success ui-btn-sm">&#x6FC0;&#x6D3B;</button>
-                            </form>
-                            {% elif contract.status == 'ACTIVE' %}
-                            <form method="post" action="{% url 'store:contract_terminate' contract.pk %}" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="ui-btn ui-btn-warning ui-btn-sm">&#x7EC8;&#x6B62;</button>
-                            </form>
-                            {% endif %}
-                            <a href="{% url 'finance:finance_list' %}?contract_id={{ contract.pk }}" class="ui-btn ui-btn-info ui-btn-sm">&#x8D22;&#x52A1;&#x8BB0;&#x5F55;</a>
-                            {% if contract.status == 'TERMINATED' or contract.status == 'EXPIRED' %}
-                            <form method="post" action="{% url 'store:contract_delete' contract.pk %}" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="ui-btn ui-btn-outline ui-btn-sm">&#x5220;&#x9664;</button>
-                            </form>
-                            {% endif %}
+                            <div class="action-stack">
+                                <a href="{% url 'store:contract_detail' contract.pk %}" class="ui-btn ui-btn-outline ui-btn-sm">详情</a>
+
+                                {% if contract.status == 'DRAFT' and can_submit_review %}
+                                <form method="post" action="{% url 'store:contract_submit_review' contract.pk %}" class="approval-inline js-once-submit">
+                                    {% csrf_token %}
+                                    <button type="submit" class="ui-btn ui-btn-primary ui-btn-sm">提交审批</button>
+                                </form>
+                                {% endif %}
+
+                                {% if contract.status == 'PENDING_REVIEW' and can_review_contract and contract.can_current_user_review %}
+                                <form method="post" action="{% url 'store:contract_approve' contract.pk %}" class="approval-inline js-once-submit">
+                                    {% csrf_token %}
+                                    <input type="text"
+                                           name="comment"
+                                           class="approval-input"
+                                           maxlength="200"
+                                           placeholder="审批意见（可选）"
+                                           aria-label="审批意见（可选）">
+                                    <button type="submit" class="ui-btn ui-btn-success ui-btn-sm">审批通过</button>
+                                </form>
+                                <form method="post" action="{% url 'store:contract_reject' contract.pk %}" class="approval-inline js-once-submit">
+                                    {% csrf_token %}
+                                    <input type="text"
+                                           name="reason"
+                                           class="approval-input"
+                                           maxlength="200"
+                                           required
+                                           placeholder="请输入驳回原因"
+                                           aria-label="驳回原因">
+                                    <button type="submit" class="ui-btn ui-btn-warning ui-btn-sm">驳回</button>
+                                </form>
+                                {% endif %}
+
+                                {% if contract.status == 'APPROVED' %}
+                                <form method="post" action="{% url 'store:contract_activate' contract.pk %}" class="approval-inline js-once-submit">
+                                    {% csrf_token %}
+                                    <button type="submit" class="ui-btn ui-btn-success ui-btn-sm">激活</button>
+                                </form>
+                                {% elif contract.status == 'ACTIVE' %}
+                                <form method="post" action="{% url 'store:contract_terminate' contract.pk %}" class="approval-inline js-once-submit">
+                                    {% csrf_token %}
+                                    <button type="submit" class="ui-btn ui-btn-warning ui-btn-sm">终止</button>
+                                </form>
+                                {% endif %}
+
+                                <a href="{% url 'finance:finance_list' %}?contract_id={{ contract.pk }}" class="ui-btn ui-btn-info ui-btn-sm">财务记录</a>
+
+                                {% if contract.status == 'TERMINATED' or contract.status == 'EXPIRED' %}
+                                <form method="post" action="{% url 'store:contract_delete' contract.pk %}" class="approval-inline js-once-submit">
+                                    {% csrf_token %}
+                                    <button type="submit" class="ui-btn ui-btn-outline ui-btn-sm">归档</button>
+                                </form>
+                                {% endif %}
+                            </div>
                             {% endif %}
                         </td>
                     </tr>
@@ -90,8 +192,28 @@
     </div>
     {% else %}
     <div class="ui-alert">
-        <strong>&#x6682;&#x65E0;&#x5408;&#x540C;</strong>&#xFF0C;&#x8BF7;&#x70B9;&#x51FB;&#x4E0A;&#x65B9;&#x6309;&#x94AE;&#x521B;&#x5EFA;&#x65B0;&#x5408;&#x540C;&#x3002;
+        <strong>暂无合同</strong>，请点击上方按钮创建新合同。
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const forms = document.querySelectorAll('form.js-once-submit');
+        forms.forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (form.dataset.submitted === '1') {
+                    event.preventDefault();
+                    return;
+                }
+                form.dataset.submitted = '1';
+                form.querySelectorAll('button[type="submit"]').forEach(function (button) {
+                    button.disabled = true;
+                });
+            });
+        });
+    });
+</script>
 {% endblock %}

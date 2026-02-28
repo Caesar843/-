@@ -32,6 +32,8 @@ class AuditLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
+        verbose_name = "审计日志"
+        verbose_name_plural = "审计日志"
         ordering = ["-created_at", "-id"]
         indexes = [
             models.Index(fields=["module", "action"]),

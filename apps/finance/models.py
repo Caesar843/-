@@ -1,6 +1,7 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from apps.store.models import Contract
+from apps.store.models import Contract, ContractItem
 from apps.tenants.managers import TenantManager
 
 
@@ -151,4 +152,117 @@ class FinanceRecord(models.Model):
     def save(self, *args, **kwargs):
         if not self.tenant_id and self.contract_id:
             self.tenant = self.contract.tenant
+        super().save(*args, **kwargs)
+
+
+class BillingSchedule(models.Model):
+    """
+    账单计划：由合同费用项按周期生成，可追溯来源版本
+    """
+
+    class Status(models.TextChoices):
+        PLANNED = "PLANNED", _("待出账")
+        ISSUED = "ISSUED", _("已出账")
+        PARTIAL = "PARTIAL", _("部分支付")
+        PAID = "PAID", _("已支付")
+        VOID = "VOID", _("作废")
+        OVERDUE = "OVERDUE", _("逾期")
+
+    tenant = models.ForeignKey(
+        "tenants.Tenant",
+        on_delete=models.PROTECT,
+        related_name="billing_schedules",
+        verbose_name=_("租户"),
+    )
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="billing_schedules",
+        verbose_name=_("合同"),
+    )
+    contract_item = models.ForeignKey(
+        ContractItem,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_name="billing_schedules",
+        verbose_name=_("合同费用项"),
+    )
+    period_start = models.DateField(
+        db_index=True,
+        verbose_name=_("账期开始"),
+    )
+    period_end = models.DateField(
+        db_index=True,
+        verbose_name=_("账期结束"),
+    )
+    due_date = models.DateField(
+        db_index=True,
+        verbose_name=_("应收日期"),
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name=_("计划金额"),
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PLANNED,
+        db_index=True,
+        verbose_name=_("计划状态"),
+    )
+    source_version = models.PositiveIntegerField(
+        default=1,
+        verbose_name=_("来源合同版本"),
+    )
+    finance_record = models.OneToOneField(
+        "FinanceRecord",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="billing_schedule",
+        verbose_name=_("生成财务记录"),
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("创建时间"))
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_("更新时间"))
+
+    objects = TenantManager()
+
+    class Meta:
+        verbose_name = _("账单计划")
+        verbose_name_plural = verbose_name
+        ordering = ["contract_id", "period_start", "id"]
+        indexes = [
+            models.Index(fields=["tenant", "contract", "status"]),
+            models.Index(fields=["tenant", "due_date"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(period_end__gte=models.F("period_start")),
+                name="billing_schedule_period_end_gte_start",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(amount__gte=0),
+                name="billing_schedule_amount_gte_0",
+            ),
+            models.UniqueConstraint(
+                fields=["contract", "contract_item", "period_start", "period_end", "source_version"],
+                name="billing_schedule_unique_period_per_item_version",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.contract_id}-{self.period_start}-{self.amount}"
+
+    def clean(self):
+        if self.contract_id and self.tenant_id and self.contract.tenant_id != self.tenant_id:
+            raise ValidationError(_("账单计划租户与合同租户不一致"))
+        if self.contract_item_id and self.contract_item.contract_id != self.contract_id:
+            raise ValidationError(_("账单计划费用项不属于该合同"))
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id and self.contract_id:
+            self.tenant = self.contract.tenant
+        self.full_clean()
         super().save(*args, **kwargs)

@@ -77,9 +77,11 @@
                             <a href="{% url 'finance:finance_detail' record.id %}" class="ui-btn ui-btn-info ui-btn-sm">
                                 <i class="fas fa-eye"></i> &#x67E5;&#x770B;
                             </a>
-                            <a href="{% url 'finance:finance_pay' record.id %}" class="ui-btn ui-btn-success ui-btn-sm">
-                                <i class="fas fa-credit-card"></i> &#x7F34;&#x8D39;
+                            {% if can_pay_finance and record.status == 'UNPAID' %}
+                            <a href="{% url 'finance:finance_list' %}?contract_id={{ record.contract.id }}" class="ui-btn ui-btn-success ui-btn-sm">
+                                <i class="fas fa-credit-card"></i> &#x53BB;&#x652F;&#x4ED8;
                             </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

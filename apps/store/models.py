@@ -51,6 +51,27 @@ class Shop(models.Model):
         verbose_name=_("租户"),
         help_text=_("店铺所属的租户/商场")
     )
+    code = models.CharField(
+        verbose_name=_("店铺编号"),
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text=_("外部或业务系统的店铺编号，用于去重匹配")
+    )
+    mall_name = models.CharField(
+        verbose_name=_("商场/园区/区域"),
+        max_length=120,
+        blank=True,
+        null=True,
+        help_text=_("所在商场、园区或区域，用于去重匹配与展示")
+    )
+    address = models.CharField(
+        verbose_name=_("店铺地址"),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_("详细地址或楼层位置")
+    )
     org_unit = models.ForeignKey(
         'tenants.OrgUnit',
         on_delete=models.SET_NULL,
@@ -136,9 +157,11 @@ class Shop(models.Model):
         indexes = [
             models.Index(fields=["tenant", "is_deleted"]),
             models.Index(fields=["tenant", "name"]),
+            models.Index(fields=["tenant", "code"]),
         ]
         constraints = [
             models.UniqueConstraint(fields=["tenant", "name"], name="shop_unique_name_per_tenant"),
+            models.UniqueConstraint(fields=["tenant", "code"], name="shop_unique_code_per_tenant", condition=models.Q(code__isnull=False)),
         ]
 
     def __str__(self):
@@ -174,6 +197,50 @@ class Shop(models.Model):
             if tenant:
                 self.tenant = tenant
         super().save(*args, **kwargs)
+
+
+class ContractNumberSequence(models.Model):
+    """
+    Per-tenant, per-year contract number sequence.
+    """
+
+    tenant = models.ForeignKey(
+        "tenants.Tenant",
+        on_delete=models.PROTECT,
+        related_name="contract_number_sequences",
+        verbose_name=_("租户"),
+    )
+    year = models.PositiveIntegerField(
+        verbose_name=_("年份"),
+    )
+    last_seq = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_("最新序号"),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("创建时间"),
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("更新时间"),
+    )
+
+    class Meta:
+        verbose_name = _("合同编号序列")
+        verbose_name_plural = _("合同编号序列")
+        indexes = [
+            models.Index(fields=["tenant", "year"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "year"],
+                name="contract_no_seq_unique_tenant_year",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.tenant_id}-{self.year}-{self.last_seq}"
 
 
 class Contract(models.Model):
@@ -286,6 +353,35 @@ class Contract(models.Model):
         null=True,
         help_text=_("审核人的意见备注")
     )
+    contract_no = models.CharField(
+        verbose_name=_("合同编号"),
+        max_length=64,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text=_("合同业务编号（同租户内唯一）")
+    )
+    is_archived = models.BooleanField(
+        verbose_name=_("是否归档"),
+        default=False,
+        db_index=True,
+        help_text=_("合同是否归档，归档后默认不在列表展示")
+    )
+    archived_at = models.DateTimeField(
+        verbose_name=_("归档时间"),
+        blank=True,
+        null=True,
+        help_text=_("合同归档时间")
+    )
+    archived_by = models.ForeignKey(
+        "auth.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="archived_contracts",
+        verbose_name=_("归档人"),
+        help_text=_("执行归档操作的用户")
+    )
 
     # 审计字段
     created_at = models.DateTimeField(
@@ -324,6 +420,11 @@ class Contract(models.Model):
                 condition=models.Q(deposit__gte=0),
                 name='contract_deposit_gte_0'
             ),
+            models.UniqueConstraint(
+                fields=["tenant", "contract_no"],
+                name="contract_unique_no_per_tenant",
+                condition=models.Q(contract_no__isnull=False),
+            ),
         ]
 
     def __str__(self):
@@ -352,4 +453,632 @@ class Contract(models.Model):
     def save(self, *args, **kwargs):
         if not self.tenant_id and self.shop_id:
             self.tenant = self.shop.tenant
+        super().save(*args, **kwargs)
+
+
+class ContractItem(models.Model):
+    """
+    合同费用项（租金/物业费/押金等）
+    """
+
+    class ItemType(models.TextChoices):
+        RENT = "RENT", _("租金")
+        PROPERTY_FEE = "PROPERTY_FEE", _("物业费")
+        DEPOSIT = "DEPOSIT", _("押金")
+        REVENUE_SHARE = "REVENUE_SHARE", _("分成")
+        OTHER = "OTHER", _("其他")
+
+    class CalcType(models.TextChoices):
+        FIXED = "FIXED", _("固定值")
+        STEP = "STEP", _("阶梯")
+        ESCALATION = "ESCALATION", _("递增")
+        PERCENTAGE = "PERCENTAGE", _("比例")
+
+    class PaymentCycle(models.TextChoices):
+        MONTHLY = "MONTHLY", _("月付")
+        QUARTERLY = "QUARTERLY", _("季付")
+        SEMIANNUALLY = "SEMIANNUALLY", _("半年付")
+        ANNUALLY = "ANNUALLY", _("年付")
+        ONE_TIME = "ONE_TIME", _("一次性")
+
+    class Status(models.TextChoices):
+        ACTIVE = "ACTIVE", _("启用")
+        INACTIVE = "INACTIVE", _("停用")
+
+    tenant = models.ForeignKey(
+        "tenants.Tenant",
+        on_delete=models.PROTECT,
+        related_name="contract_items",
+        verbose_name=_("租户"),
+    )
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="contract_items",
+        verbose_name=_("合同"),
+    )
+    item_type = models.CharField(
+        max_length=32,
+        choices=ItemType.choices,
+        default=ItemType.RENT,
+        db_index=True,
+        verbose_name=_("费用项类型"),
+    )
+    calc_type = models.CharField(
+        max_length=16,
+        choices=CalcType.choices,
+        default=CalcType.FIXED,
+        verbose_name=_("计费方式"),
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        verbose_name=_("基础金额"),
+    )
+    rate = models.DecimalField(
+        max_digits=8,
+        decimal_places=4,
+        blank=True,
+        null=True,
+        verbose_name=_("比例/递增率"),
+    )
+    tax_rate = models.DecimalField(
+        max_digits=8,
+        decimal_places=4,
+        blank=True,
+        null=True,
+        verbose_name=_("税率"),
+    )
+    currency = models.CharField(
+        max_length=8,
+        default="CNY",
+        verbose_name=_("币种"),
+    )
+    period_start = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name=_("费用项起始日期"),
+    )
+    period_end = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name=_("费用项结束日期"),
+    )
+    payment_cycle = models.CharField(
+        max_length=20,
+        choices=PaymentCycle.choices,
+        default=PaymentCycle.MONTHLY,
+        verbose_name=_("缴费周期"),
+    )
+    free_rent_from = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name=_("免租开始"),
+    )
+    free_rent_to = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name=_("免租结束"),
+    )
+    sequence = models.PositiveSmallIntegerField(
+        default=1,
+        verbose_name=_("显示顺序"),
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+        db_index=True,
+        verbose_name=_("状态"),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("创建时间"),
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("更新时间"),
+    )
+
+    objects = TenantManager()
+
+    class Meta:
+        verbose_name = _("合同费用项")
+        verbose_name_plural = _("合同费用项")
+        ordering = ["contract_id", "sequence", "id"]
+        indexes = [
+            models.Index(fields=["tenant", "contract", "status"]),
+            models.Index(fields=["tenant", "item_type"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gte=0),
+                name="contract_item_amount_gte_0",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(period_end__isnull=True)
+                | models.Q(period_start__isnull=True)
+                | models.Q(period_end__gte=models.F("period_start")),
+                name="contract_item_period_valid",
+            ),
+            models.UniqueConstraint(
+                fields=["contract", "sequence"],
+                name="contract_item_unique_sequence_per_contract",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.contract_id}-{self.item_type}-{self.amount}"
+
+    def clean(self):
+        if self.contract_id and self.tenant_id and self.contract.tenant_id != self.tenant_id:
+            raise ValidationError(_("费用项租户与合同租户不一致"))
+
+        if self.free_rent_from and self.free_rent_to and self.free_rent_to < self.free_rent_from:
+            raise ValidationError(_("免租结束日期不能早于免租开始日期"))
+
+        if self.period_start and self.period_end and self.period_end < self.period_start:
+            raise ValidationError(_("费用项结束日期不能早于开始日期"))
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id and self.contract_id:
+            self.tenant = self.contract.tenant
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class ContractAttachment(models.Model):
+    """
+    合同附件（主合同/补充协议/附件/资质）
+    """
+
+    class AttachmentType(models.TextChoices):
+        MAIN = "MAIN", _("主合同")
+        SUPPLEMENT = "SUPPLEMENT", _("补充协议")
+        ANNEX = "ANNEX", _("附件")
+        QUALIFICATION = "QUALIFICATION", _("资质文件")
+
+    tenant = models.ForeignKey(
+        "tenants.Tenant",
+        on_delete=models.PROTECT,
+        related_name="contract_attachments",
+        verbose_name=_("租户"),
+    )
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="attachments",
+        verbose_name=_("合同"),
+    )
+    attachment_type = models.CharField(
+        max_length=20,
+        choices=AttachmentType.choices,
+        default=AttachmentType.MAIN,
+        db_index=True,
+        verbose_name=_("附件类型"),
+    )
+    file = models.FileField(
+        upload_to="contract_attachments/%Y/%m/",
+        verbose_name=_("文件"),
+    )
+    original_name = models.CharField(
+        max_length=255,
+        verbose_name=_("原始文件名"),
+    )
+    mime_type = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name=_("文件类型"),
+    )
+    file_size = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_("文件大小"),
+    )
+    file_hash = models.CharField(
+        max_length=64,
+        db_index=True,
+        verbose_name=_("文件哈希"),
+    )
+    version_no = models.PositiveIntegerField(
+        default=1,
+        verbose_name=_("版本号"),
+    )
+    is_current = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name=_("是否当前版本"),
+    )
+    remark = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name=_("备注"),
+    )
+    uploaded_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="uploaded_contract_attachments",
+        verbose_name=_("上传人"),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("上传时间"),
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("更新时间"),
+    )
+
+    objects = TenantManager()
+
+    class Meta:
+        verbose_name = _("合同附件")
+        verbose_name_plural = _("合同附件")
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["tenant", "contract", "attachment_type"]),
+            models.Index(fields=["tenant", "file_hash"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["contract", "attachment_type", "version_no"],
+                name="contract_attachment_unique_version",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.contract_id}-{self.attachment_type}-v{self.version_no}"
+
+    def clean(self):
+        if self.contract_id and self.tenant_id and self.contract.tenant_id != self.tenant_id:
+            raise ValidationError(_("合同附件租户与合同租户不一致"))
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id and self.contract_id:
+            self.tenant = self.contract.tenant
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class ContractSignature(models.Model):
+    """
+    合同签署记录
+    """
+
+    class PartyType(models.TextChoices):
+        LANDLORD = "LANDLORD", _("甲方")
+        TENANT = "TENANT", _("乙方")
+        WITNESS = "WITNESS", _("见证方")
+        OTHER = "OTHER", _("其他")
+
+    class SignMethod(models.TextChoices):
+        ONLINE = "ONLINE", _("电子签")
+        OFFLINE = "OFFLINE", _("线下签")
+
+    tenant = models.ForeignKey(
+        "tenants.Tenant",
+        on_delete=models.PROTECT,
+        related_name="contract_signatures",
+        verbose_name=_("租户"),
+    )
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="signatures",
+        verbose_name=_("合同"),
+    )
+    party_type = models.CharField(
+        max_length=20,
+        choices=PartyType.choices,
+        default=PartyType.TENANT,
+        db_index=True,
+        verbose_name=_("签署方"),
+    )
+    signer_name = models.CharField(
+        max_length=100,
+        verbose_name=_("签署人"),
+    )
+    signer_title = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name=_("职务"),
+    )
+    sign_method = models.CharField(
+        max_length=20,
+        choices=SignMethod.choices,
+        default=SignMethod.OFFLINE,
+        verbose_name=_("签署方式"),
+    )
+    signed_at = models.DateTimeField(
+        db_index=True,
+        verbose_name=_("签署时间"),
+    )
+    attachment = models.ForeignKey(
+        ContractAttachment,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="signature_records",
+        verbose_name=_("关联签署文件"),
+    )
+    evidence_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        verbose_name=_("签署证据哈希"),
+    )
+    comment = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name=_("备注"),
+    )
+    created_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="created_contract_signatures",
+        verbose_name=_("登记人"),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("登记时间"),
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("更新时间"),
+    )
+
+    objects = TenantManager()
+
+    class Meta:
+        verbose_name = _("合同签署")
+        verbose_name_plural = _("合同签署")
+        ordering = ["-signed_at", "-id"]
+        indexes = [
+            models.Index(fields=["tenant", "contract", "signed_at"]),
+            models.Index(fields=["tenant", "party_type"]),
+        ]
+
+    def __str__(self):
+        return f"{self.contract_id}-{self.party_type}-{self.signer_name}"
+
+    def clean(self):
+        if self.contract_id and self.tenant_id and self.contract.tenant_id != self.tenant_id:
+            raise ValidationError(_("合同签署租户与合同租户不一致"))
+        if self.attachment_id and self.attachment.contract_id != self.contract_id:
+            raise ValidationError(_("签署附件必须属于同一合同"))
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id and self.contract_id:
+            self.tenant = self.contract.tenant
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class ApprovalFlowConfig(models.Model):
+    """
+    审批流配置（MVP：先支持合同）。
+    """
+
+    class TargetType(models.TextChoices):
+        CONTRACT = "CONTRACT", _("合同")
+
+    tenant = models.ForeignKey(
+        "tenants.Tenant",
+        on_delete=models.PROTECT,
+        related_name="approval_flow_configs",
+        verbose_name=_("租户"),
+    )
+    target_type = models.CharField(
+        max_length=32,
+        choices=TargetType.choices,
+        default=TargetType.CONTRACT,
+        db_index=True,
+        verbose_name=_("目标类型"),
+    )
+    node_name = models.CharField(
+        max_length=64,
+        verbose_name=_("节点名称"),
+    )
+    order_no = models.PositiveSmallIntegerField(
+        default=1,
+        verbose_name=_("节点顺序"),
+    )
+    approver_role = models.CharField(
+        max_length=32,
+        blank=True,
+        null=True,
+        verbose_name=_("审批角色"),
+        help_text=_("可选：ADMIN / MANAGEMENT / OPERATION 等"),
+    )
+    approver = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="approval_flow_config_nodes",
+        verbose_name=_("指定审批人"),
+    )
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name=_("是否启用"),
+    )
+    sla_hours = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name=_("处理时限(小时)"),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("创建时间"),
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("更新时间"),
+    )
+
+    objects = TenantManager()
+
+    class Meta:
+        verbose_name = _("审批流配置")
+        verbose_name_plural = _("审批流配置")
+        ordering = ["target_type", "order_no", "id"]
+        indexes = [
+            models.Index(fields=["tenant", "target_type", "is_active"]),
+            models.Index(fields=["tenant", "approver_role"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "target_type", "order_no"],
+                name="approval_flow_unique_order_per_target",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.tenant_id}-{self.target_type}-{self.order_no}-{self.node_name}"
+
+    def clean(self):
+        if not self.approver and not self.approver_role:
+            raise ValidationError(_("必须配置审批角色或指定审批人"))
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class ApprovalTask(models.Model):
+    """
+    审批任务实例（由审批流配置生成）。
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", _("待处理")
+        APPROVED = "APPROVED", _("已通过")
+        REJECTED = "REJECTED", _("已驳回")
+        SKIPPED = "SKIPPED", _("已跳过")
+
+    tenant = models.ForeignKey(
+        "tenants.Tenant",
+        on_delete=models.PROTECT,
+        related_name="approval_tasks",
+        verbose_name=_("租户"),
+    )
+    contract = models.ForeignKey(
+        Contract,
+        on_delete=models.PROTECT,
+        related_name="approval_tasks",
+        verbose_name=_("合同"),
+    )
+    flow_config = models.ForeignKey(
+        ApprovalFlowConfig,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="approval_tasks",
+        verbose_name=_("来源审批配置"),
+    )
+    round_no = models.PositiveIntegerField(
+        default=1,
+        verbose_name=_("审批轮次"),
+    )
+    order_no = models.PositiveSmallIntegerField(
+        default=1,
+        verbose_name=_("节点顺序"),
+    )
+    node_name = models.CharField(
+        max_length=64,
+        verbose_name=_("节点名称"),
+    )
+    approver_role = models.CharField(
+        max_length=32,
+        blank=True,
+        null=True,
+        verbose_name=_("审批角色"),
+    )
+    assigned_to = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="assigned_approval_tasks",
+        verbose_name=_("分配审批人"),
+    )
+    acted_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="handled_approval_tasks",
+        verbose_name=_("实际处理人"),
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+        verbose_name=_("任务状态"),
+    )
+    comment = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name=_("审批意见"),
+    )
+    sla_due_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name=_("节点时限"),
+    )
+    acted_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name=_("处理时间"),
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_("创建时间"),
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_("更新时间"),
+    )
+
+    objects = TenantManager()
+
+    class Meta:
+        verbose_name = _("审批任务")
+        verbose_name_plural = _("审批任务")
+        ordering = ["contract_id", "-round_no", "order_no", "id"]
+        indexes = [
+            models.Index(fields=["tenant", "contract", "status"]),
+            models.Index(fields=["tenant", "assigned_to", "status"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["contract", "round_no", "order_no"],
+                name="approval_task_unique_contract_round_order",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.contract_id}-R{self.round_no}-N{self.order_no}-{self.status}"
+
+    def clean(self):
+        if self.contract_id and self.tenant_id and self.contract.tenant_id != self.tenant_id:
+            raise ValidationError(_("审批任务租户与合同租户不一致"))
+        if self.flow_config_id:
+            if self.contract_id and self.flow_config.target_type != ApprovalFlowConfig.TargetType.CONTRACT:
+                raise ValidationError(_("审批配置目标类型与合同任务不匹配"))
+            if self.tenant_id and self.flow_config.tenant_id != self.tenant_id:
+                raise ValidationError(_("审批配置租户与审批任务租户不一致"))
+
+    def save(self, *args, **kwargs):
+        if not self.tenant_id and self.contract_id:
+            self.tenant = self.contract.tenant
+        self.full_clean()
         super().save(*args, **kwargs)

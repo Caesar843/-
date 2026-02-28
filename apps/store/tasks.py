@@ -49,6 +49,7 @@ def send_renewal_reminder_task(self, days_until_expiry: int = 30, **kwargs):
         logger.info(f"Starting send_renewal_reminder_task with days_until_expiry={days_until_expiry}")
         
         with transaction.atomic():
+            tenant_id = kwargs.get("tenant_id")
             today = date.today()
             expiry_date = today + timedelta(days=days_until_expiry)
             
@@ -58,6 +59,8 @@ def send_renewal_reminder_task(self, days_until_expiry: int = 30, **kwargs):
                 end_date__lte=expiry_date,
                 end_date__gt=today
             ).select_related('shop')
+            if tenant_id is not None:
+                expiring_contracts = expiring_contracts.filter(tenant_id=tenant_id)
             
             result = {
                 'total_contracts': 0,
@@ -72,10 +75,14 @@ def send_renewal_reminder_task(self, days_until_expiry: int = 30, **kwargs):
                 try:
                     # 获取店铺联系人对应的用户或管理员
                     admins = User.objects.filter(is_staff=True)
+                    if tenant_id is not None:
+                        admins = admins.filter(profile__tenant_id=tenant_id)
                     
                     if not admins.exists():
                         # 如果没有管理员，尝试获取超级用户
                         admins = User.objects.filter(is_superuser=True)
+                        if tenant_id is not None:
+                            admins = admins.filter(profile__tenant_id=tenant_id)
                     
                     for admin in admins:
                         try:
@@ -130,6 +137,7 @@ def auto_expire_contracts_task(**kwargs):
         logger.info("Starting auto_expire_contracts_task")
         
         today = date.today()
+        tenant_id = kwargs.get("tenant_id")
         
         with transaction.atomic():
             # 查询已过期的活跃合同
@@ -137,6 +145,8 @@ def auto_expire_contracts_task(**kwargs):
                 status=Contract.Status.ACTIVE,
                 end_date__lt=today
             ).select_for_update()
+            if tenant_id is not None:
+                expired_contracts = expired_contracts.filter(tenant_id=tenant_id)
             
             result = {
                 'total_expired': 0,
@@ -194,6 +204,10 @@ def generate_contract_statistics_task(**kwargs):
         
         today = date.today()
         month_start = date(today.year, today.month, 1)
+        tenant_id = kwargs.get("tenant_id")
+        contract_qs = Contract.objects.all()
+        if tenant_id is not None:
+            contract_qs = contract_qs.filter(tenant_id=tenant_id)
         
         # TODO: 实现合同统计逻辑
         result = {
@@ -201,7 +215,7 @@ def generate_contract_statistics_task(**kwargs):
             'new_contracts': 0,
             'expiring_contracts': 0,
             'renewed_contracts': 0,
-            'total_active_contracts': Contract.objects.filter(status=Contract.Status.ACTIVE).count(),
+            'total_active_contracts': contract_qs.filter(status=Contract.Status.ACTIVE).count(),
             'status': 'pending_implementation'
         }
         

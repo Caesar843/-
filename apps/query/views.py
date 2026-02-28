@@ -1,436 +1,433 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, TemplateView, FormView
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-from django.db.models import Sum, Count, Avg, Q
-from django.utils import timezone
 from datetime import datetime, timedelta
 
-from apps.store.models import Shop, Contract
+from django.contrib import messages
+from django.db.models import Avg, Count, Q, Sum
+from django.utils import timezone
+from django.views.generic import TemplateView
+
+from apps.communication.models import ActivityApplication, MaintenanceRequest
 from apps.finance.models import FinanceRecord
-from apps.operations.models import DeviceData, ManualOperationData, OperationAnalysis
-from apps.communication.models import MaintenanceRequest, ActivityApplication
-from apps.query.forms import ShopQueryForm, OperationQueryForm, FinanceQueryForm, AdminQueryForm
-
-"""
-Query App Views
-----------------
-提供多维度查询功能，包括：
-1. 店铺端查询：合约详情、缴费记录、运营数据、事务申请进度
-2. 运营专员端查询：分管区域店铺信息、运营数据汇总、事务处理情况
-3. 财务管理员端查询：费用收缴明细、未缴费用统计
-4. 管理层端查询：商场整体运营数据概览
-"""
+from apps.operations.models import DeviceData, ManualOperationData
+from apps.store.models import Contract, Shop
+from apps.user_management.models import Role
+from apps.user_management.permissions import RoleRequiredMixin
 
 
-class ShopQueryView(LoginRequiredMixin, TemplateView):
-    """店铺端多维度查询视图"""
-    template_name = 'query/shop_query.html'
-    
+def _get_role_type(user):
+    return getattr(getattr(getattr(user, "profile", None), "role", None), "role_type", None)
+
+
+def _get_request_tenant(request):
+    return getattr(request, "tenant", None) or getattr(getattr(request.user, "profile", None), "tenant", None)
+
+
+def _period_flags(period):
+    return {
+        "is_week": period == "week",
+        "is_month": period == "month",
+        "is_quarter": period == "quarter",
+        "is_year": period == "year",
+        "is_custom": period == "custom",
+    }
+
+
+def _resolve_period_range(request, *, default_period="month"):
+    period = (request.GET.get("period") or default_period).lower()
+    if period not in {"week", "month", "quarter", "year", "custom"}:
+        period = default_period
+
+    today = timezone.now().date()
+    preset_days = {
+        "week": 7,
+        "month": 30,
+        "quarter": 90,
+        "year": 365,
+    }
+
+    raw_start = (request.GET.get("start_date") or "").strip()
+    raw_end = (request.GET.get("end_date") or "").strip()
+    has_manual_range = bool(raw_start or raw_end)
+
+    if has_manual_range:
+        try:
+            start_date = datetime.strptime(raw_start, "%Y-%m-%d").date()
+            end_date = datetime.strptime(raw_end, "%Y-%m-%d").date()
+            if start_date > end_date:
+                raise ValueError("start_after_end")
+            return ("custom", start_date, end_date, None)
+        except ValueError:
+            fallback_start = today - timedelta(days=preset_days.get(default_period, 30))
+            return (
+                default_period,
+                fallback_start,
+                today,
+                "日期范围无效，已回退到默认周期。请使用 YYYY-MM-DD 且开始日期不晚于结束日期。",
+            )
+
+    if period == "custom":
+        period = default_period
+
+    start_date = today - timedelta(days=preset_days.get(period, 30))
+    return (period, start_date, today, None)
+
+
+def _annotate_percentages(stats):
+    rows = list(stats)
+    total = sum(item.get("count", 0) for item in rows)
+    for item in rows:
+        item["percentage"] = round((item.get("count", 0) / total * 100), 1) if total > 0 else 0
+    return rows
+
+
+class QueryAccessMixin(RoleRequiredMixin):
+    """查询视图基础能力：角色准入 + 多租户过滤。"""
+
+    allowed_roles = []
+
+    def get_role_type(self):
+        return _get_role_type(self.request.user)
+
+    def get_tenant(self):
+        return _get_request_tenant(self.request)
+
+    def get_shop_queryset(self):
+        tenant = self.get_tenant()
+        queryset = Shop.objects.filter(is_deleted=False)
+        if tenant is not None:
+            queryset = queryset.filter(tenant=tenant)
+
+        if self.get_role_type() == Role.RoleType.SHOP:
+            profile_shop_id = getattr(getattr(self.request.user, "profile", None), "shop_id", None)
+            if profile_shop_id:
+                queryset = queryset.filter(id=profile_shop_id)
+            else:
+                queryset = queryset.none()
+
+        return queryset
+
+    def get_contract_queryset(self):
+        return Contract.objects.for_tenant(self.get_tenant()).filter(is_archived=False)
+
+    def get_finance_queryset(self):
+        return FinanceRecord.objects.for_tenant(self.get_tenant())
+
+    def get_manual_data_queryset(self):
+        tenant = self.get_tenant()
+        queryset = ManualOperationData.objects.filter(shop__is_deleted=False)
+        if tenant is not None:
+            queryset = queryset.filter(shop__tenant=tenant)
+        return queryset
+
+    def get_device_data_queryset(self):
+        tenant = self.get_tenant()
+        queryset = DeviceData.objects.filter(shop__is_deleted=False)
+        if tenant is not None:
+            queryset = queryset.filter(shop__tenant=tenant)
+        return queryset
+
+    def get_maintenance_queryset(self):
+        tenant = self.get_tenant()
+        queryset = MaintenanceRequest.objects.filter(shop__is_deleted=False)
+        if tenant is not None:
+            queryset = queryset.filter(shop__tenant=tenant)
+        return queryset
+
+    def get_activity_queryset(self):
+        tenant = self.get_tenant()
+        queryset = ActivityApplication.objects.filter(shop__is_deleted=False)
+        if tenant is not None:
+            queryset = queryset.filter(shop__tenant=tenant)
+        return queryset
+
+
+class ShopQueryView(QueryAccessMixin, TemplateView):
+    """店铺端多维查询视图。"""
+
+    template_name = "query/shop_query.html"
+    allowed_roles = ["ADMIN", "MANAGEMENT", "OPERATION", "SHOP"]
+
     def get_context_data(self, **kwargs):
-        """获取上下文数据"""
         context = super().get_context_data(**kwargs)
-        
-        # 获取所有店铺（包括已删除的，因为数据库中所有店铺都被标记为删除了）
-        shops = Shop.objects.all()
-        context['shops'] = shops
-        
-        # 如果选择了店铺，获取该店铺的详细信息
-        shop_id = self.request.GET.get('shop_id')
-        if shop_id:
-            try:
-                shop = get_object_or_404(Shop, id=shop_id)
-                context['selected_shop'] = shop
-                
-                # 获取店铺的合约信息
-                contracts = Contract.objects.filter(shop=shop).order_by('-created_at')
-                context['contracts'] = contracts
-                
-                # 获取店铺的缴费记录
-                finance_records = FinanceRecord.objects.filter(
-                    contract__shop=shop
-                ).order_by('-created_at')
-                context['finance_records'] = finance_records
-                
-                # 获取店铺的运营数据
-                operation_data = ManualOperationData.objects.filter(
-                    shop=shop
-                ).order_by('-data_date')[:30]  # 最近30条
-                context['operation_data'] = operation_data
-                
-                # 获取店铺的事务申请进度
-                maintenance_requests = MaintenanceRequest.objects.filter(
-                    shop=shop
-                ).order_by('-created_at')
-                activity_applications = ActivityApplication.objects.filter(
-                    shop=shop
-                ).order_by('-created_at')
-                context['maintenance_requests'] = maintenance_requests
-                context['activity_applications'] = activity_applications
-                
-            except Exception as e:
-                messages.error(self.request, f'查询失败: {str(e)}')
-        
+        shops = self.get_shop_queryset().order_by("name")
+        context["shops"] = shops
+
+        shop_id = (self.request.GET.get("shop_id") or "").strip()
+        if not shop_id:
+            return context
+
+        selected_shop = shops.filter(id=shop_id).first()
+        if not selected_shop:
+            context["shop_selection_error"] = "所选店铺不存在或无权限访问，请重新选择。"
+            messages.error(self.request, context["shop_selection_error"])
+            return context
+
+        context["selected_shop"] = selected_shop
+        context["contracts"] = self.get_contract_queryset().filter(shop=selected_shop).order_by("-created_at")
+        context["finance_records"] = (
+            self.get_finance_queryset().filter(contract__shop=selected_shop).order_by("-created_at")
+        )
+        context["operation_data"] = (
+            self.get_manual_data_queryset().filter(shop=selected_shop).order_by("-data_date")[:30]
+        )
+        context["maintenance_requests"] = (
+            self.get_maintenance_queryset().filter(shop=selected_shop).order_by("-created_at")
+        )
+        context["activity_applications"] = (
+            self.get_activity_queryset().filter(shop=selected_shop).order_by("-created_at")
+        )
         return context
 
 
-class OperationQueryView(LoginRequiredMixin, TemplateView):
-    """运营专员端多维度查询视图"""
-    template_name = 'query/operation_query.html'
-    
+class OperationQueryView(QueryAccessMixin, TemplateView):
+    """运营查询视图。"""
+
+    template_name = "query/operation_query.html"
+    allowed_roles = ["ADMIN", "MANAGEMENT", "OPERATION"]
+
     def get_context_data(self, **kwargs):
-        """获取上下文数据"""
         context = super().get_context_data(**kwargs)
-        
-        # 获取查询参数
-        business_type = self.request.GET.get('business_type')
-        start_date = self.request.GET.get('start_date')
-        end_date = self.request.GET.get('end_date')
-        period = self.request.GET.get('period', 'month')  # 默认按月
-        
-        # 添加布尔值上下文变量用于模板判断
-        context.update({
-            'is_retail': business_type == 'RETAIL',
-            'is_food': business_type == 'FOOD',
-            'is_entertainment': business_type == 'ENTERTAINMENT',
-            'is_service': business_type == 'SERVICE',
-            'is_other': business_type == 'OTHER',
-            'is_week': period == 'week',
-            'is_month': period == 'month',
-            'is_quarter': period == 'quarter',
-            'is_year': period == 'year',
-            'is_custom': period == 'custom'
-        })
-        
-        context['period'] = period
-        
-        # 计算时间范围
-        current_date = timezone.now().date()
-        if not start_date or not end_date:
-            if period == 'week':
-                start_date = current_date - timedelta(days=7)
-                end_date = current_date
-            elif period == 'month':
-                start_date = current_date - timedelta(days=30)
-                end_date = current_date
-            elif period == 'quarter':
-                start_date = current_date - timedelta(days=90)
-                end_date = current_date
-            elif period == 'year':
-                start_date = current_date - timedelta(days=365)
-                end_date = current_date
-            else:  # 默认30天
-                start_date = current_date - timedelta(days=30)
-                end_date = current_date
-        else:
-            try:
-                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-            except Exception:
-                # 处理无效日期格式
-                start_date = current_date - timedelta(days=30)
-                end_date = current_date
-        
-        context['start_date'] = start_date
-        context['end_date'] = end_date
-        
-        # 构建查询条件
-        shop_filter = Q(is_deleted=False)
+
+        business_type = (self.request.GET.get("business_type") or "").strip()
+        period, start_date, end_date, date_input_error = _resolve_period_range(
+            self.request,
+            default_period="month",
+        )
+
+        context.update(
+            {
+                "is_retail": business_type == "RETAIL",
+                "is_food": business_type == "FOOD",
+                "is_entertainment": business_type == "ENTERTAINMENT",
+                "is_service": business_type == "SERVICE",
+                "is_other": business_type == "OTHER",
+                "period": period,
+                "start_date": start_date,
+                "end_date": end_date,
+                **_period_flags(period),
+            }
+        )
+        if date_input_error:
+            context["date_input_error"] = date_input_error
+            messages.warning(self.request, date_input_error)
+
+        shops = self.get_shop_queryset()
         if business_type:
-            shop_filter &= Q(business_type=business_type)
-        
-        # 获取店铺信息
-        shops = Shop.objects.filter(shop_filter)
-        context['shops'] = shops
-        
-        # 获取运营数据汇总
-        if start_date and end_date:
-            try:
-                start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
-                end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
-                
-                # 获取手动运营数据汇总
-                manual_data = ManualOperationData.objects.filter(
-                    shop__is_deleted=False,
-                    data_date__range=[start_date_obj, end_date_obj]
-                ).aggregate(
-                    total_sales=Sum('sales_amount'),
-                    total_foot_traffic=Sum('foot_traffic'),
-                    total_transactions=Sum('transaction_count'),
-                    avg_transaction_value=Avg('average_transaction_value')
-                )
-                context['manual_data_summary'] = manual_data
-                
-                # 获取设备数据汇总
-                device_data = DeviceData.objects.filter(
-                    shop__is_deleted=False,
-                    data_time__date__range=[start_date_obj, end_date_obj]
-                ).values('data_type').annotate(
-                    total_value=Sum('value'),
-                    avg_value=Avg('value'),
-                    count=Count('id')
-                )
-                context['device_data_summary'] = device_data
-                
-            except Exception as e:
-                messages.error(self.request, f'查询失败: {str(e)}')
-        
-        # 获取事务处理情况
-        maintenance_stats = MaintenanceRequest.objects.filter(
-            shop__is_deleted=False
-        ).values('status').annotate(count=Count('id'))
-        activity_stats = ActivityApplication.objects.filter(
-            shop__is_deleted=False
-        ).values('status').annotate(count=Count('id'))
-        
-        # 计算维修请求百分比
-        total_maintenance = sum(stat['count'] for stat in maintenance_stats)
-        for stat in maintenance_stats:
-            percentage = (stat['count'] / total_maintenance * 100) if total_maintenance > 0 else 0
-            stat['percentage'] = round(percentage, 1)
-        
-        # 计算活动申请百分比
-        total_activity = sum(stat['count'] for stat in activity_stats)
-        for stat in activity_stats:
-            percentage = (stat['count'] / total_activity * 100) if total_activity > 0 else 0
-            stat['percentage'] = round(percentage, 1)
-        
-        context['maintenance_stats'] = maintenance_stats
-        context['activity_stats'] = activity_stats
-        
+            shops = shops.filter(business_type=business_type)
+        context["shops"] = shops
+
+        manual_data_queryset = self.get_manual_data_queryset().filter(data_date__range=[start_date, end_date])
+        if business_type:
+            manual_data_queryset = manual_data_queryset.filter(shop__business_type=business_type)
+
+        context["manual_data_summary"] = manual_data_queryset.aggregate(
+            total_sales=Sum("sales_amount"),
+            total_foot_traffic=Sum("foot_traffic"),
+            total_transactions=Sum("transaction_count"),
+            avg_transaction_value=Avg("average_transaction_value"),
+        )
+
+        device_data_queryset = self.get_device_data_queryset().filter(data_time__date__range=[start_date, end_date])
+        if business_type:
+            device_data_queryset = device_data_queryset.filter(shop__business_type=business_type)
+
+        context["device_data_summary"] = device_data_queryset.values("data_type").annotate(
+            total_value=Sum("value"),
+            avg_value=Avg("value"),
+            count=Count("id"),
+        )
+
+        maintenance_stats_queryset = self.get_maintenance_queryset()
+        activity_stats_queryset = self.get_activity_queryset()
+        if business_type:
+            maintenance_stats_queryset = maintenance_stats_queryset.filter(shop__business_type=business_type)
+            activity_stats_queryset = activity_stats_queryset.filter(shop__business_type=business_type)
+
+        context["maintenance_stats"] = _annotate_percentages(
+            maintenance_stats_queryset.values("status").annotate(count=Count("id"))
+        )
+        context["activity_stats"] = _annotate_percentages(
+            activity_stats_queryset.values("status").annotate(count=Count("id"))
+        )
         return context
 
 
-class FinanceQueryView(LoginRequiredMixin, TemplateView):
-    """财务管理员端多维度查询视图"""
-    template_name = 'query/finance_query.html'
-    
+class FinanceQueryView(QueryAccessMixin, TemplateView):
+    """财务查询视图。"""
+
+    template_name = "query/finance_query.html"
+    allowed_roles = ["ADMIN", "MANAGEMENT", "FINANCE"]
+
     def get_context_data(self, **kwargs):
-        """获取上下文数据"""
         context = super().get_context_data(**kwargs)
-        
-        # 获取查询参数
-        fee_type = self.request.GET.get('fee_type')
-        status = self.request.GET.get('status')
-        start_date = self.request.GET.get('start_date')
-        end_date = self.request.GET.get('end_date')
-        period = self.request.GET.get('period', 'month')  # 默认按月
-        
-        # 添加布尔值上下文变量用于模板判断
-        context.update({
-            'is_rent': fee_type == 'RENT',
-            'is_property_fee': fee_type == 'PROPERTY_FEE',
-            'is_utility_fee': fee_type == 'UTILITY_FEE',
-            'is_other_fee': fee_type == 'OTHER',
-            'is_unpaid': status == 'UNPAID',
-            'is_paid': status == 'PAID',
-            'is_void': status == 'VOID',
-            'is_week': period == 'week',
-            'is_month': period == 'month',
-            'is_quarter': period == 'quarter',
-            'is_year': period == 'year',
-            'is_custom': period == 'custom'
-        })
-        
-        context['period'] = period
-        
-        # 计算时间范围
-        current_date = timezone.now().date()
-        if not start_date or not end_date:
-            if period == 'week':
-                start_date = current_date - timedelta(days=7)
-                end_date = current_date
-            elif period == 'month':
-                start_date = current_date - timedelta(days=30)
-                end_date = current_date
-            elif period == 'quarter':
-                start_date = current_date - timedelta(days=90)
-                end_date = current_date
-            elif period == 'year':
-                start_date = current_date - timedelta(days=365)
-                end_date = current_date
-            else:  # 默认30天
-                start_date = current_date - timedelta(days=30)
-                end_date = current_date
-        else:
-            try:
-                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-            except Exception:
-                # 处理无效日期格式
-                start_date = current_date - timedelta(days=30)
-                end_date = current_date
-        
-        context['start_date'] = start_date
-        context['end_date'] = end_date
-        
-        # 构建查询条件
-        finance_filter = Q()
-        
+
+        fee_type = (self.request.GET.get("fee_type") or "").strip()
+        status = (self.request.GET.get("status") or "").strip()
+        period, start_date, end_date, date_input_error = _resolve_period_range(
+            self.request,
+            default_period="month",
+        )
+
+        context.update(
+            {
+                "is_rent": fee_type == "RENT",
+                "is_property_fee": fee_type == "PROPERTY_FEE",
+                "is_utility_fee": fee_type == "UTILITY_FEE",
+                "is_other_fee": fee_type == "OTHER",
+                "is_unpaid": status == "UNPAID",
+                "is_paid": status == "PAID",
+                "is_void": status == "VOID",
+                "period": period,
+                "start_date": start_date,
+                "end_date": end_date,
+                **_period_flags(period),
+            }
+        )
+        if date_input_error:
+            context["date_input_error"] = date_input_error
+            messages.warning(self.request, date_input_error)
+
+        finance_filter = Q(billing_period_start__range=[start_date, end_date])
         if fee_type:
             finance_filter &= Q(fee_type=fee_type)
         if status:
             finance_filter &= Q(status=status)
-        if start_date and end_date:
-            try:
-                start_date_obj = start_date
-                end_date_obj = end_date
-                finance_filter &= Q(billing_period_start__range=[start_date_obj, end_date_obj])
-            except Exception as e:
-                messages.error(self.request, f'日期格式错误: {str(e)}')
-        
-        # 获取费用收缴明细
-        finance_records = FinanceRecord.objects.filter(finance_filter).order_by('-created_at')
-        context['finance_records'] = finance_records
-        
-        # 获取未缴费用统计
-        unpaid_records = FinanceRecord.objects.filter(
-            status=FinanceRecord.Status.UNPAID
-        ).aggregate(
-            total_amount=Sum('amount'),
-            count=Count('id')
+
+        finance_queryset = self.get_finance_queryset()
+        context["finance_records"] = finance_queryset.filter(finance_filter).order_by("-created_at")
+        context["unpaid_records"] = finance_queryset.filter(status=FinanceRecord.Status.UNPAID).aggregate(
+            total_amount=Sum("amount"),
+            count=Count("id"),
         )
-        context['unpaid_records'] = unpaid_records
-        
-        # 按店铺统计未缴费用
-        shop_unpaid_stats = FinanceRecord.objects.filter(
-            status=FinanceRecord.Status.UNPAID
-        ).values('contract__shop__name').annotate(
-            total_amount=Sum('amount'),
-            count=Count('id')
-        ).order_by('-total_amount')
-        context['shop_unpaid_stats'] = shop_unpaid_stats
-        
-        # 按费用类型统计
-        fee_type_stats = FinanceRecord.objects.filter(
-            finance_filter
-        ).values('fee_type').annotate(
-            total_amount=Sum('amount'),
-            count=Count('id')
+        context["unpaid_amount"] = context["unpaid_records"].get("total_amount") or 0
+        context["shop_unpaid_stats"] = (
+            finance_queryset.filter(status=FinanceRecord.Status.UNPAID)
+            .values("contract__shop__name")
+            .annotate(total_amount=Sum("amount"), count=Count("id"))
+            .order_by("-total_amount")
         )
-        context['fee_type_stats'] = fee_type_stats
-        
+        context["fee_type_stats"] = (
+            finance_queryset.filter(finance_filter)
+            .values("fee_type")
+            .annotate(total_amount=Sum("amount"), count=Count("id"))
+        )
         return context
 
 
-class AdminQueryView(LoginRequiredMixin, TemplateView):
-    """管理层端多维度查询视图"""
-    template_name = 'query/admin_query.html'
-    
+class AdminQueryView(QueryAccessMixin, TemplateView):
+    """管理层查询视图。"""
+
+    template_name = "query/admin_query.html"
+    allowed_roles = ["ADMIN", "MANAGEMENT"]
+
     def get_context_data(self, **kwargs):
-        """获取上下文数据"""
         context = super().get_context_data(**kwargs)
-        
-        # 获取查询参数
-        period = self.request.GET.get('period', 'month')  # 默认按月
-        business_type = self.request.GET.get('business_type')
-        
-        # 计算时间范围
+
+        period = (self.request.GET.get("period") or "month").lower()
+        if period not in {"week", "month", "quarter", "year"}:
+            period = "month"
+        business_type = (self.request.GET.get("business_type") or "").strip()
+
         end_date = timezone.now().date()
-        if period == 'week':
-            start_date = end_date - timedelta(days=7)
-        elif period == 'month':
-            start_date = end_date - timedelta(days=30)
-        elif period == 'quarter':
-            start_date = end_date - timedelta(days=90)
-        else:  # year
-            start_date = end_date - timedelta(days=365)
-        
-        # 添加布尔值上下文变量用于模板判断
-        context.update({
-            'is_retail': business_type == 'RETAIL',
-            'is_food': business_type == 'FOOD',
-            'is_entertainment': business_type == 'ENTERTAINMENT',
-            'is_service': business_type == 'SERVICE',
-            'is_other': business_type == 'OTHER'
-        })
-        
-        context['period'] = period
-        context['start_date'] = start_date
-        context['end_date'] = end_date
-        
-        # 获取商场整体运营数据概览
-        try:
-            # 店铺统计
-            total_shops = Shop.objects.filter(is_deleted=False).count()
-            context['total_shops'] = total_shops
-            
-            # 合约统计
-            active_contracts = Contract.objects.filter(status=Contract.Status.ACTIVE).count()
-            context['active_contracts'] = active_contracts
-            
-            # 财务统计
-            total_revenue = FinanceRecord.objects.filter(
+        days_by_period = {
+            "week": 7,
+            "month": 30,
+            "quarter": 90,
+            "year": 365,
+        }
+        start_date = end_date - timedelta(days=days_by_period[period])
+
+        context.update(
+            {
+                "is_retail": business_type == "RETAIL",
+                "is_food": business_type == "FOOD",
+                "is_entertainment": business_type == "ENTERTAINMENT",
+                "is_service": business_type == "SERVICE",
+                "is_other": business_type == "OTHER",
+                "period": period,
+                "start_date": start_date,
+                "end_date": end_date,
+            }
+        )
+
+        shop_queryset = self.get_shop_queryset()
+        contract_queryset = self.get_contract_queryset()
+        finance_queryset = self.get_finance_queryset()
+        operation_queryset = self.get_manual_data_queryset()
+        maintenance_queryset = self.get_maintenance_queryset()
+        activity_queryset = self.get_activity_queryset()
+
+        if business_type:
+            shop_queryset = shop_queryset.filter(business_type=business_type)
+            contract_queryset = contract_queryset.filter(shop__business_type=business_type)
+            finance_queryset = finance_queryset.filter(contract__shop__business_type=business_type)
+            operation_queryset = operation_queryset.filter(shop__business_type=business_type)
+            maintenance_queryset = maintenance_queryset.filter(shop__business_type=business_type)
+            activity_queryset = activity_queryset.filter(shop__business_type=business_type)
+
+        context["total_shops"] = shop_queryset.count()
+        context["active_contracts"] = contract_queryset.filter(status=Contract.Status.ACTIVE).count()
+        context["total_revenue"] = (
+            finance_queryset.filter(
                 status=FinanceRecord.Status.PAID,
-                paid_at__date__range=[start_date, end_date]
-            ).aggregate(total=Sum('amount'))['total'] or 0
-            context['total_revenue'] = total_revenue
-            
-            unpaid_amount = FinanceRecord.objects.filter(
-                status=FinanceRecord.Status.UNPAID
-            ).aggregate(total=Sum('amount'))['total'] or 0
-            context['unpaid_amount'] = unpaid_amount
-            
-            # 运营数据统计
-            operation_summary = ManualOperationData.objects.filter(
-                data_date__range=[start_date, end_date]
-            ).aggregate(
-                total_sales=Sum('sales_amount'),
-                total_foot_traffic=Sum('foot_traffic'),
-                avg_transaction_value=Avg('average_transaction_value')
-            )
-            context['operation_summary'] = operation_summary
-            
-            # 事务处理统计
-            maintenance_total = MaintenanceRequest.objects.count()
-            maintenance_completed = MaintenanceRequest.objects.filter(
-                status=MaintenanceRequest.Status.COMPLETED
-            ).count()
-            context['maintenance_total'] = maintenance_total
-            context['maintenance_completed'] = maintenance_completed
-            
-            activity_total = ActivityApplication.objects.count()
-            activity_approved = ActivityApplication.objects.filter(
-                status=ActivityApplication.Status.APPROVED
-            ).count()
-            context['activity_total'] = activity_total
-            context['activity_approved'] = activity_approved
-            
-            # 按业态类型统计店铺
-            business_type_stats = Shop.objects.filter(
-                is_deleted=False
-            ).values('business_type').annotate(count=Count('id'))
-            context['business_type_stats'] = business_type_stats
-            
-            # 获取事务处理情况统计
-            maintenance_stats = MaintenanceRequest.objects.filter(
-                shop__is_deleted=False
-            ).values('status').annotate(count=Count('id'))
-            activity_stats = ActivityApplication.objects.filter(
-                shop__is_deleted=False
-            ).values('status').annotate(count=Count('id'))
-            
-            # 计算维修请求百分比
-            total_maintenance = sum(stat['count'] for stat in maintenance_stats)
-            for stat in maintenance_stats:
-                percentage = (stat['count'] / total_maintenance * 100) if total_maintenance > 0 else 0
-                stat['percentage'] = round(percentage, 1)
-            
-            # 计算活动申请百分比
-            total_activity = sum(stat['count'] for stat in activity_stats)
-            for stat in activity_stats:
-                percentage = (stat['count'] / total_activity * 100) if total_activity > 0 else 0
-                stat['percentage'] = round(percentage, 1)
-            
-            context['maintenance_stats'] = maintenance_stats
-            context['activity_stats'] = activity_stats
-            
-        except Exception as e:
-            messages.error(self.request, f'查询失败: {str(e)}')
-        
+                paid_at__date__range=[start_date, end_date],
+            ).aggregate(total=Sum("amount"))["total"]
+            or 0
+        )
+        context["unpaid_amount"] = (
+            finance_queryset.filter(status=FinanceRecord.Status.UNPAID).aggregate(total=Sum("amount"))["total"]
+            or 0
+        )
+        context["operation_summary"] = operation_queryset.filter(data_date__range=[start_date, end_date]).aggregate(
+            total_sales=Sum("sales_amount"),
+            total_foot_traffic=Sum("foot_traffic"),
+            avg_transaction_value=Avg("average_transaction_value"),
+        )
+
+        context["maintenance_total"] = maintenance_queryset.count()
+        context["maintenance_completed"] = maintenance_queryset.filter(
+            status=MaintenanceRequest.Status.COMPLETED
+        ).count()
+        context["activity_total"] = activity_queryset.count()
+        context["activity_approved"] = activity_queryset.filter(status=ActivityApplication.Status.APPROVED).count()
+
+        context["business_type_stats"] = shop_queryset.values("business_type").annotate(count=Count("id"))
+        context["maintenance_stats"] = _annotate_percentages(
+            maintenance_queryset.values("status").annotate(count=Count("id"))
+        )
+        context["activity_stats"] = _annotate_percentages(
+            activity_queryset.values("status").annotate(count=Count("id"))
+        )
         return context
 
 
-class DashboardView(LoginRequiredMixin, TemplateView):
-    """查询功能仪表盘"""
-    template_name = 'query/dashboard.html'
+class DashboardView(RoleRequiredMixin, TemplateView):
+    """查询功能仪表盘。"""
+
+    template_name = "query/dashboard.html"
+    allowed_roles = ["ADMIN", "MANAGEMENT", "OPERATION", "FINANCE", "SHOP"]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        role_type = _get_role_type(self.request.user)
+        can_view_shop_query = role_type in {"ADMIN", "MANAGEMENT", "OPERATION", "SHOP"}
+        can_view_operation_query = role_type in {"ADMIN", "MANAGEMENT", "OPERATION"}
+        can_view_finance_query = role_type in {"ADMIN", "MANAGEMENT", "FINANCE"}
+        can_view_admin_query = role_type in {"ADMIN", "MANAGEMENT"}
+
+        context.update(
+            {
+                "can_view_shop_query": can_view_shop_query,
+                "can_view_operation_query": can_view_operation_query,
+                "can_view_finance_query": can_view_finance_query,
+                "can_view_admin_query": can_view_admin_query,
+                "available_query_count": sum(
+                    [
+                        can_view_shop_query,
+                        can_view_operation_query,
+                        can_view_finance_query,
+                        can_view_admin_query,
+                    ]
+                ),
+            }
+        )
+        return context

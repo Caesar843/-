@@ -3,6 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
+from apps.core.views import HealthCheckView, LandingView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from apps.core.views import HealthCheckView
 
@@ -35,6 +36,7 @@ urlpatterns = [
     
     # Core app for authentication
     path('core/', include('apps.core.urls')),
+    path('landing/', LandingView.as_view(), name='landing'),
     
     # -------------------------------------------------------------------------
     # API Documentation (Swagger & ReDoc)
